@@ -25,7 +25,13 @@
       "Bash(wmic process where \"name=''node.exe''\" call terminate)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(gh auth status:*)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": [],
     "ask": []
