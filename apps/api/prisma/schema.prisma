@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Tavoli del ristorante
+model Table {
+  id        String   @id @default(cuid())
+  number    Int      @unique
+  seats     Int      @default(4)
+  qrCode    String   @unique
+  status    String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, RESERVED
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Categorie del menu (Toast, Salad, etc.)
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?
+  sortOrder   Int        @default(0)
+  active      Boolean    @default(true)
+  items       MenuItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// Piatti del menu
+model MenuItem {
+  id             String          @id @default(cuid())
+  name           String
+  description    String?
+  price          Int             // Prezzo in centesimi
+  imageUrl       String?
+  available      Boolean         @default(true)
+  sortOrder      Int             @default(0)
+  categoryId     String
+  category       Category        @relation(fields: [categoryId], references: [id])
+  modifierGroups ModifierGroup[]
+  orderItems     OrderItem[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+// Gruppi di modificatori (es. "Extra ingredienti")
+model ModifierGroup {
+  id          String     @id @default(cuid())
+  name        String
+  required    Boolean    @default(false)
+  multiSelect Boolean    @default(false)
+  minSelect   Int        @default(0)
+  maxSelect   Int        @default(5)
+  menuItemId  String
+  menuItem    MenuItem   @relation(fields: [menuItemId], references: [id])
+  modifiers   Modifier[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// Singoli modificatori (es. "+ mozzarella", "+ avocado")
+model Modifier {
+  id              String              @id @default(cuid())
+  name            String
+  price           Int                 @default(0) // Sovrapprezzo in centesimi
+  available       Boolean             @default(true)
+  modifierGroupId String
+  modifierGroup   ModifierGroup       @relation(fields: [modifierGroupId], references: [id])
+  orderItems      OrderItemModifier[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+// Ordini
+model Order {
+  id            String      @id @default(cuid())
+  tableId       String
+  table         Table       @relation(fields: [tableId], references: [id])
+  items         OrderItem[]
+  status        String      @default("PENDING") // PENDING, PREPARING, READY, SERVED, CANCELLED
+  orderType     String      @default("DINE_IN") // DINE_IN, TAKEAWAY
+  paymentMethod String?     // CASH, CARD
+  subtotal      Int         @default(0) // Subtotale in centesimi (senza sovrapprezzo)
+  surcharge     Int         @default(0) // Sovrapprezzo carta (3%) in centesimi
+  totalAmount   Int         // Totale finale in centesimi
+  customerName  String?     // Nome cliente per take away
+  customerPhone String?     // Telefono cliente per take away
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// Elementi dell'ordine
+model OrderItem {
+  id          String              @id @default(cuid())
+  orderId     String
+  order       Order               @relation(fields: [orderId], references: [id])
+  menuItemId  String
+  menuItem    MenuItem            @relation(fields: [menuItemId], references: [id])
+  quantity    Int                 @default(1)
+  notes       String?
+  consumeMode String              @default("DINE_IN") // DINE_IN, TAKEAWAY
+  modifiers   OrderItemModifier[]
+  createdAt   DateTime            @default(now())
+}
+
+// Modificatori applicati a un elemento dell'ordine
+model OrderItemModifier {
+  id          String    @id @default(cuid())
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+  modifierId  String
+  modifier    Modifier  @relation(fields: [modifierId], references: [id])
+}

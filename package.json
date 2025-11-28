@@ -1,0 +1,31 @@
+{
+  "name": "mykafe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema di ordinazione digitale per ristoranti",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm run --parallel dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm run --parallel build",
+    "build:api": "pnpm --filter api build",
+    "build:web": "pnpm --filter web build",
+    "lint": "pnpm run --parallel lint",
+    "db:push": "pnpm --filter api db:push",
+    "db:generate": "pnpm --filter api db:generate",
+    "db:seed": "pnpm --filter api db:seed",
+    "db:studio": "pnpm --filter api db:studio",
+    "postinstall": "pnpm --filter api db:generate"
+  },
+  "keywords": ["restaurant", "ordering", "qrcode", "kitchen-display"],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

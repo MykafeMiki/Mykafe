@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm init:*)",
+      "Bash(pnpm install:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npx tsx:*)",
+      "Bash(pnpm run dev:*)",
+      "Bash(start http://localhost:3000)",
+      "Bash(pnpm --filter api db:push:*)",
+      "Bash(npx prisma db seed:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(cmd /c \"taskkill /PID 48172 /F\")",
+      "Bash(start http://localhost:3000/takeaway)",
+      "Bash(pnpm run dev:api:*)",
+      "Bash(pnpm add:*)",
+      "Bash(timeout /t)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(timeout /t 2 /nobreak)",
+      "Bash(cmd /c:*)",
+      "Bash(wmic process where \"name=''node.exe''\" call terminate)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(dir:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
