@@ -1,11 +1,22 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const BUCKET_NAME = 'menu-images'
+
+let supabase: SupabaseClient | null = null
+
+function getSupabaseClient(): SupabaseClient {
+  if (!supabase) {
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase configuration missing. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.')
+    }
+
+    supabase = createClient(supabaseUrl, supabaseServiceKey)
+  }
+  return supabase
+}
 
 export interface UploadResult {
   url: string
@@ -28,7 +39,9 @@ export async function uploadImage(
   const cleanName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
   const path = `${folder}/${timestamp}_${cleanName}`
 
-  const { data, error } = await supabase.storage
+  const client = getSupabaseClient()
+
+  const { data, error } = await client.storage
     .from(BUCKET_NAME)
     .upload(path, file, {
       contentType: getContentType(fileName),
@@ -41,7 +54,7 @@ export async function uploadImage(
   }
 
   // Get public URL
-  const { data: urlData } = supabase.storage
+  const { data: urlData } = client.storage
     .from(BUCKET_NAME)
     .getPublicUrl(path)
 
@@ -56,7 +69,9 @@ export async function uploadImage(
  * @param path - The file path in the bucket
  */
 export async function deleteImage(path: string): Promise<void> {
-  const { error } = await supabase.storage
+  const client = getSupabaseClient()
+
+  const { error } = await client.storage
     .from(BUCKET_NAME)
     .remove([path])
 
