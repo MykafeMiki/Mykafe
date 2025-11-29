@@ -23,7 +23,7 @@ export default function TakeawayPage() {
   const [error, setError] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null)
 
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
   const setTableIdInCart = useCart((state) => state.setTableId)
   const addToCart = useCart((state) => state.addItem)
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Volume2, VolumeX, RefreshCw } from 'lucide-react'
 import { OrderCard } from '@/components/kitchen/OrderCard'
 import { getActiveOrders, updateOrderStatus } from '@/lib/api'
-import { connectSocket, disconnectSocket } from '@/lib/socket'
+import { subscribeToOrders, unsubscribeFromOrders } from '@/lib/socket'
 import type { Order, OrderStatus } from '@shared/types'
 
 export default function KitchenPage() {
@@ -35,28 +35,26 @@ export default function KitchenPage() {
   useEffect(() => {
     fetchOrders()
 
-    const socket = connectSocket()
-    socket.emit('join:kitchen')
-
-    socket.on('order:new', (order: Order) => {
-      setOrders((prev) => [order, ...prev])
-      playNotificationSound()
-      setLastUpdate(new Date())
-    })
-
-    socket.on('order:updated', (updatedOrder: Order) => {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
-          .filter((o) => ['PENDING', 'PREPARING'].includes(o.status))
-      )
-      setLastUpdate(new Date())
-    })
+    // Subscribe to Supabase Realtime for order updates
+    subscribeToOrders(
+      // On new order
+      (newOrder) => {
+        // Fetch fresh data to get complete order with relations
+        fetchOrders()
+        playNotificationSound()
+      },
+      // On order update
+      (updatedOrder) => {
+        // Fetch fresh data to get complete order with relations
+        fetchOrders()
+      }
+    )
 
     // Polling fallback
     const interval = setInterval(fetchOrders, 30000)
 
     return () => {
-      disconnectSocket()
+      unsubscribeFromOrders()
       clearInterval(interval)
     }
   }, [fetchOrders, playNotificationSound])

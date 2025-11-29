@@ -1,31 +1,72 @@
 'use client'
 
-import { io, Socket } from 'socket.io-client'
-import type { ServerToClientEvents, ClientToServerEvents } from '@shared/types'
+import { createClient, RealtimeChannel } from '@supabase/supabase-js'
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-export function getSocket() {
-  if (!socket) {
-    socket = io(SOCKET_URL, {
-      autoConnect: false,
-    })
+let ordersChannel: RealtimeChannel | null = null
+
+export interface OrderEvent {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE'
+  new: Record<string, unknown>
+  old: Record<string, unknown>
+}
+
+export function subscribeToOrders(onNewOrder: (order: unknown) => void, onOrderUpdate: (order: unknown) => void) {
+  if (ordersChannel) {
+    ordersChannel.unsubscribe()
   }
-  return socket
+
+  ordersChannel = supabase
+    .channel('orders-channel')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'Order'
+      },
+      (payload) => {
+        console.log('New order:', payload.new)
+        onNewOrder(payload.new)
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'Order'
+      },
+      (payload) => {
+        console.log('Order updated:', payload.new)
+        onOrderUpdate(payload.new)
+      }
+    )
+    .subscribe()
+
+  return ordersChannel
+}
+
+export function unsubscribeFromOrders() {
+  if (ordersChannel) {
+    ordersChannel.unsubscribe()
+    ordersChannel = null
+  }
+}
+
+// Legacy compatibility functions (no-op for now)
+export function getSocket() {
+  return null
 }
 
 export function connectSocket() {
-  const socket = getSocket()
-  if (!socket.connected) {
-    socket.connect()
-  }
-  return socket
+  return null
 }
 
 export function disconnectSocket() {
-  if (socket?.connected) {
-    socket.disconnect()
-  }
+  unsubscribeFromOrders()
 }

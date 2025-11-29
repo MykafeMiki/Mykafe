@@ -2,8 +2,8 @@
 
 import { Clock, ChefHat, Check, X, UtensilsCrossed, ShoppingBag, Phone, User, Banknote, CreditCard } from 'lucide-react'
 import { formatTime, cn } from '@/lib/utils'
-import type { Order, OrderStatus } from '@shared/types'
-import { ConsumeMode, OrderType, PaymentMethod } from '@shared/types'
+import type { Order } from '@shared/types'
+import { ConsumeMode, OrderType, PaymentMethod, OrderStatus } from '@shared/types'
 
 interface OrderCardProps {
   order: Order
@@ -44,9 +44,9 @@ export function OrderCard({ order, onStatusChange }: OrderCardProps) {
   const isTakeaway = order.orderType === OrderType.TAKEAWAY
 
   const nextStatus: Record<string, OrderStatus | null> = {
-    PENDING: 'PREPARING',
-    PREPARING: 'READY',
-    READY: 'SERVED',
+    PENDING: OrderStatus.PREPARING,
+    PREPARING: OrderStatus.READY,
+    READY: OrderStatus.SERVED,
     SERVED: null,
     CANCELLED: null,
   }

@@ -26,7 +26,7 @@ export default function MenuPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
   const setTableIdInCart = useCart((state) => state.setTableId)
   const addToCart = useCart((state) => state.addItem)
 

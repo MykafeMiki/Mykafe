@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+const API_URL = `${SUPABASE_URL}/functions/v1`
 
 // Token management
 let authToken: string | null = null
@@ -27,6 +30,7 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
       ...options?.headers,
     },
   })
@@ -44,6 +48,7 @@ async function fetchApiAuth<T>(endpoint: string, options?: RequestInit): Promise
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options?.headers,
     },
@@ -61,63 +66,65 @@ async function fetchApiAuth<T>(endpoint: string, options?: RequestInit): Promise
 
 // Auth
 export const adminLogin = (password: string) =>
-  fetchApi<{ token: string }>('/api/auth/login', {
+  fetchApi<{ token: string }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ password }),
   })
 
 export const verifyToken = () =>
-  fetchApiAuth<{ valid: boolean }>('/api/auth/verify')
+  fetchApiAuth<{ valid: boolean }>('/auth/verify')
 
 // Menu
-export const getMenu = () => fetchApi<Category[]>('/api/menu')
-export const getMenuItem = (id: string) => fetchApi<MenuItem>(`/api/menu/items/${id}`)
+export const getMenu = () => fetchApi<Category[]>('/menu')
+export const getMenuItem = (id: string) => fetchApi<MenuItem>(`/menu/items/${id}`)
 
 // Admin Menu
+export const getAdminCategories = () => fetchApi<Category[]>('/menu/admin/categories')
+
 export const createCategory = (data: { name: string; description?: string; imageUrl?: string; sortOrder?: number }) =>
-  fetchApi<Category>('/api/menu/categories', {
+  fetchApi<Category>('/menu/categories', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 
 export const updateCategory = (id: string, data: { name?: string; description?: string; imageUrl?: string; sortOrder?: number; active?: boolean }) =>
-  fetchApi<Category>(`/api/menu/categories/${id}`, {
+  fetchApi<Category>(`/menu/categories/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   })
 
 export const createMenuItem = (data: { name: string; description?: string; price: number; categoryId: string; imageUrl?: string; sortOrder?: number }) =>
-  fetchApi<MenuItem>('/api/menu/items', {
+  fetchApi<MenuItem>('/menu/items', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 
 export const updateMenuItem = (id: string, data: { name?: string; description?: string; price?: number; imageUrl?: string; sortOrder?: number; available?: boolean }) =>
-  fetchApi<MenuItem>(`/api/menu/items/${id}`, {
+  fetchApi<MenuItem>(`/menu/items/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   })
 
 export const updateItemAvailability = (id: string, available: boolean) =>
-  fetchApi<MenuItem>(`/api/menu/items/${id}/availability`, {
+  fetchApi<MenuItem>(`/menu/items/${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ available }),
   })
 
 // Tables
-export const getTables = () => fetchApi<Table[]>('/api/tables')
-export const getTableByQr = (qrCode: string) => fetchApi<Table>(`/api/tables/qr/${qrCode}`)
-export const getTable = (id: string) => fetchApi<Table>(`/api/tables/${id}`)
+export const getTables = () => fetchApi<Table[]>('/tables')
+export const getTableByQr = (qrCode: string) => fetchApi<Table>(`/tables/qr/${qrCode}`)
+export const getTable = (id: string) => fetchApi<Table>(`/tables/${id}`)
 
 // Orders
-export const getActiveOrders = () => fetchApi<Order[]>('/api/orders/active')
+export const getActiveOrders = () => fetchApi<Order[]>('/orders/active')
 export const createOrder = (data: CreateOrderRequest) =>
-  fetchApi<Order>('/api/orders', {
+  fetchApi<Order>('/orders', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 export const updateOrderStatus = (id: string, status: string) =>
-  fetchApi<Order>(`/api/orders/${id}/status`, {
+  fetchApi<Order>(`/orders/${id}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
   })
@@ -133,9 +140,12 @@ export const uploadItemImage = async (file: File): Promise<UploadResult> => {
   const formData = new FormData()
   formData.append('image', file)
 
-  const res = await fetch(`${API_URL}/api/upload/items`, {
+  const res = await fetch(`${API_URL}/upload/items`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: formData,
   })
 
@@ -151,9 +161,12 @@ export const uploadCategoryImage = async (file: File): Promise<UploadResult> => 
   const formData = new FormData()
   formData.append('image', file)
 
-  const res = await fetch(`${API_URL}/api/upload/categories`, {
+  const res = await fetch(`${API_URL}/upload/categories`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: formData,
   })
 
@@ -166,10 +179,11 @@ export const uploadCategoryImage = async (file: File): Promise<UploadResult> => 
 
 export const deleteImage = async (url: string): Promise<void> => {
   const token = getAuthToken()
-  const res = await fetch(`${API_URL}/api/upload`, {
+  const res = await fetch(`${API_URL}/upload`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
       ...(token && { Authorization: `Bearer ${token}` }),
     },
     body: JSON.stringify({ url }),
