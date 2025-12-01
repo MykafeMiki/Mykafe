@@ -1,11 +1,22 @@
 'use client'
 
-import { createClient, RealtimeChannel } from '@supabase/supabase-js'
+import { createClient, RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+// Lazy initialization to avoid build-time errors
+let supabase: SupabaseClient | null = null
+
+function getSupabaseClient(): SupabaseClient {
+  if (!supabase) {
+    if (!SUPABASE_ANON_KEY) {
+      throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured')
+    }
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  }
+  return supabase
+}
 
 let ordersChannel: RealtimeChannel | null = null
 
@@ -20,7 +31,8 @@ export function subscribeToOrders(onNewOrder: (order: unknown) => void, onOrderU
     ordersChannel.unsubscribe()
   }
 
-  ordersChannel = supabase
+  const client = getSupabaseClient()
+  ordersChannel = client
     .channel('orders-channel')
     .on(
       'postgres_changes',

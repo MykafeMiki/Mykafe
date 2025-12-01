@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { Volume2, VolumeX, RefreshCw } from 'lucide-react'
 import { OrderCard } from '@/components/kitchen/OrderCard'
 import { getActiveOrders, updateOrderStatus } from '@/lib/api'
-import { subscribeToOrders, unsubscribeFromOrders } from '@/lib/socket'
 import type { Order, OrderStatus } from '@shared/types'
 
 export default function KitchenPage() {
@@ -35,26 +34,32 @@ export default function KitchenPage() {
   useEffect(() => {
     fetchOrders()
 
-    // Subscribe to Supabase Realtime for order updates
-    subscribeToOrders(
-      // On new order
-      (newOrder) => {
-        // Fetch fresh data to get complete order with relations
-        fetchOrders()
-        playNotificationSound()
-      },
-      // On order update
-      (updatedOrder) => {
-        // Fetch fresh data to get complete order with relations
-        fetchOrders()
-      }
-    )
+    let cleanup: (() => void) | undefined
+
+    // Dynamically import socket to avoid build-time Supabase client creation
+    import('@/lib/socket').then(({ subscribeToOrders, unsubscribeFromOrders }) => {
+      // Subscribe to Supabase Realtime for order updates
+      subscribeToOrders(
+        // On new order
+        () => {
+          // Fetch fresh data to get complete order with relations
+          fetchOrders()
+          playNotificationSound()
+        },
+        // On order update
+        () => {
+          // Fetch fresh data to get complete order with relations
+          fetchOrders()
+        }
+      )
+      cleanup = unsubscribeFromOrders
+    }).catch(console.error)
 
     // Polling fallback
     const interval = setInterval(fetchOrders, 30000)
 
     return () => {
-      unsubscribeFromOrders()
+      if (cleanup) cleanup()
       clearInterval(interval)
     }
   }, [fetchOrders, playNotificationSound])
