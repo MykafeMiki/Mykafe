@@ -36,7 +36,13 @@
       "Bash(pnpm run build:*)",
       "Bash(vercel login)",
       "WebFetch(domain:biefwzrprjqusjynqwus.supabase.co)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "WebFetch(domain:mykafe-api.vercel.app)",
+      "Bash(npx vercel --version)",
+      "Bash(npx vercel link)",
+      "Bash(npx vercel --prod --yes)",
+      "Bash(del \"C:\\Users\\dario\\OneDrive\\Desktop\\MyKafe\\apps\\web\\vercel.json\")",
+      "Bash(npx vercel:*)"
     ],
     "deny": [],
     "ask": []

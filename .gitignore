@@ -37,3 +37,6 @@ coverage/
 # Windows reserved names
 nul
 NUL
+
+.vercel
+.env*.local

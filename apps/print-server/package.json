@@ -1,0 +1,25 @@
+{
+  "name": "print-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MyKafe Kitchen Print Server - Stampa automatica ordini",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "setup": "node dist/setup.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.86.0",
+    "escpos": "^3.0.0-alpha.6",
+    "escpos-usb": "^3.0.0-alpha.4",
+    "escpos-network": "^3.0.0-alpha.4",
+    "dotenv": "^16.4.0",
+    "chalk": "^4.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.10.0",
+    "typescript": "^5.4.0"
+  }
+}
