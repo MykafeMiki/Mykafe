@@ -7,6 +7,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Ingredienti (per gestione disponibilità)
+model Ingredient {
+  id            String                @id @default(cuid())
+  name          String                @unique
+  inStock       Boolean               @default(true)
+  menuType      String                @default("CLASSIC") // CLASSIC, SUSHI - per separare gli stock
+  menuItems     MenuItemIngredient[]  // Ingrediente principale dei piatti
+  modifiers     Modifier[]            // Usato come modificatore
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+// Relazione MenuItem <-> Ingrediente principale
+model MenuItemIngredient {
+  id           String     @id @default(cuid())
+  menuItemId   String
+  menuItem     MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  isPrimary    Boolean    @default(false) // Se true, piatto non disponibile quando ingrediente finisce
+
+  @@unique([menuItemId, ingredientId])
+}
+
+// Sessione Festa (conto condiviso)
+model PartySession {
+  id          String   @id @default(cuid())
+  code        String   @unique // Codice 6 caratteri per unirsi
+  name        String?  // Nome festa opzionale
+  hostTableId String?  // Tavolo che ha creato la festa
+  isActive    Boolean  @default(true)
+  orders      Order[]
+  createdAt   DateTime @default(now())
+  closedAt    DateTime?
+}
+
 // Tavoli del ristorante
 model Table {
   id        String   @id @default(cuid())
@@ -14,6 +50,7 @@ model Table {
   seats     Int      @default(4)
   qrCode    String   @unique
   status    String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, RESERVED
+  isCounter Boolean  @default(false) // true = banco (richiede customerName)
   orders    Order[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -34,19 +71,20 @@ model Category {
 
 // Piatti del menu
 model MenuItem {
-  id             String          @id @default(cuid())
+  id             String               @id @default(cuid())
   name           String
   description    String?
-  price          Int             // Prezzo in centesimi
+  price          Int                  // Prezzo in centesimi
   imageUrl       String?
-  available      Boolean         @default(true)
-  sortOrder      Int             @default(0)
+  available      Boolean              @default(true)
+  sortOrder      Int                  @default(0)
   categoryId     String
-  category       Category        @relation(fields: [categoryId], references: [id])
+  category       Category             @relation(fields: [categoryId], references: [id])
   modifierGroups ModifierGroup[]
   orderItems     OrderItem[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  ingredients    MenuItemIngredient[] // Ingredienti del piatto
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 }
 
 // Gruppi di modificatori (es. "Extra ingredienti")
@@ -72,6 +110,8 @@ model Modifier {
   available       Boolean             @default(true)
   modifierGroupId String
   modifierGroup   ModifierGroup       @relation(fields: [modifierGroupId], references: [id])
+  ingredientId    String?             // Collegamento opzionale a ingrediente
+  ingredient      Ingredient?         @relation(fields: [ingredientId], references: [id])
   orderItems      OrderItemModifier[]
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
@@ -79,21 +119,23 @@ model Modifier {
 
 // Ordini
 model Order {
-  id            String      @id @default(cuid())
-  tableId       String
-  table         Table       @relation(fields: [tableId], references: [id])
-  items         OrderItem[]
-  status        String      @default("PENDING") // PENDING, PREPARING, READY, SERVED, CANCELLED
-  orderType     String      @default("DINE_IN") // DINE_IN, TAKEAWAY
-  paymentMethod String?     // CASH, CARD
-  subtotal      Int         @default(0) // Subtotale in centesimi (senza sovrapprezzo)
-  surcharge     Int         @default(0) // Sovrapprezzo carta (3%) in centesimi
-  totalAmount   Int         // Totale finale in centesimi
-  customerName  String?     // Nome cliente per take away
-  customerPhone String?     // Telefono cliente per take away
-  notes         String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id             String        @id @default(cuid())
+  tableId        String
+  table          Table         @relation(fields: [tableId], references: [id])
+  items          OrderItem[]
+  status         String        @default("PENDING") // PENDING, PREPARING, READY, SERVED, CANCELLED
+  orderType      String        @default("DINE_IN") // DINE_IN, TAKEAWAY
+  paymentMethod  String?       // CASH, CARD
+  subtotal       Int           @default(0) // Subtotale in centesimi (senza sovrapprezzo)
+  surcharge      Int           @default(0) // Sovrapprezzo carta (3%) in centesimi
+  totalAmount    Int           // Totale finale in centesimi
+  customerName   String?       // Nome cliente per take away o banco
+  customerPhone  String?       // Telefono cliente per take away
+  notes          String?
+  partySessionId String?       // Sessione festa (conto condiviso)
+  partySession   PartySession? @relation(fields: [partySessionId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 // Elementi dell'ordine

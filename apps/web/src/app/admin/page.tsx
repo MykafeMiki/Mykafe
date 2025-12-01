@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image as ImageIcon, Loader2, Lock, LogOut } from 'lucide-react'
 import { formatPrice } from '@/lib/utils'
 import {
-  getMenu,
+  getAdminCategories,
   getTables,
   createCategory,
   updateCategory,
@@ -53,7 +53,7 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       const [menuData, tablesData] = await Promise.all([
-        getMenu(),
+        getAdminCategories(),
         getTables(),
       ])
       setCategories(menuData)
@@ -177,6 +177,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+  const [togglingCategory, setTogglingCategory] = useState<string | null>(null)
 
   const handleToggleAvailability = async (item: MenuItem) => {
     try {
@@ -187,8 +188,62 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
     }
   }
 
+  const handleToggleCategory = async (category: Category) => {
+    setTogglingCategory(category.id)
+    try {
+      await updateCategory(category.id, { active: !category.active })
+      await onUpdate()
+    } catch (err) {
+      console.error('Failed to toggle category:', err)
+    } finally {
+      setTogglingCategory(null)
+    }
+  }
+
+  // Trova categorie speciali (es. Sushi) per lo switch rapido
+  const specialCategories = categories.filter(cat =>
+    cat.name.toLowerCase().includes('sushi')
+  )
+
   return (
     <div className="space-y-6">
+      {/* Quick Toggle per categorie speciali (es. Sushi) */}
+      {specialCategories.length > 0 && (
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200">
+          <h3 className="text-sm font-medium text-orange-800 mb-3">Menu Speciali</h3>
+          <div className="flex flex-wrap gap-3">
+            {specialCategories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleToggleCategory(cat)}
+                disabled={togglingCategory === cat.id}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  cat.active
+                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+                } ${togglingCategory === cat.id ? 'opacity-50' : ''}`}
+              >
+                <span className="text-2xl">🍣</span>
+                <div className="text-left">
+                  <div className="font-semibold">{cat.name}</div>
+                  <div className={`text-xs ${cat.active ? 'text-orange-100' : 'text-gray-400'}`}>
+                    {cat.active ? 'Attivo' : 'Disattivo'}
+                  </div>
+                </div>
+                {cat.active ? (
+                  <ToggleRight className="w-6 h-6 ml-2" />
+                ) : (
+                  <ToggleLeft className="w-6 h-6 ml-2" />
+                )}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-orange-600 mt-2">
+            Attiva il menu sushi il mercoledì o quando disponibile
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">Gestione Menu</h2>
         <div className="flex gap-2">
@@ -217,7 +272,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
       </div>
 
       {categories.map((category) => (
-        <div key={category.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div key={category.id} className={`bg-white rounded-xl shadow-sm overflow-hidden ${!category.active ? 'opacity-60' : ''}`}>
           <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
             <div className="flex items-center gap-3">
               {category.imageUrl && (
@@ -228,21 +283,46 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
                 />
               )}
               <div>
-                <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                  {!category.active && (
+                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
+                      Nascosta
+                    </span>
+                  )}
+                </div>
                 {category.description && (
                   <p className="text-sm text-gray-500">{category.description}</p>
                 )}
               </div>
             </div>
-            <button
-              onClick={() => {
-                setEditingCategory(category)
-                setShowCategoryModal(true)
-              }}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <Edit className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleToggleCategory(category)}
+                disabled={togglingCategory === category.id}
+                className={`p-1 rounded transition ${
+                  category.active
+                    ? 'text-green-500 hover:bg-green-50'
+                    : 'text-gray-400 hover:bg-gray-100'
+                }`}
+                title={category.active ? 'Categoria visibile' : 'Categoria nascosta'}
+              >
+                {category.active ? (
+                  <ToggleRight className="w-6 h-6" />
+                ) : (
+                  <ToggleLeft className="w-6 h-6" />
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setEditingCategory(category)
+                  setShowCategoryModal(true)
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="divide-y">

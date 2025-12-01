@@ -29,12 +29,43 @@ export enum PaymentMethod {
 }
 
 // Types
+export type MenuType = 'CLASSIC' | 'SUSHI'
+
+export interface Ingredient {
+  id: string
+  name: string
+  inStock: boolean
+  menuType: MenuType // CLASSIC o SUSHI - per separare gli stock
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface MenuItemIngredient {
+  id: string
+  menuItemId: string
+  ingredientId: string
+  ingredient?: Ingredient
+  isPrimary: boolean // Se true, piatto non disponibile quando ingrediente finisce
+}
+
+export interface PartySession {
+  id: string
+  code: string // Codice 6 caratteri per unirsi
+  name?: string
+  hostTableId?: string
+  isActive: boolean
+  orders?: Order[]
+  createdAt: Date
+  closedAt?: Date
+}
+
 export interface Table {
   id: string
   number: number
   seats: number
   qrCode: string
   status: TableStatus
+  isCounter: boolean // true = banco (richiede customerName)
   createdAt: Date
   updatedAt: Date
 }
@@ -59,6 +90,7 @@ export interface MenuItem {
   sortOrder: number
   categoryId: string
   modifierGroups?: ModifierGroup[]
+  ingredients?: MenuItemIngredient[] // Ingredienti del piatto
 }
 
 export interface ModifierGroup {
@@ -78,6 +110,8 @@ export interface Modifier {
   price: number // in cents
   available: boolean
   modifierGroupId: string
+  ingredientId?: string // Collegamento opzionale a ingrediente
+  ingredient?: Ingredient
 }
 
 export interface Order {
@@ -94,6 +128,8 @@ export interface Order {
   customerName?: string
   customerPhone?: string
   notes?: string
+  partySessionId?: string // Sessione festa (conto condiviso)
+  partySession?: PartySession
   createdAt: Date
   updatedAt: Date
 }
@@ -131,6 +167,26 @@ export interface CreateOrderRequest {
   paymentMethod?: PaymentMethod
   customerName?: string
   customerPhone?: string
+  partyCode?: string // Codice per unirsi a una sessione festa
+}
+
+// Party Session API types
+export interface CreatePartyRequest {
+  tableId: string
+  name?: string
+}
+
+export interface JoinPartyRequest {
+  code: string
+  tableId: string
+}
+
+export interface PartyBillResponse {
+  partySession: PartySession
+  orders: Order[]
+  totalAmount: number
+  subtotal: number
+  surcharge: number
 }
 
 export interface CartItem {

@@ -34,7 +34,14 @@ Deno.serve(async (req) => {
             *,
             modifierGroups:ModifierGroup(
               *,
-              modifiers:Modifier(*)
+              modifiers:Modifier(
+                *,
+                ingredient:Ingredient(inStock)
+              )
+            ),
+            ingredients:MenuItemIngredient(
+              isPrimary,
+              ingredient:Ingredient(inStock)
             )
           )
         `)
@@ -43,17 +50,47 @@ Deno.serve(async (req) => {
 
       if (error) throw error
 
-      // Filter available items and modifiers
+      // Filter items based on ingredient availability
       const filteredCategories = categories?.map(cat => ({
         ...cat,
         items: cat.items
-          ?.filter((item: { available: boolean }) => item.available)
+          ?.filter((item: {
+            available: boolean,
+            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean } }[]
+          }) => {
+            // Check if item is marked as available
+            if (!item.available) return false
+
+            // Check if any PRIMARY ingredient is out of stock
+            const primaryOutOfStock = item.ingredients?.some(
+              ing => ing.isPrimary && !ing.ingredient?.inStock
+            )
+
+            return !primaryOutOfStock
+          })
           ?.sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
-          ?.map((item: { modifierGroups: { modifiers: { available: boolean }[] }[] }) => ({
+          ?.map((item: {
+            modifierGroups: { modifiers: { available: boolean, ingredient?: { inStock: boolean } }[] }[],
+            ingredients?: unknown[]
+          }) => ({
             ...item,
+            // Remove ingredients from response (internal use only)
+            ingredients: undefined,
             modifierGroups: item.modifierGroups?.map(group => ({
               ...group,
-              modifiers: group.modifiers?.filter((mod: { available: boolean }) => mod.available)
+              modifiers: group.modifiers?.filter((mod: {
+                available: boolean,
+                ingredient?: { inStock: boolean }
+              }) => {
+                // Filter out unavailable modifiers or those with out-of-stock ingredients
+                if (!mod.available) return false
+                if (mod.ingredient && !mod.ingredient.inStock) return false
+                return true
+              }).map((mod: { ingredient?: unknown }) => {
+                // Remove ingredient details from response
+                const { ingredient, ...rest } = mod
+                return rest
+              })
             }))
           }))
       }))
@@ -141,11 +178,12 @@ Deno.serve(async (req) => {
       })
     }
 
-    // POST /menu/items - Create menu item
+    // POST /menu/items - Create menu item (con supporto per modifierGroups e ingredients)
     if (req.method === 'POST' && subPath[0] === 'items') {
       const body = await req.json()
-      const { name, description, price, categoryId, imageUrl, sortOrder } = body
+      const { name, description, price, categoryId, imageUrl, sortOrder, modifierGroups, ingredientIds } = body
 
+      // Crea il menu item
       const { data: item, error } = await supabase
         .from('MenuItem')
         .insert({
@@ -161,7 +199,78 @@ Deno.serve(async (req) => {
 
       if (error) throw error
 
-      return new Response(JSON.stringify(item), {
+      // Crea i modifier groups se forniti
+      if (modifierGroups && modifierGroups.length > 0) {
+        for (const group of modifierGroups) {
+          const { data: modGroup, error: groupError } = await supabase
+            .from('ModifierGroup')
+            .insert({
+              name: group.name,
+              menuItemId: item.id,
+              required: group.required || false,
+              multiSelect: group.multiSelect || false,
+              minSelect: group.minSelect || 0,
+              maxSelect: group.maxSelect || 5
+            })
+            .select()
+            .single()
+
+          if (groupError) throw groupError
+
+          // Crea i modifiers per questo gruppo
+          if (group.modifiers && group.modifiers.length > 0) {
+            const modifiersToInsert = group.modifiers.map((mod: { name: string, price?: number, ingredientId?: string }) => ({
+              name: mod.name,
+              price: mod.price ? Math.round(mod.price * 100) : 0,
+              modifierGroupId: modGroup.id,
+              ingredientId: mod.ingredientId || null,
+              available: true
+            }))
+
+            const { error: modError } = await supabase
+              .from('Modifier')
+              .insert(modifiersToInsert)
+
+            if (modError) throw modError
+          }
+        }
+      }
+
+      // Associa ingredienti se forniti (ingredientIds: [{ id, isPrimary }])
+      if (ingredientIds && ingredientIds.length > 0) {
+        const ingredientAssociations = ingredientIds.map((ing: { id: string, isPrimary?: boolean }) => ({
+          menuItemId: item.id,
+          ingredientId: ing.id,
+          isPrimary: ing.isPrimary || false
+        }))
+
+        const { error: ingError } = await supabase
+          .from('MenuItemIngredient')
+          .insert(ingredientAssociations)
+
+        if (ingError) throw ingError
+      }
+
+      // Fetch complete item with relations
+      const { data: completeItem, error: fetchError } = await supabase
+        .from('MenuItem')
+        .select(`
+          *,
+          modifierGroups:ModifierGroup(
+            *,
+            modifiers:Modifier(*)
+          ),
+          ingredients:MenuItemIngredient(
+            *,
+            ingredient:Ingredient(*)
+          )
+        `)
+        .eq('id', item.id)
+        .single()
+
+      if (fetchError) throw fetchError
+
+      return new Response(JSON.stringify(completeItem), {
         status: 201,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -218,6 +327,140 @@ Deno.serve(async (req) => {
       if (error) throw error
 
       return new Response(JSON.stringify(category), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // POST /menu/items/:id/modifier-groups - Add modifier group to menu item
+    if (req.method === 'POST' && subPath[0] === 'items' && subPath[1] && subPath[2] === 'modifier-groups') {
+      const menuItemId = subPath[1]
+      const body = await req.json()
+      const { name, required, multiSelect, minSelect, maxSelect, modifiers } = body
+
+      const { data: modGroup, error: groupError } = await supabase
+        .from('ModifierGroup')
+        .insert({
+          name,
+          menuItemId,
+          required: required || false,
+          multiSelect: multiSelect || false,
+          minSelect: minSelect || 0,
+          maxSelect: maxSelect || 5
+        })
+        .select()
+        .single()
+
+      if (groupError) throw groupError
+
+      // Crea modifiers se forniti
+      if (modifiers && modifiers.length > 0) {
+        const modifiersToInsert = modifiers.map((mod: { name: string, price?: number, ingredientId?: string }) => ({
+          name: mod.name,
+          price: mod.price ? Math.round(mod.price * 100) : 0,
+          modifierGroupId: modGroup.id,
+          ingredientId: mod.ingredientId || null,
+          available: true
+        }))
+
+        await supabase.from('Modifier').insert(modifiersToInsert)
+      }
+
+      // Fetch complete group
+      const { data: completeGroup } = await supabase
+        .from('ModifierGroup')
+        .select('*, modifiers:Modifier(*)')
+        .eq('id', modGroup.id)
+        .single()
+
+      return new Response(JSON.stringify(completeGroup), {
+        status: 201,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // POST /menu/modifier-groups/:id/modifiers - Add modifier to group
+    if (req.method === 'POST' && subPath[0] === 'modifier-groups' && subPath[1] && subPath[2] === 'modifiers') {
+      const modifierGroupId = subPath[1]
+      const body = await req.json()
+      const { name, price, ingredientId } = body
+
+      const { data: modifier, error } = await supabase
+        .from('Modifier')
+        .insert({
+          name,
+          price: price ? Math.round(price * 100) : 0,
+          modifierGroupId,
+          ingredientId: ingredientId || null,
+          available: true
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return new Response(JSON.stringify(modifier), {
+        status: 201,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // PATCH /menu/modifiers/:id - Update modifier
+    if (req.method === 'PATCH' && subPath[0] === 'modifiers' && subPath[1]) {
+      const modifierId = subPath[1]
+      const body = await req.json()
+      const { name, price, available, ingredientId } = body
+
+      const updateData: Record<string, unknown> = {}
+      if (name !== undefined) updateData.name = name
+      if (price !== undefined) updateData.price = Math.round(price * 100)
+      if (available !== undefined) updateData.available = available
+      if (ingredientId !== undefined) updateData.ingredientId = ingredientId
+
+      const { data: modifier, error } = await supabase
+        .from('Modifier')
+        .update(updateData)
+        .eq('id', modifierId)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return new Response(JSON.stringify(modifier), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // DELETE /menu/modifiers/:id - Delete modifier
+    if (req.method === 'DELETE' && subPath[0] === 'modifiers' && subPath[1]) {
+      const modifierId = subPath[1]
+
+      const { error } = await supabase
+        .from('Modifier')
+        .delete()
+        .eq('id', modifierId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // DELETE /menu/modifier-groups/:id - Delete modifier group
+    if (req.method === 'DELETE' && subPath[0] === 'modifier-groups' && subPath[1]) {
+      const groupId = subPath[1]
+
+      // Delete modifiers first
+      await supabase.from('Modifier').delete().eq('modifierGroupId', groupId)
+
+      const { error } = await supabase
+        .from('ModifierGroup')
+        .delete()
+        .eq('id', groupId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }

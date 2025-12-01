@@ -89,7 +89,40 @@ Deno.serve(async (req) => {
     // POST /orders - Create new order
     if (req.method === 'POST' && subPath.length === 0) {
       const body = await req.json()
-      const { tableId, items, notes, orderType, paymentMethod, customerName, customerPhone } = body
+      const { tableId, items, notes, orderType, paymentMethod, customerName, customerPhone, partyCode } = body
+
+      // Verifica se il tavolo è un banco (richiede customerName)
+      const { data: table } = await supabase
+        .from('Table')
+        .select('isCounter')
+        .eq('id', tableId)
+        .single()
+
+      if (table?.isCounter && !customerName) {
+        return new Response(JSON.stringify({ error: 'Customer name required for counter orders' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Verifica partyCode se fornito
+      let partySessionId: string | null = null
+      if (partyCode) {
+        const { data: party } = await supabase
+          .from('PartySession')
+          .select('id')
+          .eq('code', partyCode.toUpperCase())
+          .eq('isActive', true)
+          .single()
+
+        if (!party) {
+          return new Response(JSON.stringify({ error: 'Invalid party code' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+        partySessionId = party.id
+      }
 
       const isCard = paymentMethod === 'CARD'
       const CARD_MULTIPLIER = 1.03
@@ -145,7 +178,8 @@ Deno.serve(async (req) => {
           subtotal,
           surcharge,
           totalAmount,
-          status: 'PENDING'
+          status: 'PENDING',
+          partySessionId
         })
         .select()
         .single()

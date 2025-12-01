@@ -42,6 +42,16 @@ app.use('/api/auth', authRouter)
 // Protected Admin Routes
 app.use('/api/upload', verifyAdmin, uploadRouter)
 
+// Root route (per Vercel)
+app.get('/', (req, res) => {
+  res.json({
+    name: 'MyKafe API',
+    status: 'ok',
+    message: 'API migrata a Supabase Edge Functions',
+    supabase: 'https://biefwzrprjqusjynqwus.supabase.co/functions/v1'
+  })
+})
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })

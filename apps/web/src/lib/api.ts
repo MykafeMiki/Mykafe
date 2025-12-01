@@ -129,6 +129,96 @@ export const updateOrderStatus = (id: string, status: string) =>
     body: JSON.stringify({ status }),
   })
 
+// Ingredients
+export const getIngredients = () => fetchApiAuth<Ingredient[]>('/ingredients')
+
+export const createIngredient = (data: { name: string }) =>
+  fetchApiAuth<Ingredient>('/ingredients', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+export const updateIngredient = (id: string, data: { name?: string; inStock?: boolean }) =>
+  fetchApiAuth<Ingredient>(`/ingredients/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+
+export const setIngredientStock = (id: string, inStock: boolean) =>
+  fetchApiAuth<Ingredient>(`/ingredients/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ inStock }),
+  })
+
+// Party Sessions
+export const createParty = (data: { tableId: string; name?: string }) =>
+  fetchApi<PartySession>('/party', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+export const getPartyByCode = (code: string) =>
+  fetchApi<PartySession>(`/party/${code}`)
+
+export const joinParty = (code: string, tableId: string) =>
+  fetchApi<PartySession>(`/party/${code}/join`, {
+    method: 'POST',
+    body: JSON.stringify({ tableId }),
+  })
+
+export const getPartyBill = (code: string) =>
+  fetchApi<PartyBillResponse>(`/party/${code}/bill`)
+
+export const closeParty = (code: string) =>
+  fetchApiAuth<PartySession>(`/party/${code}/close`, {
+    method: 'PATCH',
+  })
+
+// Menu Admin - Modifier Groups
+export const addModifierGroup = (menuItemId: string, data: {
+  name: string
+  required?: boolean
+  multiSelect?: boolean
+  minSelect?: number
+  maxSelect?: number
+  modifiers?: { name: string; price?: number; ingredientId?: string }[]
+}) =>
+  fetchApiAuth<ModifierGroup>(`/menu/items/${menuItemId}/modifier-groups`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+export const addModifier = (modifierGroupId: string, data: {
+  name: string
+  price?: number
+  ingredientId?: string
+}) =>
+  fetchApiAuth<Modifier>(`/menu/modifier-groups/${modifierGroupId}/modifiers`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+export const updateModifier = (id: string, data: {
+  name?: string
+  price?: number
+  available?: boolean
+  ingredientId?: string
+}) =>
+  fetchApiAuth<Modifier>(`/menu/modifiers/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+
+export const deleteModifier = (id: string) =>
+  fetchApiAuth<{ success: boolean }>(`/menu/modifiers/${id}`, {
+    method: 'DELETE',
+  })
+
+export const deleteModifierGroup = (id: string) =>
+  fetchApiAuth<{ success: boolean }>(`/menu/modifier-groups/${id}`, {
+    method: 'DELETE',
+  })
+
 // Upload
 export interface UploadResult {
   url: string
@@ -195,5 +285,5 @@ export const deleteImage = async (url: string): Promise<void> => {
 }
 
 // Types
-import type { Category, MenuItem, Table, Order } from '@shared/types'
+import type { Category, MenuItem, Table, Order, Ingredient, PartySession, PartyBillResponse, ModifierGroup, Modifier } from '@shared/types'
 import type { CreateOrderRequest } from '@shared/types'

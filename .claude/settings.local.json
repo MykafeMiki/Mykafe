@@ -34,7 +34,9 @@
       "Bash(git remote set-url:*)",
       "Bash(npx supabase:*)",
       "Bash(pnpm run build:*)",
-      "Bash(vercel login)"
+      "Bash(vercel login)",
+      "WebFetch(domain:biefwzrprjqusjynqwus.supabase.co)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

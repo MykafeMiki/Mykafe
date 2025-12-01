@@ -91,17 +91,19 @@ Deno.serve(async (req) => {
     // POST /tables - Create table
     if (req.method === 'POST' && subPath.length === 0) {
       const body = await req.json()
-      const { number, seats } = body
+      const { number, seats, isCounter } = body
 
       // Generate unique QR code
-      const qrCode = `table-${number}-${Date.now()}`
+      const prefix = isCounter ? 'counter' : 'table'
+      const qrCode = `${prefix}-${number}-${Date.now()}`
 
       const { data: table, error } = await supabase
         .from('Table')
         .insert({
           number,
           seats: seats || 4,
-          qrCode
+          qrCode,
+          isCounter: isCounter || false
         })
         .select()
         .single()
