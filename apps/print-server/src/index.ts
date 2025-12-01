@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, RealtimeChannel } from '@supabase/supabase-js'
 import dotenv from 'dotenv'
-import { printOrder } from './printer'
+import { printOrder, initPrinter, closePrinter } from './printer'
 import { formatOrderReceipt } from './receipt'
 import type { Order } from './types'
 
@@ -17,72 +17,86 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-console.log('🖨️  MyKafe Print Server')
-console.log('========================')
-console.log(`📡 Connesso a: ${SUPABASE_URL}`)
-console.log('👂 In ascolto per nuovi ordini...\n')
+let channel: RealtimeChannel | null = null
 
-// Sottoscrivi ai nuovi ordini
-const channel = supabase
-  .channel('kitchen-printer')
-  .on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'Order'
-    },
-    async (payload) => {
-      console.log('📥 Nuovo ordine ricevuto:', payload.new.id)
+async function main() {
+  console.log('🖨️  MyKafe Print Server')
+  console.log('========================')
+  console.log(`📡 Connesso a: ${SUPABASE_URL}`)
 
-      try {
-        // Fetch ordine completo con relazioni
-        const { data: order, error } = await supabase
-          .from('Order')
-          .select(`
-            *,
-            table:Table(*),
-            items:OrderItem(
+  // Inizializza stampante
+  await initPrinter()
+
+  console.log('👂 In ascolto per nuovi ordini...\n')
+
+  // Sottoscrivi ai nuovi ordini
+  channel = supabase
+    .channel('kitchen-printer')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'Order'
+      },
+      async (payload) => {
+        console.log('📥 Nuovo ordine ricevuto:', payload.new.id)
+
+        try {
+          // Fetch ordine completo con relazioni
+          const { data: order, error } = await supabase
+            .from('Order')
+            .select(`
               *,
-              menuItem:MenuItem(*),
-              modifiers:OrderItemModifier(
+              table:Table(*),
+              items:OrderItem(
                 *,
-                modifier:Modifier(*)
+                menuItem:MenuItem(*),
+                modifiers:OrderItemModifier(
+                  *,
+                  modifier:Modifier(*)
+                )
               )
-            )
-          `)
-          .eq('id', payload.new.id)
-          .single()
+            `)
+            .eq('id', payload.new.id)
+            .single()
 
-        if (error || !order) {
-          console.error('❌ Errore nel recupero ordine:', error)
-          return
+          if (error || !order) {
+            console.error('❌ Errore nel recupero ordine:', error)
+            return
+          }
+
+          // Formatta e stampa
+          const receipt = formatOrderReceipt(order as Order)
+          await printOrder(receipt)
+
+          console.log(`✅ Ordine #${order.id.slice(-6)} stampato!\n`)
+        } catch (err) {
+          console.error('❌ Errore stampa:', err)
         }
-
-        // Formatta e stampa
-        const receipt = formatOrderReceipt(order as Order)
-        await printOrder(receipt)
-
-        console.log(`✅ Ordine #${order.id.slice(-6)} stampato!\n`)
-      } catch (err) {
-        console.error('❌ Errore stampa:', err)
       }
-    }
-  )
-  .subscribe((status) => {
-    if (status === 'SUBSCRIBED') {
-      console.log('✅ Connesso a Supabase Realtime')
-    } else if (status === 'CHANNEL_ERROR') {
-      console.error('❌ Errore connessione Realtime')
-    }
-  })
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Connesso a Supabase Realtime')
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Errore connessione Realtime')
+      }
+    })
+}
 
 // Gestisci chiusura
 process.on('SIGINT', async () => {
   console.log('\n👋 Chiusura Print Server...')
-  await supabase.removeChannel(channel)
+  if (channel) {
+    await supabase.removeChannel(channel)
+  }
+  closePrinter()
   process.exit(0)
 })
 
-// Mantieni il processo attivo
-setInterval(() => {}, 1000)
+// Avvia il server
+main().catch((err) => {
+  console.error('❌ Errore avvio:', err)
+  process.exit(1)
+})
