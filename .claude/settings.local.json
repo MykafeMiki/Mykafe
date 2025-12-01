@@ -42,7 +42,17 @@
       "Bash(npx vercel link)",
       "Bash(npx vercel --prod --yes)",
       "Bash(del \"C:\\Users\\dario\\OneDrive\\Desktop\\MyKafe\\apps\\web\\vercel.json\")",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(vercel env add:*)",
+      "Bash(vercel env:*)",
+      "Bash(vercel project ls:*)",
+      "Bash(vercel ls:*)",
+      "Bash(printf:*)",
+      "Bash(vercel --prod:*)",
+      "WebFetch(domain:mykafe-cari4wvid-trainsmart.vercel.app)",
+      "Bash(vercel alias:*)",
+      "Bash(vercel inspect:*)",
+      "Bash(vercel link:*)"
     ],
     "deny": [],
     "ask": []
