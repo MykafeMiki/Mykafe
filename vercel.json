@@ -1,10 +1,8 @@
 {
-  "buildCommand": "cd apps/web && npm run build",
-  "outputDirectory": "apps/web/.next",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter web build",
+  "devCommand": "pnpm --filter web dev",
   "installCommand": "pnpm install",
-  "framework": "nextjs",
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://biefwzrprjqusjynqwus.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZWZ3enJwcmpxdXNqeW5xd3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMDgzMTgsImV4cCI6MjA3OTY4NDMxOH0.CfLbUJa3znC9zNYXdYa0zrFzZM4ASvgw9Ousq27ZqCw"
-  }
+  "ignoreCommand": "exit 0",
+  "outputDirectory": "apps/web/.next"
 }
