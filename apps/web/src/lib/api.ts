@@ -1,7 +1,4 @@
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co'
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-
-const API_URL = `${SUPABASE_URL}/functions/v1`
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mykafe-api.vercel.app'
 
 // Token management
 let authToken: string | null = null
@@ -30,7 +27,6 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
       ...options?.headers,
     },
   })
@@ -48,7 +44,6 @@ async function fetchApiAuth<T>(endpoint: string, options?: RequestInit): Promise
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options?.headers,
     },
@@ -233,7 +228,6 @@ export const uploadItemImage = async (file: File): Promise<UploadResult> => {
   const res = await fetch(`${API_URL}/upload/items`, {
     method: 'POST',
     headers: {
-      'apikey': SUPABASE_ANON_KEY,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: formData,
@@ -254,7 +248,6 @@ export const uploadCategoryImage = async (file: File): Promise<UploadResult> => 
   const res = await fetch(`${API_URL}/upload/categories`, {
     method: 'POST',
     headers: {
-      'apikey': SUPABASE_ANON_KEY,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: formData,
@@ -273,7 +266,6 @@ export const deleteImage = async (url: string): Promise<void> => {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY,
       ...(token && { Authorization: `Bearer ${token}` }),
     },
     body: JSON.stringify({ url }),
