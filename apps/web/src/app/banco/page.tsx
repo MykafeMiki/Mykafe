@@ -1,19 +1,23 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { CheckCircle, ShoppingBag, Banknote, CreditCard } from 'lucide-react'
+import { CheckCircle, Store, User } from 'lucide-react'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
 import { ItemModal } from '@/components/menu/ItemModal'
 import { CartButton } from '@/components/cart/CartButton'
-import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
+import { BancoCartDrawer } from '@/components/cart/BancoCartDrawer'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import type { Category, MenuItem, Modifier } from '@shared/types'
-import { ConsumeMode, PaymentMethod } from '@shared/types'
+import { ConsumeMode } from '@shared/types'
 import { cn } from '@/lib/utils'
 
-export default function TakeawayPage() {
+type OrderStep = 'name' | 'menu'
+
+export default function BancoPage() {
+  const [step, setStep] = useState<OrderStep>('name')
+  const [customerName, setCustomerNameLocal] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('')
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
@@ -21,16 +25,16 @@ export default function TakeawayPage() {
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null)
 
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
   const setTableIdInCart = useCart((state) => state.setTableId)
+  const setCustomerNameInCart = useCart((state) => state.setCustomerName)
   const addToCart = useCart((state) => state.addItem)
 
   useEffect(() => {
     async function loadData() {
       try {
-        // Load takeaway table
+        // Load counter/takeaway table
         const table = await getTableByQr('takeaway')
         setTableIdInCart(table.id)
 
@@ -80,7 +84,19 @@ export default function TakeawayPage() {
 
   const handleOrderSuccess = () => {
     setOrderSuccess(true)
-    setTimeout(() => setOrderSuccess(false), 5000)
+    // Reset after order
+    setTimeout(() => {
+      setOrderSuccess(false)
+      setStep('name')
+      setCustomerNameLocal('')
+    }, 5000)
+  }
+
+  const handleContinueToMenu = () => {
+    if (customerName.trim()) {
+      setCustomerNameInCart(customerName.trim())
+      setStep('menu')
+    }
   }
 
   if (loading) {
@@ -107,64 +123,57 @@ export default function TakeawayPage() {
     )
   }
 
-  // Schermata selezione metodo di pagamento
-  if (!paymentMethod) {
+  // Step 1: Name Input
+  if (step === 'name') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        {/* Header */}
-        <header className="bg-orange-500 text-white p-4">
+        <header className="bg-primary-500 text-white p-4">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="w-6 h-6" />
-            <h1 className="text-xl font-bold">MyKafe - Take Away</h1>
+            <Store className="w-6 h-6" />
+            <h1 className="text-xl font-bold">MyKafe - Ordina al Banco</h1>
           </div>
-          <p className="text-orange-100 text-sm mt-1">
-            Ordina online e ritira in negozio
+          <p className="text-primary-100 text-sm mt-1">
+            Ordina e ritira qui in negozio
           </p>
         </header>
 
-        {/* Payment Selection */}
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
+            <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <User className="w-10 h-10 text-primary-600" />
+            </div>
+
             <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              Come vuoi pagare?
+              Come ti chiami?
             </h2>
             <p className="text-gray-500 text-center mb-8">
-              Seleziona il metodo di pagamento per continuare
+              Ti chiameremo quando il tuo ordine sarà pronto
             </p>
 
             <div className="space-y-4">
-              <button
-                onClick={() => setPaymentMethod(PaymentMethod.CASH)}
-                className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition"
-              >
-                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
-                  <Banknote className="w-7 h-7 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <span className="block font-semibold text-lg text-gray-900">
-                    Alla consegna in cassa
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    Paga quando ritiri l'ordine
-                  </span>
-                </div>
-              </button>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerNameLocal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleContinueToMenu()
+                }}
+                placeholder="Il tuo nome"
+                autoFocus
+                className="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none transition"
+              />
 
               <button
-                onClick={() => setPaymentMethod(PaymentMethod.CARD)}
-                className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition"
+                onClick={handleContinueToMenu}
+                disabled={!customerName.trim()}
+                className={cn(
+                  'w-full py-4 rounded-xl font-semibold text-lg transition',
+                  customerName.trim()
+                    ? 'bg-primary-500 text-white hover:bg-primary-600'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                )}
               >
-                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-7 h-7 text-blue-600" />
-                </div>
-                <div className="text-left">
-                  <span className="block font-semibold text-lg text-gray-900">
-                    Carta
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    Paga subito online
-                  </span>
-                </div>
+                Continua
               </button>
             </div>
           </div>
@@ -173,45 +182,31 @@ export default function TakeawayPage() {
     )
   }
 
-  // Menu dopo selezione pagamento
+  // Step 2: Menu
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Header */}
-      <header className="bg-orange-500 text-white p-4">
+      <header className="bg-primary-500 text-white p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="w-6 h-6" />
-            <h1 className="text-xl font-bold">MyKafe - Take Away</h1>
+            <Store className="w-6 h-6" />
+            <h1 className="text-xl font-bold">MyKafe</h1>
           </div>
-          <button
-            onClick={() => setPaymentMethod(null)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium',
-              paymentMethod === PaymentMethod.CASH
-                ? 'bg-green-600 text-white'
-                : 'bg-blue-600 text-white'
-            )}
-          >
-            {paymentMethod === PaymentMethod.CASH ? (
-              <><Banknote className="w-4 h-4" /> In cassa</>
-            ) : (
-              <><CreditCard className="w-4 h-4" /> Carta</>
-            )}
-          </button>
+          <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
+            <User className="w-4 h-4" />
+            <span className="text-sm font-medium">{customerName}</span>
+          </div>
         </div>
-        <p className="text-orange-100 text-sm mt-1">
-          Ordina online e ritira in negozio
+        <p className="text-primary-100 text-sm mt-1">
+          Ordina al banco
         </p>
       </header>
 
-      {/* Category Navigation */}
       <CategoryNav
         categories={categories}
         activeCategory={activeCategory}
         onSelect={scrollToCategory}
       />
 
-      {/* Menu Items */}
       <main className="p-4 space-y-8">
         {categories.map((category) => (
           <section
@@ -236,7 +231,6 @@ export default function TakeawayPage() {
                   key={item.id}
                   item={item}
                   onAdd={handleAddItem}
-                  priceMultiplier={paymentMethod === PaymentMethod.CARD ? 1.03 : 1}
                 />
               ))}
             </div>
@@ -244,37 +238,32 @@ export default function TakeawayPage() {
         ))}
       </main>
 
-      {/* Cart Button */}
-      <CartButton onClick={() => setIsCartOpen(true)} paymentMethod={paymentMethod} />
+      <CartButton onClick={() => setIsCartOpen(true)} />
 
-      {/* Takeaway Cart Drawer */}
-      <TakeawayCartDrawer
+      <BancoCartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         onOrderSuccess={handleOrderSuccess}
-        paymentMethod={paymentMethod}
+        customerName={customerName}
       />
 
-      {/* Item Modal */}
       {selectedItem && (
         <ItemModal
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
           onAdd={handleAddWithModifiers}
           defaultConsumeMode={ConsumeMode.TAKEAWAY}
-          priceMultiplier={paymentMethod === PaymentMethod.CARD ? 1.03 : 1}
           hideConsumeModeSelector={true}
         />
       )}
 
-      {/* Order Success Toast */}
       {orderSuccess && (
         <div className="fixed top-4 left-4 right-4 z-50 bg-accent-500 text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top">
           <CheckCircle className="w-6 h-6" />
           <div>
-            <p className="font-semibold">Ordine inviato!</p>
+            <p className="font-semibold">Ordine inviato, {customerName}!</p>
             <p className="text-sm text-accent-100">
-              Ti avviseremo quando sarà pronto per il ritiro
+              Ti chiameremo quando sarà pronto
             </p>
           </div>
         </div>

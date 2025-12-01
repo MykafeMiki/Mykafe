@@ -21,6 +21,7 @@ export enum ConsumeMode {
 export enum OrderType {
   DINE_IN = 'DINE_IN',
   TAKEAWAY = 'TAKEAWAY',
+  COUNTER = 'COUNTER',  // In-store counter ordering
 }
 
 export enum PaymentMethod {

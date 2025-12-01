@@ -52,7 +52,13 @@
       "WebFetch(domain:mykafe-cari4wvid-trainsmart.vercel.app)",
       "Bash(vercel alias:*)",
       "Bash(vercel inspect:*)",
-      "Bash(vercel link:*)"
+      "Bash(vercel link:*)",
+      "Bash(vercel teams ls:*)",
+      "Bash(vercel whoami:*)",
+      "Bash(vercel logout:*)",
+      "Bash(vercel project rm:*)",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

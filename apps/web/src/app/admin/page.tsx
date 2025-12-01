@@ -917,40 +917,102 @@ function LoginScreen({ onLogin }: LoginScreenProps) {
 function QRTab({ tables }: { tables: Table[] }) {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
 
+  // Filter out takeaway "table" from the list
+  const realTables = tables.filter(t => t.qrCode !== 'takeaway')
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">QR Code Tavoli</h2>
+        <h2 className="text-xl font-bold text-gray-900">QR Code</h2>
         <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition">
           Stampa tutti
         </button>
       </div>
 
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
-        <p className="text-sm">
-          Ogni QR code porta i clienti direttamente al menu del loro tavolo.
-          Stampa e posiziona i QR sui tavoli.
-        </p>
+      {/* Special QR Codes */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-700">QR Speciali</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Counter/Banco QR */}
+          <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-6 border-2 border-primary-200">
+            <div className="flex items-start gap-4">
+              <div className="w-24 h-24 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                <QrCode className="w-16 h-16 text-primary-500" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-lg text-primary-800">Banco / Take Away</h4>
+                <p className="text-sm text-primary-600 mt-1">
+                  Per clienti che ordinano al banco in negozio
+                </p>
+                <p className="text-xs text-primary-500 mt-2 break-all">
+                  {baseUrl}/banco
+                </p>
+                <button className="mt-3 text-sm bg-primary-500 text-white px-4 py-1.5 rounded-lg hover:bg-primary-600 transition">
+                  Scarica QR
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Online Ordering Link */}
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border-2 border-orange-200">
+            <div className="flex items-start gap-4">
+              <div className="w-24 h-24 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                <QrCode className="w-16 h-16 text-orange-500" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-lg text-orange-800">Ordini Online</h4>
+                <p className="text-sm text-orange-600 mt-1">
+                  Link da condividere per ordini da remoto
+                </p>
+                <p className="text-xs text-orange-500 mt-2 break-all">
+                  {baseUrl}/ordina
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => navigator.clipboard.writeText(`${baseUrl}/ordina`)}
+                    className="text-sm bg-orange-500 text-white px-4 py-1.5 rounded-lg hover:bg-orange-600 transition"
+                  >
+                    Copia link
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {tables.map((table) => (
-          <div
-            key={table.id}
-            className="bg-white rounded-xl p-6 shadow-sm border text-center"
-          >
-            <div className="w-32 h-32 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
-              <QrCode className="w-20 h-20 text-gray-400" />
+      {/* Table QR Codes */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-700">QR Tavoli</h3>
+
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
+          <p className="text-sm">
+            Ogni QR code porta i clienti direttamente al menu del loro tavolo.
+            Stampa e posiziona i QR sui tavoli.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {realTables.map((table) => (
+            <div
+              key={table.id}
+              className="bg-white rounded-xl p-6 shadow-sm border text-center"
+            >
+              <div className="w-32 h-32 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                <QrCode className="w-20 h-20 text-gray-400" />
+              </div>
+              <h3 className="font-bold text-lg">Tavolo {table.number}</h3>
+              <p className="text-xs text-gray-400 mt-1 break-all">
+                {baseUrl}/menu/{table.qrCode}
+              </p>
+              <button className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium">
+                Scarica QR
+              </button>
             </div>
-            <h3 className="font-bold text-lg">Tavolo {table.number}</h3>
-            <p className="text-xs text-gray-400 mt-1 break-all">
-              {baseUrl}/menu/{table.qrCode}
-            </p>
-            <button className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium">
-              Scarica QR
-            </button>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   )

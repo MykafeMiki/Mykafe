@@ -20,7 +20,9 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url)
     const pathParts = url.pathname.split('/').filter(Boolean)
-    const subPath = pathParts.slice(2) // Remove 'functions' and 'tables'
+    // Path is like /tables/qr/tavolo-1 (after Supabase routing)
+    // pathParts = ['tables', 'qr', 'tavolo-1']
+    const subPath = pathParts.slice(1) // Remove 'tables' only
 
     // GET /tables - Get all tables
     if (req.method === 'GET' && subPath.length === 0) {
