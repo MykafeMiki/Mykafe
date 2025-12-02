@@ -41,7 +41,21 @@
   },
   "home": {
     "title": "MyKafe",
-    "subtitle": "Digital ordering system"
+    "subtitle": "Digital ordering system",
+    "table": "Table",
+    "tableDesc": "Order from your table with QR code",
+    "takeawayCounter": "Counter Takeaway",
+    "takeawayCounterDesc": "Order and pick up at counter",
+    "takeawayHome": "Online Takeaway",
+    "takeawayHomeDesc": "Order online and pick up in store",
+    "kitchen": "Kitchen",
+    "kitchenDesc": "Order display for kitchen",
+    "cashier": "Cashier",
+    "cashierDesc": "Payment and receipt management",
+    "admin": "Admin",
+    "adminDesc": "Manage menu, tables and settings",
+    "qrTitle": "QR Code Access",
+    "qrDescription": "Customers can scan the QR code on their table to access the menu and order directly."
   },
   "ordina": {
     "title": "Order Online",
@@ -173,6 +187,12 @@
     "tableQrCodes": "Table QR Codes",
     "tableQrNote": "Each QR code takes customers directly to their table menu. Print and place QR codes on tables.",
     "saveError": "Error saving"
+  },
+  "cassa": {
+    "title": "Cashier",
+    "subtitle": "Payment and receipt management",
+    "comingSoon": "Coming Soon",
+    "comingSoonDesc": "The cashier feature will be available soon."
   },
   "login": {
     "title": "Admin MyKafe",

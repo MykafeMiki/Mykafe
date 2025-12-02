@@ -41,7 +41,21 @@
   },
   "home": {
     "title": "MyKafe",
-    "subtitle": "Sistema de pedidos digital"
+    "subtitle": "Sistema de pedidos digital",
+    "table": "Mesa",
+    "tableDesc": "Pide desde tu mesa con código QR",
+    "takeawayCounter": "Para llevar mostrador",
+    "takeawayCounterDesc": "Pide y recoge en mostrador",
+    "takeawayHome": "Para llevar online",
+    "takeawayHomeDesc": "Pide online y recoge en tienda",
+    "kitchen": "Cocina",
+    "kitchenDesc": "Pantalla de pedidos para cocina",
+    "cashier": "Caja",
+    "cashierDesc": "Gestión de pagos y tickets",
+    "admin": "Admin",
+    "adminDesc": "Gestionar menú, mesas y configuración",
+    "qrTitle": "Acceso por código QR",
+    "qrDescription": "Los clientes pueden escanear el código QR en su mesa para acceder al menú y pedir directamente."
   },
   "ordina": {
     "title": "Pedir en línea",
@@ -173,6 +187,12 @@
     "tableQrCodes": "QR de Mesas",
     "tableQrNote": "Cada código QR lleva a los clientes directamente al menú de su mesa. Imprime y coloca los QR en las mesas.",
     "saveError": "Error al guardar"
+  },
+  "cassa": {
+    "title": "Caja",
+    "subtitle": "Gestión de pagos y tickets",
+    "comingSoon": "Próximamente",
+    "comingSoonDesc": "La funcionalidad de caja estará disponible pronto."
   },
   "login": {
     "title": "Admin MyKafe",

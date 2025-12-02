@@ -41,7 +41,21 @@
   },
   "home": {
     "title": "MyKafe",
-    "subtitle": "Système de commande numérique"
+    "subtitle": "Système de commande numérique",
+    "table": "Table",
+    "tableDesc": "Commandez depuis votre table avec QR code",
+    "takeawayCounter": "Vente au comptoir",
+    "takeawayCounterDesc": "Commandez et retirez au comptoir",
+    "takeawayHome": "Vente en ligne",
+    "takeawayHomeDesc": "Commandez en ligne et retirez en magasin",
+    "kitchen": "Cuisine",
+    "kitchenDesc": "Affichage des commandes pour la cuisine",
+    "cashier": "Caisse",
+    "cashierDesc": "Gestion des paiements et tickets",
+    "admin": "Admin",
+    "adminDesc": "Gérer menu, tables et paramètres",
+    "qrTitle": "Accès par QR Code",
+    "qrDescription": "Les clients peuvent scanner le QR code sur leur table pour accéder au menu et commander directement."
   },
   "ordina": {
     "title": "Commander en ligne",
@@ -173,6 +187,12 @@
     "tableQrCodes": "QR des Tables",
     "tableQrNote": "Chaque code QR amène les clients directement au menu de leur table. Imprimez et placez les QR sur les tables.",
     "saveError": "Erreur lors de l'enregistrement"
+  },
+  "cassa": {
+    "title": "Caisse",
+    "subtitle": "Gestion des paiements et tickets",
+    "comingSoon": "Bientôt disponible",
+    "comingSoonDesc": "La fonctionnalité caisse sera bientôt disponible."
   },
   "login": {
     "title": "Admin MyKafe",

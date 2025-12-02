@@ -41,7 +41,21 @@
   },
   "home": {
     "title": "MyKafe",
-    "subtitle": "Sistema di ordinazione digitale"
+    "subtitle": "Sistema di ordinazione digitale",
+    "table": "Tavolo",
+    "tableDesc": "Ordina dal tuo tavolo con QR code",
+    "takeawayCounter": "Take Away Banco",
+    "takeawayCounterDesc": "Ordina e ritira al banco",
+    "takeawayHome": "Take Away Online",
+    "takeawayHomeDesc": "Ordina online e ritira in negozio",
+    "kitchen": "Cucina",
+    "kitchenDesc": "Display ordini per la cucina",
+    "cashier": "Cassa",
+    "cashierDesc": "Gestione pagamenti e scontrini",
+    "admin": "Admin",
+    "adminDesc": "Gestisci menu, tavoli e impostazioni",
+    "qrTitle": "Accesso tramite QR Code",
+    "qrDescription": "I clienti possono scansionare il QR code sul tavolo per accedere direttamente al menu e ordinare."
   },
   "ordina": {
     "title": "Ordina Online",
@@ -173,6 +187,12 @@
     "tableQrCodes": "QR Tavoli",
     "tableQrNote": "Ogni QR code porta i clienti direttamente al menu del loro tavolo. Stampa e posiziona i QR sui tavoli.",
     "saveError": "Errore nel salvataggio"
+  },
+  "cassa": {
+    "title": "Cassa",
+    "subtitle": "Gestione pagamenti e scontrini",
+    "comingSoon": "In arrivo",
+    "comingSoonDesc": "La funzionalità cassa sarà disponibile presto."
   },
   "login": {
     "title": "Admin MyKafe",

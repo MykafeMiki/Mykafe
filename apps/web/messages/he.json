@@ -41,7 +41,21 @@
   },
   "home": {
     "title": "MyKafe",
-    "subtitle": "מערכת הזמנות דיגיטלית"
+    "subtitle": "מערכת הזמנות דיגיטלית",
+    "table": "שולחן",
+    "tableDesc": "הזמן מהשולחן שלך עם קוד QR",
+    "takeawayCounter": "איסוף בדלפק",
+    "takeawayCounterDesc": "הזמן ואסוף בדלפק",
+    "takeawayHome": "איסוף אונליין",
+    "takeawayHomeDesc": "הזמן אונליין ואסוף בחנות",
+    "kitchen": "מטבח",
+    "kitchenDesc": "מסך הזמנות למטבח",
+    "cashier": "קופה",
+    "cashierDesc": "ניהול תשלומים וקבלות",
+    "admin": "ניהול",
+    "adminDesc": "נהל תפריט, שולחנות והגדרות",
+    "qrTitle": "גישה באמצעות קוד QR",
+    "qrDescription": "לקוחות יכולים לסרוק את קוד ה-QR על השולחן שלהם כדי לגשת לתפריט ולהזמין ישירות."
   },
   "ordina": {
     "title": "הזמן אונליין",
@@ -173,6 +187,12 @@
     "tableQrCodes": "QR שולחנות",
     "tableQrNote": "כל קוד QR מוביל לקוחות ישירות לתפריט השולחן שלהם. הדפס והנח קודי QR על השולחנות.",
     "saveError": "שגיאה בשמירה"
+  },
+  "cassa": {
+    "title": "קופה",
+    "subtitle": "ניהול תשלומים וקבלות",
+    "comingSoon": "בקרוב",
+    "comingSoonDesc": "פונקציית הקופה תהיה זמינה בקרוב."
   },
   "login": {
     "title": "ניהול MyKafe",

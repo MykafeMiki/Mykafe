@@ -58,7 +58,9 @@
       "Bash(vercel logout:*)",
       "Bash(vercel project rm:*)",
       "Bash(timeout /t 10 /nobreak)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "WebFetch(domain:mykafe-app.vercel.app)",
+      "WebFetch(domain:mykafe-4qbma8c6a-mikis-projects-d8d1ac59.vercel.app)"
     ],
     "deny": [],
     "ask": []
