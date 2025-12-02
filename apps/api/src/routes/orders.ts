@@ -19,7 +19,11 @@ router.get('/', async (req, res) => {
         table: true,
         items: {
           include: {
-            menuItem: true,
+            menuItem: {
+              include: {
+                category: true,
+              },
+            },
             modifiers: {
               include: {
                 modifier: true,
@@ -50,7 +54,11 @@ router.get('/active', async (req, res) => {
         table: true,
         items: {
           include: {
-            menuItem: true,
+            menuItem: {
+              include: {
+                category: true,
+              },
+            },
             modifiers: {
               include: {
                 modifier: true,
@@ -147,7 +155,11 @@ router.post('/', async (req, res) => {
         table: true,
         items: {
           include: {
-            menuItem: true,
+            menuItem: {
+              include: {
+                category: true,
+              },
+            },
             modifiers: {
               include: {
                 modifier: true,
@@ -189,7 +201,11 @@ router.patch('/:id/status', async (req, res) => {
         table: true,
         items: {
           include: {
-            menuItem: true,
+            menuItem: {
+              include: {
+                category: true,
+              },
+            },
             modifiers: {
               include: {
                 modifier: true,
