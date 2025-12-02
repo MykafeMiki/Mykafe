@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image as ImageIcon, Loader2, Lock, LogOut } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
 import {
   getAdminCategories,
@@ -23,6 +24,9 @@ import type { Category, MenuItem, Table } from '@shared/types'
 type Tab = 'menu' | 'tables' | 'qr'
 
 export default function AdminPage() {
+  const t = useTranslations('admin')
+  const tc = useTranslations('common')
+  const tl = useTranslations('login')
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('menu')
   const [categories, setCategories] = useState<Category[]>([])
@@ -77,7 +81,7 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500">Caricamento...</div>
+        <div className="text-gray-500">{tc('loading')}</div>
       </div>
     )
   }
@@ -89,6 +93,7 @@ export default function AdminPage() {
           setIsAuthenticated(true)
           loadData()
         }}
+        t={tl}
       />
     )
   }
@@ -99,15 +104,15 @@ export default function AdminPage() {
       <header className="bg-gray-800 text-white p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Pannello Admin</h1>
-            <p className="text-gray-400">Gestisci menu, tavoli e QR code</p>
+            <h1 className="text-2xl font-bold">{t('title')}</h1>
+            <p className="text-gray-400">{t('subtitle')}</p>
           </div>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
           >
             <LogOut className="w-4 h-4" />
-            Esci
+            {t('logout')}
           </button>
         </div>
       </header>
@@ -123,7 +128,7 @@ export default function AdminPage() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Menu
+            {t('menuTab')}
           </button>
           <button
             onClick={() => setActiveTab('tables')}
@@ -133,7 +138,7 @@ export default function AdminPage() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Tavoli
+            {t('tablesTab')}
           </button>
           <button
             onClick={() => setActiveTab('qr')}
@@ -143,7 +148,7 @@ export default function AdminPage() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            QR Code
+            {t('qrTab')}
           </button>
         </div>
       </nav>
@@ -151,13 +156,13 @@ export default function AdminPage() {
       {/* Content */}
       <main className="p-4 max-w-4xl mx-auto">
         {activeTab === 'menu' && (
-          <MenuTab categories={categories} onUpdate={loadData} />
+          <MenuTab categories={categories} onUpdate={loadData} t={t} tc={tc} />
         )}
         {activeTab === 'tables' && (
-          <TablesTab tables={tables} />
+          <TablesTab tables={tables} t={t} />
         )}
         {activeTab === 'qr' && (
-          <QRTab tables={tables} />
+          <QRTab tables={tables} t={t} tc={tc} />
         )}
       </main>
     </div>
@@ -169,9 +174,11 @@ export default function AdminPage() {
 interface MenuTabProps {
   categories: Category[]
   onUpdate: () => Promise<void>
+  t: ReturnType<typeof useTranslations<'admin'>>
+  tc: ReturnType<typeof useTranslations<'common'>>
 }
 
-function MenuTab({ categories, onUpdate }: MenuTabProps) {
+function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [showItemModal, setShowItemModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -210,7 +217,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
       {/* Quick Toggle per categorie speciali (es. Sushi) */}
       {specialCategories.length > 0 && (
         <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200">
-          <h3 className="text-sm font-medium text-orange-800 mb-3">Menu Speciali</h3>
+          <h3 className="text-sm font-medium text-orange-800 mb-3">{t('specialMenus')}</h3>
           <div className="flex flex-wrap gap-3">
             {specialCategories.map((cat) => (
               <button
@@ -227,7 +234,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
                 <div className="text-left">
                   <div className="font-semibold">{cat.name}</div>
                   <div className={`text-xs ${cat.active ? 'text-orange-100' : 'text-gray-400'}`}>
-                    {cat.active ? 'Attivo' : 'Disattivo'}
+                    {cat.active ? tc('active') : tc('inactive')}
                   </div>
                 </div>
                 {cat.active ? (
@@ -239,13 +246,13 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
             ))}
           </div>
           <p className="text-xs text-orange-600 mt-2">
-            Attiva il menu sushi il mercoledì o quando disponibile
+            {t('sushiNote')}
           </p>
         </div>
       )}
 
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Gestione Menu</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('menuManagement')}</h2>
         <div className="flex gap-2">
           <button
             onClick={() => {
@@ -255,7 +262,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
             className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
           >
             <Plus className="w-5 h-5" />
-            Categoria
+            {t('addCategory')}
           </button>
           <button
             onClick={() => {
@@ -266,7 +273,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
             className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition"
           >
             <Plus className="w-5 h-5" />
-            Piatto
+            {t('addDish')}
           </button>
         </div>
       </div>
@@ -287,7 +294,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
                   <h3 className="font-semibold text-gray-900">{category.name}</h3>
                   {!category.active && (
                     <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
-                      Nascosta
+                      {tc('hidden')}
                     </span>
                   )}
                 </div>
@@ -348,7 +355,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
                       <h4 className="font-medium text-gray-900">{item.name}</h4>
                       {!item.available && (
                         <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
-                          Non disponibile
+                          {tc('unavailable')}
                         </span>
                       )}
                     </div>
@@ -379,7 +386,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
                         ? 'text-green-500 hover:bg-green-50'
                         : 'text-gray-400 hover:bg-gray-100'
                     }`}
-                    title={item.available ? 'Disponibile' : 'Non disponibile'}
+                    title={item.available ? tc('available') : tc('unavailable')}
                   >
                     {item.available ? (
                       <ToggleRight className="w-6 h-6" />
@@ -401,7 +408,7 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
               className="w-full p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-2 transition"
             >
               <Plus className="w-4 h-4" />
-              <span className="text-sm">Aggiungi piatto</span>
+              <span className="text-sm">{t('addItem')}</span>
             </button>
           </div>
         </div>
@@ -416,6 +423,8 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
             await onUpdate()
             setShowCategoryModal(false)
           }}
+          t={t}
+          tc={tc}
         />
       )}
 
@@ -430,6 +439,8 @@ function MenuTab({ categories, onUpdate }: MenuTabProps) {
             await onUpdate()
             setShowItemModal(false)
           }}
+          t={t}
+          tc={tc}
         />
       )}
     </div>
@@ -442,9 +453,11 @@ interface CategoryModalProps {
   category: Category | null
   onClose: () => void
   onSave: () => Promise<void>
+  t: ReturnType<typeof useTranslations<'admin'>>
+  tc: ReturnType<typeof useTranslations<'common'>>
 }
 
-function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
+function CategoryModal({ category, onClose, onSave, t, tc }: CategoryModalProps) {
   const [name, setName] = useState(category?.name || '')
   const [description, setDescription] = useState(category?.description || '')
   const [imageUrl, setImageUrl] = useState(category?.imageUrl || '')
@@ -462,7 +475,7 @@ function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
       setImageUrl(result.url)
     } catch (err) {
       console.error('Failed to upload image:', err)
-      alert('Errore nel caricamento dell\'immagine')
+      alert(t('saveError'))
     } finally {
       setUploading(false)
     }
@@ -482,7 +495,7 @@ function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
       await onSave()
     } catch (err) {
       console.error('Failed to save category:', err)
-      alert('Errore nel salvataggio')
+      alert(t('saveError'))
     } finally {
       setSaving(false)
     }
@@ -494,7 +507,7 @@ function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
       <div className="relative w-full max-w-md bg-white rounded-xl overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-bold">
-            {category ? 'Modifica Categoria' : 'Nuova Categoria'}
+            {category ? t('editCategory') : t('newCategory')}
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
             <X className="w-5 h-5" />
@@ -505,7 +518,7 @@ function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
           {/* Image Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Immagine
+              {t('image')}
             </label>
             <div className="flex items-center gap-4">
               {imageUrl ? (
@@ -533,7 +546,7 @@ function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
                 ) : (
                   <Upload className="w-4 h-4" />
                 )}
-                {uploading ? 'Caricamento...' : 'Carica'}
+                {uploading ? t('uploading') : t('upload')}
               </button>
             </div>
           </div>
@@ -541,7 +554,7 @@ function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nome *
+              {tc('name')} *
             </label>
             <input
               type="text"
@@ -555,7 +568,7 @@ function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descrizione
+              {t('description')}
             </label>
             <textarea
               value={description}
@@ -572,7 +585,7 @@ function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
               onClick={onClose}
               className="flex-1 py-2 border rounded-lg hover:bg-gray-50"
             >
-              Annulla
+              {tc('cancel')}
             </button>
             <button
               type="submit"
@@ -580,7 +593,7 @@ function CategoryModal({ category, onClose, onSave }: CategoryModalProps) {
               className="flex-1 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              {category ? 'Salva' : 'Crea'}
+              {category ? tc('save') : tc('create')}
             </button>
           </div>
         </form>
@@ -597,9 +610,11 @@ interface ItemModalProps {
   categories: Category[]
   onClose: () => void
   onSave: () => Promise<void>
+  t: ReturnType<typeof useTranslations<'admin'>>
+  tc: ReturnType<typeof useTranslations<'common'>>
 }
 
-function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalProps) {
+function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: ItemModalProps) {
   const [name, setName] = useState(item?.name || '')
   const [description, setDescription] = useState(item?.description || '')
   const [price, setPrice] = useState(item ? (item.price / 100).toFixed(2) : '')
@@ -619,7 +634,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
       setImageUrl(result.url)
     } catch (err) {
       console.error('Failed to upload image:', err)
-      alert('Errore nel caricamento dell\'immagine')
+      alert(t('saveError'))
     } finally {
       setUploading(false)
     }
@@ -646,7 +661,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
       await onSave()
     } catch (err) {
       console.error('Failed to save item:', err)
-      alert('Errore nel salvataggio')
+      alert(t('saveError'))
     } finally {
       setSaving(false)
     }
@@ -658,7 +673,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
       <div className="relative w-full max-w-md bg-white rounded-xl overflow-hidden max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
           <h2 className="text-lg font-bold">
-            {item ? 'Modifica Piatto' : 'Nuovo Piatto'}
+            {item ? t('editDish') : t('newDish')}
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
             <X className="w-5 h-5" />
@@ -669,7 +684,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
           {/* Image Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Immagine
+              {t('image')}
             </label>
             <div className="flex items-center gap-4">
               {imageUrl ? (
@@ -697,7 +712,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
                 ) : (
                   <Upload className="w-4 h-4" />
                 )}
-                {uploading ? 'Caricamento...' : 'Carica'}
+                {uploading ? t('uploading') : t('upload')}
               </button>
             </div>
           </div>
@@ -706,7 +721,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
           {!item && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Categoria *
+                {t('category')} *
               </label>
               <select
                 value={selectedCategory}
@@ -725,7 +740,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nome *
+              {tc('name')} *
             </label>
             <input
               type="text"
@@ -739,7 +754,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descrizione
+              {t('description')}
             </label>
             <textarea
               value={description}
@@ -752,7 +767,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
           {/* Price */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Prezzo (€) *
+              {tc('price')} (€) *
             </label>
             <input
               type="number"
@@ -772,7 +787,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
               onClick={onClose}
               className="flex-1 py-2 border rounded-lg hover:bg-gray-50"
             >
-              Annulla
+              {tc('cancel')}
             </button>
             <button
               type="submit"
@@ -780,7 +795,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
               className="flex-1 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              {item ? 'Salva' : 'Crea'}
+              {item ? tc('save') : tc('create')}
             </button>
           </div>
         </form>
@@ -791,7 +806,12 @@ function ItemModal({ item, categoryId, categories, onClose, onSave }: ItemModalP
 
 // ============ TABLES TAB ============
 
-function TablesTab({ tables }: { tables: Table[] }) {
+interface TablesTabProps {
+  tables: Table[]
+  t: ReturnType<typeof useTranslations<'admin'>>
+}
+
+function TablesTab({ tables, t }: TablesTabProps) {
   const statusColors: Record<string, string> = {
     AVAILABLE: 'bg-green-100 text-green-700',
     OCCUPIED: 'bg-red-100 text-red-700',
@@ -799,18 +819,18 @@ function TablesTab({ tables }: { tables: Table[] }) {
   }
 
   const statusLabels: Record<string, string> = {
-    AVAILABLE: 'Libero',
-    OCCUPIED: 'Occupato',
-    RESERVED: 'Riservato',
+    AVAILABLE: t('free'),
+    OCCUPIED: t('occupied'),
+    RESERVED: t('reserved'),
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Gestione Tavoli</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('tablesManagement')}</h2>
         <button className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition">
           <Plus className="w-5 h-5" />
-          Aggiungi tavolo
+          {t('addTable')}
         </button>
       </div>
 
@@ -824,7 +844,7 @@ function TablesTab({ tables }: { tables: Table[] }) {
               {table.number}
             </div>
             <div className="text-sm text-gray-500 mb-3">
-              {table.seats} posti
+              {table.seats} {t('seats')}
             </div>
             <span
               className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
@@ -844,9 +864,10 @@ function TablesTab({ tables }: { tables: Table[] }) {
 
 interface LoginScreenProps {
   onLogin: () => void
+  t: ReturnType<typeof useTranslations<'login'>>
 }
 
-function LoginScreen({ onLogin }: LoginScreenProps) {
+function LoginScreen({ onLogin, t }: LoginScreenProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -863,7 +884,7 @@ function LoginScreen({ onLogin }: LoginScreenProps) {
       setAuthToken(token)
       onLogin()
     } catch (err) {
-      setError('Password non valida')
+      setError(t('invalidPassword'))
     } finally {
       setLoading(false)
     }
@@ -877,8 +898,8 @@ function LoginScreen({ onLogin }: LoginScreenProps) {
             <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin MyKafe</h1>
-            <p className="text-gray-500 mt-1">Inserisci la password per accedere</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+            <p className="text-gray-500 mt-1">{t('enterPassword')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -887,7 +908,7 @@ function LoginScreen({ onLogin }: LoginScreenProps) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder={t('password')}
                 className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 autoFocus
               />
@@ -903,7 +924,7 @@ function LoginScreen({ onLogin }: LoginScreenProps) {
               className="w-full py-3 bg-gray-800 text-white rounded-xl font-medium hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-              {loading ? 'Accesso...' : 'Accedi'}
+              {loading ? t('loggingIn') : t('login')}
             </button>
           </form>
         </div>
@@ -914,24 +935,30 @@ function LoginScreen({ onLogin }: LoginScreenProps) {
 
 // ============ QR TAB ============
 
-function QRTab({ tables }: { tables: Table[] }) {
+interface QRTabProps {
+  tables: Table[]
+  t: ReturnType<typeof useTranslations<'admin'>>
+  tc: ReturnType<typeof useTranslations<'common'>>
+}
+
+function QRTab({ tables, t, tc }: QRTabProps) {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
 
   // Filter out takeaway "table" from the list
-  const realTables = tables.filter(t => t.qrCode !== 'takeaway')
+  const realTables = tables.filter(tbl => tbl.qrCode !== 'takeaway')
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">QR Code</h2>
+        <h2 className="text-xl font-bold text-gray-900">{t('qrCodes')}</h2>
         <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition">
-          Stampa tutti
+          {t('printAll')}
         </button>
       </div>
 
       {/* Special QR Codes */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-700">QR Speciali</h3>
+        <h3 className="text-lg font-semibold text-gray-700">{t('specialQr')}</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Counter/Banco QR */}
@@ -941,15 +968,15 @@ function QRTab({ tables }: { tables: Table[] }) {
                 <QrCode className="w-16 h-16 text-primary-500" />
               </div>
               <div className="flex-1">
-                <h4 className="font-bold text-lg text-primary-800">Banco / Take Away</h4>
+                <h4 className="font-bold text-lg text-primary-800">{t('counterTakeaway')}</h4>
                 <p className="text-sm text-primary-600 mt-1">
-                  Per clienti che ordinano al banco in negozio
+                  {t('counterDescription')}
                 </p>
                 <p className="text-xs text-primary-500 mt-2 break-all">
                   {baseUrl}/banco
                 </p>
                 <button className="mt-3 text-sm bg-primary-500 text-white px-4 py-1.5 rounded-lg hover:bg-primary-600 transition">
-                  Scarica QR
+                  {t('downloadQr')}
                 </button>
               </div>
             </div>
@@ -962,9 +989,9 @@ function QRTab({ tables }: { tables: Table[] }) {
                 <QrCode className="w-16 h-16 text-orange-500" />
               </div>
               <div className="flex-1">
-                <h4 className="font-bold text-lg text-orange-800">Ordini Online</h4>
+                <h4 className="font-bold text-lg text-orange-800">{t('onlineOrders')}</h4>
                 <p className="text-sm text-orange-600 mt-1">
-                  Link da condividere per ordini da remoto
+                  {t('onlineDescription')}
                 </p>
                 <p className="text-xs text-orange-500 mt-2 break-all">
                   {baseUrl}/ordina
@@ -974,7 +1001,7 @@ function QRTab({ tables }: { tables: Table[] }) {
                     onClick={() => navigator.clipboard.writeText(`${baseUrl}/ordina`)}
                     className="text-sm bg-orange-500 text-white px-4 py-1.5 rounded-lg hover:bg-orange-600 transition"
                   >
-                    Copia link
+                    {t('copyLink')}
                   </button>
                 </div>
               </div>
@@ -985,12 +1012,11 @@ function QRTab({ tables }: { tables: Table[] }) {
 
       {/* Table QR Codes */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-700">QR Tavoli</h3>
+        <h3 className="text-lg font-semibold text-gray-700">{t('tableQrCodes')}</h3>
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
           <p className="text-sm">
-            Ogni QR code porta i clienti direttamente al menu del loro tavolo.
-            Stampa e posiziona i QR sui tavoli.
+            {t('tableQrNote')}
           </p>
         </div>
 
@@ -1003,12 +1029,12 @@ function QRTab({ tables }: { tables: Table[] }) {
               <div className="w-32 h-32 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
                 <QrCode className="w-20 h-20 text-gray-400" />
               </div>
-              <h3 className="font-bold text-lg">Tavolo {table.number}</h3>
+              <h3 className="font-bold text-lg">{tc('table')} {table.number}</h3>
               <p className="text-xs text-gray-400 mt-1 break-all">
                 {baseUrl}/menu/{table.qrCode}
               </p>
               <button className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium">
-                Scarica QR
+                {t('downloadQr')}
               </button>
             </div>
           ))}

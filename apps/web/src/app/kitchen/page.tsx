@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Volume2, VolumeX, RefreshCw, Lock, Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { OrderCard } from '@/components/kitchen/OrderCard'
 import { getActiveOrders, updateOrderStatus, verifyToken, adminLogin, setAuthToken, getAuthToken } from '@/lib/api'
 import type { Order, OrderStatus } from '@shared/types'
 
 export default function KitchenPage() {
+  const t = useTranslations('kitchen')
+  const tl = useTranslations('login')
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [orders, setOrders] = useState<Order[]>([])
@@ -112,7 +115,7 @@ export default function KitchenPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Verifica accesso...</div>
+        <div className="text-white text-xl">{tl('verifyingAccess')}</div>
       </div>
     )
   }
@@ -120,14 +123,14 @@ export default function KitchenPage() {
   // Not authenticated - show login
   if (!isAuthenticated) {
     return (
-      <KitchenLoginScreen onLogin={() => setIsAuthenticated(true)} />
+      <KitchenLoginScreen onLogin={() => setIsAuthenticated(true)} t={tl} />
     )
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Caricamento ordini...</div>
+        <div className="text-white text-xl">{t('loadingOrders')}</div>
       </div>
     )
   }
@@ -137,9 +140,9 @@ export default function KitchenPage() {
       {/* Header */}
       <header className="bg-gray-800 text-white p-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Kitchen Display</h1>
+          <h1 className="text-2xl font-bold">{t('title')}</h1>
           <p className="text-gray-400 text-sm">
-            Ultimo aggiornamento:{' '}
+            {t('lastUpdate')}:{' '}
             {lastUpdate.toLocaleTimeString('it-IT', {
               hour: '2-digit',
               minute: '2-digit',
@@ -152,7 +155,7 @@ export default function KitchenPage() {
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
-            title={soundEnabled ? 'Disattiva suono' : 'Attiva suono'}
+            title={soundEnabled ? t('soundOff') : t('soundOn')}
           >
             {soundEnabled ? (
               <Volume2 className="w-6 h-6" />
@@ -164,7 +167,7 @@ export default function KitchenPage() {
           <button
             onClick={fetchOrders}
             className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
-            title="Aggiorna"
+            title={t('refresh')}
           >
             <RefreshCw className="w-6 h-6" />
           </button>
@@ -177,9 +180,9 @@ export default function KitchenPage() {
           <div className="flex items-center justify-center h-[calc(100vh-120px)]">
             <div className="text-center text-gray-500">
               <ChefHatIcon className="w-24 h-24 mx-auto mb-4 opacity-30" />
-              <p className="text-xl">Nessun ordine attivo</p>
+              <p className="text-xl">{t('noActiveOrders')}</p>
               <p className="text-sm mt-2">
-                I nuovi ordini appariranno qui automaticamente
+                {t('ordersAppearHere')}
               </p>
             </div>
           </div>
@@ -189,7 +192,7 @@ export default function KitchenPage() {
             <div>
               <h2 className="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2">
                 <span className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" />
-                In attesa ({pendingOrders.length})
+                {t('pending')} ({pendingOrders.length})
               </h2>
               <div className="space-y-4">
                 {pendingOrders.map((order) => (
@@ -206,7 +209,7 @@ export default function KitchenPage() {
             <div>
               <h2 className="text-lg font-bold text-blue-400 mb-4 flex items-center gap-2">
                 <span className="w-3 h-3 bg-blue-400 rounded-full" />
-                In preparazione ({preparingOrders.length})
+                {t('preparing')} ({preparingOrders.length})
               </h2>
               <div className="space-y-4">
                 {preparingOrders.map((order) => (
@@ -244,9 +247,10 @@ function ChefHatIcon({ className }: { className?: string }) {
 
 interface KitchenLoginScreenProps {
   onLogin: () => void
+  t: ReturnType<typeof useTranslations<'login'>>
 }
 
-function KitchenLoginScreen({ onLogin }: KitchenLoginScreenProps) {
+function KitchenLoginScreen({ onLogin, t }: KitchenLoginScreenProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -263,7 +267,7 @@ function KitchenLoginScreen({ onLogin }: KitchenLoginScreenProps) {
       setAuthToken(token)
       onLogin()
     } catch (err) {
-      setError('Password non valida')
+      setError(t('invalidPassword'))
     } finally {
       setLoading(false)
     }
@@ -277,8 +281,8 @@ function KitchenLoginScreen({ onLogin }: KitchenLoginScreenProps) {
             <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white">Kitchen Display</h1>
-            <p className="text-gray-400 mt-1">Inserisci la password per accedere</p>
+            <h1 className="text-2xl font-bold text-white">{t('kitchenTitle')}</h1>
+            <p className="text-gray-400 mt-1">{t('enterPassword')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -287,7 +291,7 @@ function KitchenLoginScreen({ onLogin }: KitchenLoginScreenProps) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder={t('password')}
                 className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
                 autoFocus
               />
@@ -303,7 +307,7 @@ function KitchenLoginScreen({ onLogin }: KitchenLoginScreenProps) {
               className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-              {loading ? 'Accesso...' : 'Accedi'}
+              {loading ? t('loggingIn') : t('login')}
             </button>
           </form>
         </div>

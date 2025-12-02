@@ -1,6 +1,7 @@
 'use client'
 
 import { ShoppingBag } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
 import { formatPrice } from '@/lib/utils'
 import { PaymentMethod } from '@shared/types'
@@ -18,6 +19,7 @@ function roundUpToTenCents(amount: number): number {
 }
 
 export function CartButton({ onClick, paymentMethod }: CartButtonProps) {
+  const t = useTranslations('cart')
   const itemCount = useCart((state) => state.getItemCount())
   const items = useCart((state) => state.items)
   const baseTotal = useCart((state) => state.getTotal())
@@ -46,7 +48,7 @@ export function CartButton({ onClick, paymentMethod }: CartButtonProps) {
             {itemCount}
           </span>
         </div>
-        <span className="font-semibold">Vedi carrello</span>
+        <span className="font-semibold">{t('viewCart')}</span>
       </div>
       <span className="font-bold text-lg">{formatPrice(total)}</span>
     </button>

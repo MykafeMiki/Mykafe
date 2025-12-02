@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale, getMessages } from 'next-intl/server'
+import { isRtl, type Locale } from '@/i18n/config'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -18,15 +21,21 @@ export const viewport: Viewport = {
   themeColor: '#ec7711',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const locale = await getLocale() as Locale
+  const messages = await getMessages()
+  const rtl = isRtl(locale)
+
   return (
-    <html lang="it">
+    <html lang={locale} dir={rtl ? 'rtl' : 'ltr'}>
       <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+        <NextIntlClientProvider messages={messages}>
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   )

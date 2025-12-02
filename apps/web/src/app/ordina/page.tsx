@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
 import { ItemModal } from '@/components/menu/ItemModal'
 import { CartButton } from '@/components/cart/CartButton'
 import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
+import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import type { Category, MenuItem, Modifier } from '@shared/types'
@@ -28,26 +30,11 @@ function getAvailableDates(): Date[] {
   return dates
 }
 
-function formatDate(date: Date): string {
-  const today = new Date()
-  const tomorrow = new Date(today)
-  tomorrow.setDate(today.getDate() + 1)
-
-  if (date.toDateString() === today.toDateString()) {
-    return 'Oggi'
-  } else if (date.toDateString() === tomorrow.toDateString()) {
-    return 'Domani'
-  } else {
-    return date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })
-  }
-}
-
 function getAvailableTimeSlots(selectedDate: Date): string[] {
   const slots: string[] = []
   const now = new Date()
   const isToday = selectedDate.toDateString() === now.toDateString()
 
-  // Opening hours: 8:00 - 20:00
   const openingHour = 8
   const closingHour = 20
 
@@ -56,7 +43,6 @@ function getAvailableTimeSlots(selectedDate: Date): string[] {
       const slotTime = new Date(selectedDate)
       slotTime.setHours(hour, minute, 0, 0)
 
-      // Skip past times for today
       if (isToday && slotTime <= now) {
         continue
       }
@@ -82,6 +68,10 @@ function isWithin30Minutes(selectedDate: Date, selectedTime: string): boolean {
 }
 
 export default function OrdinaPage() {
+  const t = useTranslations('ordina')
+  const tc = useTranslations('common')
+  const locale = useLocale()
+
   const [step, setStep] = useState<OrderStep>('datetime')
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTime, setSelectedTime] = useState<string>('')
@@ -103,21 +93,33 @@ export default function OrdinaPage() {
   const availableTimeSlots = getAvailableTimeSlots(selectedDate)
   const showWarning = selectedTime && isWithin30Minutes(selectedDate, selectedTime)
 
+  const formatDate = (date: Date): string => {
+    const today = new Date()
+    const tomorrow = new Date(today)
+    tomorrow.setDate(today.getDate() + 1)
+
+    if (date.toDateString() === today.toDateString()) {
+      return t('today')
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return t('tomorrow')
+    } else {
+      return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })
+    }
+  }
+
   useEffect(() => {
     async function loadData() {
       try {
-        // Load takeaway table
         const table = await getTableByQr('takeaway')
         setTableIdInCart(table.id)
 
-        // Load menu
         const menuData = await getMenu()
         setCategories(menuData)
         if (menuData.length > 0) {
           setActiveCategory(menuData[0].id)
         }
       } catch (err) {
-        setError('Errore nel caricamento del menu')
+        setError(tc('error'))
         console.error(err)
       } finally {
         setLoading(false)
@@ -125,9 +127,8 @@ export default function OrdinaPage() {
     }
 
     loadData()
-  }, [setTableIdInCart])
+  }, [setTableIdInCart, tc])
 
-  // Update pickup time in cart when date/time changes
   useEffect(() => {
     if (selectedDate && selectedTime) {
       const [hours, minutes] = selectedTime.split(':').map(Number)
@@ -183,7 +184,7 @@ export default function OrdinaPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-gray-500">Caricamento...</div>
+        <div className="animate-pulse text-gray-500">{tc('loading')}</div>
       </div>
     )
   }
@@ -197,7 +198,7 @@ export default function OrdinaPage() {
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-primary-500 text-white rounded-lg"
           >
-            Riprova
+            {tc('retry')}
           </button>
         </div>
       </div>
@@ -209,28 +210,31 @@ export default function OrdinaPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="w-6 h-6" />
-            <h1 className="text-xl font-bold">MyKafe - Ordina Online</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-6 h-6" />
+              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+            </div>
+            <LanguageSelectorCompact />
           </div>
           <p className="text-orange-100 text-sm mt-1">
-            Ordina e ritira in negozio
+            {t('subtitle')}
           </p>
         </header>
 
         <main className="flex-1 p-6 max-w-lg mx-auto w-full">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Quando vuoi ritirare?
+            {t('pickupQuestion')}
           </h2>
           <p className="text-gray-500 mb-6">
-            Seleziona giorno e orario per il ritiro
+            {t('selectDateTime')}
           </p>
 
           {/* Date Selection */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="w-5 h-5 text-gray-500" />
-              <span className="font-medium text-gray-700">Giorno</span>
+              <span className="font-medium text-gray-700">{t('day')}</span>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {availableDates.map((date) => (
@@ -238,7 +242,7 @@ export default function OrdinaPage() {
                   key={date.toISOString()}
                   onClick={() => {
                     setSelectedDate(date)
-                    setSelectedTime('') // Reset time when date changes
+                    setSelectedTime('')
                   }}
                   className={cn(
                     'flex-shrink-0 px-4 py-3 rounded-xl border-2 transition text-center min-w-[100px]',
@@ -249,7 +253,7 @@ export default function OrdinaPage() {
                 >
                   <div className="font-semibold">{formatDate(date)}</div>
                   <div className="text-xs text-gray-500">
-                    {date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                    {date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
                   </div>
                 </button>
               ))}
@@ -260,11 +264,11 @@ export default function OrdinaPage() {
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Clock className="w-5 h-5 text-gray-500" />
-              <span className="font-medium text-gray-700">Orario</span>
+              <span className="font-medium text-gray-700">{t('time')}</span>
             </div>
             {availableTimeSlots.length === 0 ? (
               <p className="text-gray-500 text-sm">
-                Nessun orario disponibile per questo giorno. Seleziona un altro giorno.
+                {t('noTimeSlots')}
               </p>
             ) : (
               <div className="grid grid-cols-4 gap-2">
@@ -291,10 +295,9 @@ export default function OrdinaPage() {
             <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3">
               <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />
               <div>
-                <p className="font-medium text-amber-800">Preavviso breve</p>
+                <p className="font-medium text-amber-800">{t('shortNotice')}</p>
                 <p className="text-sm text-amber-700">
-                  Gli ordini con meno di 30 minuti di preavviso potrebbero subire ritardi
-                  in base all'affluenza in negozio.
+                  {t('shortNoticeWarning')}
                 </p>
               </div>
             </div>
@@ -311,7 +314,7 @@ export default function OrdinaPage() {
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             )}
           >
-            Continua
+            {tc('continue')}
           </button>
         </main>
       </div>
@@ -321,17 +324,20 @@ export default function OrdinaPage() {
   // Step 2: Payment Selection
   if (step === 'payment') {
     const [hours, minutes] = selectedTime.split(':')
-    const pickupTimeDisplay = `${formatDate(selectedDate)} alle ${hours}:${minutes}`
+    const pickupTimeDisplay = `${formatDate(selectedDate)} ${hours}:${minutes}`
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="w-6 h-6" />
-            <h1 className="text-xl font-bold">MyKafe - Ordina Online</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-6 h-6" />
+              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+            </div>
+            <LanguageSelectorCompact />
           </div>
           <p className="text-orange-100 text-sm mt-1">
-            Ritiro: {pickupTimeDisplay}
+            {t('pickup')}: {pickupTimeDisplay}
           </p>
         </header>
 
@@ -341,14 +347,14 @@ export default function OrdinaPage() {
               onClick={() => setStep('datetime')}
               className="text-orange-500 mb-4 text-sm font-medium"
             >
-              &larr; Cambia orario
+              &larr; {t('changeTime')}
             </button>
 
             <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              Come vuoi pagare?
+              {t('paymentQuestion')}
             </h2>
             <p className="text-gray-500 text-center mb-8">
-              Seleziona il metodo di pagamento
+              {t('selectPayment')}
             </p>
 
             <div className="space-y-4">
@@ -361,10 +367,10 @@ export default function OrdinaPage() {
                 </div>
                 <div className="text-left">
                   <span className="block font-semibold text-lg text-gray-900">
-                    Alla consegna in cassa
+                    {t('cashAtPickup')}
                   </span>
                   <span className="text-sm text-gray-500">
-                    Paga quando ritiri l'ordine
+                    {t('cashDescription')}
                   </span>
                 </div>
               </button>
@@ -378,10 +384,10 @@ export default function OrdinaPage() {
                 </div>
                 <div className="text-left">
                   <span className="block font-semibold text-lg text-gray-900">
-                    Carta
+                    {t('card')}
                   </span>
                   <span className="text-sm text-gray-500">
-                    Paga subito online (+3% commissione)
+                    {t('cardDescription')}
                   </span>
                 </div>
               </button>
@@ -394,7 +400,7 @@ export default function OrdinaPage() {
 
   // Step 3: Menu
   const [hours, minutes] = selectedTime.split(':')
-  const pickupTimeDisplay = `${formatDate(selectedDate)} alle ${hours}:${minutes}`
+  const pickupTimeDisplay = `${formatDate(selectedDate)} ${hours}:${minutes}`
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -404,27 +410,30 @@ export default function OrdinaPage() {
             <ShoppingBag className="w-6 h-6" />
             <h1 className="text-xl font-bold">MyKafe</h1>
           </div>
-          <button
-            onClick={() => setStep('payment')}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium',
-              paymentMethod === PaymentMethod.CASH
-                ? 'bg-green-600 text-white'
-                : 'bg-blue-600 text-white'
-            )}
-          >
-            {paymentMethod === PaymentMethod.CASH ? (
-              <><Banknote className="w-4 h-4" /> Contanti</>
-            ) : (
-              <><CreditCard className="w-4 h-4" /> Carta</>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setStep('payment')}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium',
+                paymentMethod === PaymentMethod.CASH
+                  ? 'bg-green-600 text-white'
+                  : 'bg-blue-600 text-white'
+              )}
+            >
+              {paymentMethod === PaymentMethod.CASH ? (
+                <><Banknote className="w-4 h-4" /> {t('cash')}</>
+              ) : (
+                <><CreditCard className="w-4 h-4" /> {t('card')}</>
+              )}
+            </button>
+            <LanguageSelectorCompact />
+          </div>
         </div>
         <button
           onClick={() => setStep('datetime')}
           className="text-orange-100 text-sm mt-1 hover:text-white"
         >
-          Ritiro: {pickupTimeDisplay} &rarr;
+          {t('pickup')}: {pickupTimeDisplay} &rarr;
         </button>
       </header>
 
@@ -490,9 +499,9 @@ export default function OrdinaPage() {
         <div className="fixed top-4 left-4 right-4 z-50 bg-accent-500 text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top">
           <CheckCircle className="w-6 h-6" />
           <div>
-            <p className="font-semibold">Ordine inviato!</p>
+            <p className="font-semibold">{t('orderSent')}</p>
             <p className="text-sm text-accent-100">
-              Ti aspettiamo {pickupTimeDisplay}
+              {t('pickupConfirmation', { time: pickupTimeDisplay })}
             </p>
           </div>
         </div>

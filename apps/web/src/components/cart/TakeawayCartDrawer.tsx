@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Minus, Plus, Trash2, Loader2, User, Phone } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
 import { formatPrice } from '@/lib/utils'
 import { createOrder } from '@/lib/api'
@@ -31,6 +32,7 @@ function getItemPrice(basePrice: number, modifiersPrice: number, quantity: numbe
 }
 
 export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMethod }: TakeawayCartDrawerProps) {
+  const t = useTranslations('cart')
   const { items, tableId, updateQuantity, removeItem, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,12 +51,12 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
     if (!tableId || items.length === 0) return
 
     if (!customerName.trim()) {
-      setError('Inserisci il tuo nome')
+      setError(t('enterName'))
       return
     }
 
     if (!customerPhone.trim()) {
-      setError('Inserisci il tuo numero di telefono')
+      setError(t('enterPhone'))
       return
     }
 
@@ -83,7 +85,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
       onOrderSuccess()
       onClose()
     } catch (err) {
-      setError('Errore nell\'invio dell\'ordine. Riprova.')
+      setError(t('orderError'))
       console.error(err)
     } finally {
       setIsSubmitting(false)
@@ -99,7 +101,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
       <div className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-orange-50">
-          <h2 className="text-lg font-bold text-gray-900">Ordine Take Away</h2>
+          <h2 className="text-lg font-bold text-gray-900">{t('takeawayOrder')}</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-gray-100 transition"
@@ -112,7 +114,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
         <div className="flex-1 overflow-y-auto p-4">
           {items.length === 0 ? (
             <p className="text-center text-gray-500 py-8">
-              Il carrello è vuoto
+              {t('empty')}
             </p>
           ) : (
             <div className="space-y-6">
@@ -181,7 +183,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
 
               {/* Customer Info */}
               <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">I tuoi dati</h3>
+                <h3 className="font-semibold text-gray-900">{t('yourData')}</h3>
                 <div className="space-y-2">
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -189,7 +191,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                       type="text"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Il tuo nome"
+                      placeholder={t('namePlaceholder')}
                       className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
                   </div>
@@ -199,7 +201,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                       type="tel"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
-                      placeholder="Numero di telefono"
+                      placeholder={t('phonePlaceholder')}
                       className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
                   </div>
@@ -217,7 +219,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
             )}
 
             <div className="flex items-center justify-between text-lg font-bold mb-4">
-              <span>Totale</span>
+              <span>{t('total')}</span>
               <span>{formatPrice(total)}</span>
             </div>
 
@@ -229,10 +231,10 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Invio in corso...
+                  {t('sending')}
                 </>
               ) : (
-                `Ordina - ${formatPrice(total)}`
+                `${t('orderButton')} - ${formatPrice(total)}`
               )}
             </button>
           </div>

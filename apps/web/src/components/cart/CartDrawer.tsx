@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Minus, Plus, Trash2, Loader2, UtensilsCrossed, ShoppingBag } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
 import { formatPrice, cn } from '@/lib/utils'
 import { createOrder } from '@/lib/api'
@@ -14,6 +15,8 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps) {
+  const t = useTranslations('cart')
+  const tm = useTranslations('menuItem')
   const { items, tableId, updateQuantity, updateConsumeMode, removeItem, clearCart, getTotal } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,7 +43,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
       onOrderSuccess()
       onClose()
     } catch (err) {
-      setError('Errore nell\'invio dell\'ordine. Riprova.')
+      setError(t('orderError'))
       console.error(err)
     } finally {
       setIsSubmitting(false)
@@ -56,7 +59,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
       <div className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-bold text-gray-900">Il tuo ordine</h2>
+          <h2 className="text-lg font-bold text-gray-900">{t('title')}</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-gray-100 transition"
@@ -69,7 +72,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
         <div className="flex-1 overflow-y-auto p-4">
           {items.length === 0 ? (
             <p className="text-center text-gray-500 py-8">
-              Il carrello è vuoto
+              {t('empty')}
             </p>
           ) : (
             <div className="space-y-4">
@@ -142,7 +145,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
                       )}
                     >
                       <UtensilsCrossed className="w-3.5 h-3.5" />
-                      Al tavolo
+                      {tm('eatHere')}
                     </button>
                     <button
                       onClick={() => updateConsumeMode(index, ConsumeMode.TAKEAWAY)}
@@ -154,7 +157,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
                       )}
                     >
                       <ShoppingBag className="w-3.5 h-3.5" />
-                      Da asporto
+                      {tm('takeaway')}
                     </button>
                   </div>
                 </div>
@@ -171,7 +174,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
             )}
 
             <div className="flex items-center justify-between mb-4">
-              <span className="text-gray-600">Totale</span>
+              <span className="text-gray-600">{t('total')}</span>
               <span className="text-xl font-bold">{formatPrice(getTotal())}</span>
             </div>
 
@@ -183,10 +186,10 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Invio in corso...
+                  {t('sending')}
                 </>
               ) : (
-                'Conferma ordine'
+                t('confirmOrder')
               )}
             </button>
           </div>

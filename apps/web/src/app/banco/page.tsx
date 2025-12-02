@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { CheckCircle, Store, User } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
 import { ItemModal } from '@/components/menu/ItemModal'
 import { CartButton } from '@/components/cart/CartButton'
 import { BancoCartDrawer } from '@/components/cart/BancoCartDrawer'
+import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import type { Category, MenuItem, Modifier } from '@shared/types'
@@ -16,6 +18,9 @@ import { cn } from '@/lib/utils'
 type OrderStep = 'name' | 'menu'
 
 export default function BancoPage() {
+  const t = useTranslations('banco')
+  const tc = useTranslations('common')
+
   const [step, setStep] = useState<OrderStep>('name')
   const [customerName, setCustomerNameLocal] = useState('')
   const [categories, setCategories] = useState<Category[]>([])
@@ -45,7 +50,7 @@ export default function BancoPage() {
           setActiveCategory(menuData[0].id)
         }
       } catch (err) {
-        setError('Errore nel caricamento del menu')
+        setError(tc('error'))
         console.error(err)
       } finally {
         setLoading(false)
@@ -102,7 +107,7 @@ export default function BancoPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-gray-500">Caricamento...</div>
+        <div className="animate-pulse text-gray-500">{tc('loading')}</div>
       </div>
     )
   }
@@ -116,7 +121,7 @@ export default function BancoPage() {
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-primary-500 text-white rounded-lg"
           >
-            Riprova
+            {tc('retry')}
           </button>
         </div>
       </div>
@@ -128,12 +133,15 @@ export default function BancoPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center gap-2">
-            <Store className="w-6 h-6" />
-            <h1 className="text-xl font-bold">MyKafe - Ordina al Banco</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Store className="w-6 h-6" />
+              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+            </div>
+            <LanguageSelectorCompact />
           </div>
           <p className="text-primary-100 text-sm mt-1">
-            Ordina e ritira qui in negozio
+            {t('subtitle')}
           </p>
         </header>
 
@@ -144,10 +152,10 @@ export default function BancoPage() {
             </div>
 
             <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              Come ti chiami?
+              {t('nameQuestion')}
             </h2>
             <p className="text-gray-500 text-center mb-8">
-              Ti chiameremo quando il tuo ordine sarà pronto
+              {t('nameDescription')}
             </p>
 
             <div className="space-y-4">
@@ -158,7 +166,7 @@ export default function BancoPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleContinueToMenu()
                 }}
-                placeholder="Il tuo nome"
+                placeholder={t('namePlaceholder')}
                 autoFocus
                 className="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none transition"
               />
@@ -173,7 +181,7 @@ export default function BancoPage() {
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 )}
               >
-                Continua
+                {tc('continue')}
               </button>
             </div>
           </div>
@@ -191,13 +199,16 @@ export default function BancoPage() {
             <Store className="w-6 h-6" />
             <h1 className="text-xl font-bold">MyKafe</h1>
           </div>
-          <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
-            <User className="w-4 h-4" />
-            <span className="text-sm font-medium">{customerName}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
+              <User className="w-4 h-4" />
+              <span className="text-sm font-medium">{customerName}</span>
+            </div>
+            <LanguageSelectorCompact />
           </div>
         </div>
         <p className="text-primary-100 text-sm mt-1">
-          Ordina al banco
+          {t('title')}
         </p>
       </header>
 
@@ -261,9 +272,9 @@ export default function BancoPage() {
         <div className="fixed top-4 left-4 right-4 z-50 bg-accent-500 text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top">
           <CheckCircle className="w-6 h-6" />
           <div>
-            <p className="font-semibold">Ordine inviato, {customerName}!</p>
+            <p className="font-semibold">{t('orderSent', { name: customerName })}</p>
             <p className="text-sm text-accent-100">
-              Ti chiameremo quando sarà pronto
+              {t('orderConfirmation')}
             </p>
           </div>
         </div>

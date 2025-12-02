@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X, Minus, Plus, Trash2, Loader2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
 import { formatPrice } from '@/lib/utils'
 import { createOrder } from '@/lib/api'
@@ -15,6 +16,8 @@ interface BancoCartDrawerProps {
 }
 
 export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName }: BancoCartDrawerProps) {
+  const t = useTranslations('cart')
+  const tb = useTranslations('banco')
   const { items, tableId, updateQuantity, removeItem, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,7 +52,7 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
       onOrderSuccess()
       onClose()
     } catch (err) {
-      setError('Errore nell\'invio dell\'ordine. Riprova.')
+      setError(t('orderError'))
       console.error(err)
     } finally {
       setIsSubmitting(false)
@@ -66,8 +69,8 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-primary-50">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Il tuo ordine</h2>
-            <p className="text-sm text-gray-500">Ordine per: {customerName}</p>
+            <h2 className="text-lg font-bold text-gray-900">{t('title')}</h2>
+            <p className="text-sm text-gray-500">{tb('orderFor')}: {customerName}</p>
           </div>
           <button
             onClick={onClose}
@@ -81,7 +84,7 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
         <div className="flex-1 overflow-y-auto p-4">
           {items.length === 0 ? (
             <p className="text-center text-gray-500 py-8">
-              Il carrello è vuoto
+              {t('empty')}
             </p>
           ) : (
             <div className="space-y-3">
@@ -153,7 +156,7 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
             )}
 
             <div className="flex items-center justify-between text-lg font-bold mb-4">
-              <span>Totale</span>
+              <span>{t('total')}</span>
               <span>{formatPrice(total)}</span>
             </div>
 
@@ -165,15 +168,15 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Invio in corso...
+                  {t('sending')}
                 </>
               ) : (
-                `Ordina - ${formatPrice(total)}`
+                `${t('orderButton')} - ${formatPrice(total)}`
               )}
             </button>
 
             <p className="text-center text-gray-500 text-sm mt-3">
-              Pagamento in cassa al ritiro
+              {tb('payAtCounter')}
             </p>
           </div>
         )}

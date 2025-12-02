@@ -3,17 +3,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { CheckCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
 import { ItemModal } from '@/components/menu/ItemModal'
 import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
+import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
 export default function MenuPage() {
+  const t = useTranslations('tableMenu')
+  const tc = useTranslations('common')
   const params = useParams()
   const tableId = params.tableId as string
 
@@ -45,7 +49,7 @@ export default function MenuPage() {
           setActiveCategory(menuData[0].id)
         }
       } catch (err) {
-        setError('Errore nel caricamento del menu')
+        setError(tc('error'))
         console.error(err)
       } finally {
         setLoading(false)
@@ -53,7 +57,7 @@ export default function MenuPage() {
     }
 
     loadData()
-  }, [tableId, setTableIdInCart])
+  }, [tableId, setTableIdInCart, tc])
 
   const scrollToCategory = (categoryId: string) => {
     setActiveCategory(categoryId)
@@ -90,7 +94,7 @@ export default function MenuPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-gray-500">Caricamento menu...</div>
+        <div className="animate-pulse text-gray-500">{t('loadingMenu')}</div>
       </div>
     )
   }
@@ -104,7 +108,7 @@ export default function MenuPage() {
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-primary-500 text-white rounded-lg"
           >
-            Riprova
+            {tc('retry')}
           </button>
         </div>
       </div>
@@ -115,10 +119,15 @@ export default function MenuPage() {
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
       <header className="bg-primary-500 text-white p-4">
-        <h1 className="text-xl font-bold">MyKafe</h1>
-        {tableNumber && (
-          <p className="text-primary-100">Tavolo {tableNumber}</p>
-        )}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">MyKafe</h1>
+            {tableNumber && (
+              <p className="text-primary-100">{tc('table')} {tableNumber}</p>
+            )}
+          </div>
+          <LanguageSelectorCompact />
+        </div>
       </header>
 
       {/* Category Navigation */}
@@ -184,9 +193,9 @@ export default function MenuPage() {
         <div className="fixed top-4 left-4 right-4 z-50 bg-accent-500 text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top">
           <CheckCircle className="w-6 h-6" />
           <div>
-            <p className="font-semibold">Ordine inviato!</p>
+            <p className="font-semibold">{t('orderSent')}</p>
             <p className="text-sm text-accent-100">
-              Lo stiamo preparando per te
+              {t('preparing')}
             </p>
           </div>
         </div>
