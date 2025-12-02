@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   UtensilsCrossed,
@@ -8,13 +9,57 @@ import {
   ChefHat,
   CreditCard,
   Settings,
-  QrCode
+  QrCode,
+  Lock,
+  Loader2,
+  LogOut
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
+import { adminLogin, verifyToken, setAuthToken, getAuthToken } from '@/lib/api'
 
 export default function HomePage() {
   const t = useTranslations('home')
+  const tl = useTranslations('login')
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = getAuthToken()
+      if (!token) {
+        setIsAuthenticated(false)
+        setAuthLoading(false)
+        return
+      }
+      try {
+        await verifyToken()
+        setIsAuthenticated(true)
+      } catch {
+        setAuthToken(null)
+        setIsAuthenticated(false)
+      }
+      setAuthLoading(false)
+    }
+    checkAuth()
+  }, [])
+
+  const handleLogout = () => {
+    setAuthToken(null)
+    setIsAuthenticated(false)
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-500">{tl('verifyingAccess')}</div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <HomeLoginScreen onLogin={() => setIsAuthenticated(true)} t={tl} />
+  }
 
   const menuItems = [
     {
@@ -82,7 +127,16 @@ export default function HomePage() {
             <h1 className="text-3xl font-bold text-gray-900">MyKafe</h1>
             <p className="text-gray-500 mt-1">{t('subtitle')}</p>
           </div>
-          <LanguageSelectorCompact />
+          <div className="flex items-center gap-3">
+            <LanguageSelectorCompact />
+            <button
+              onClick={handleLogout}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+              title={tl('logout') || 'Logout'}
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -131,6 +185,79 @@ export default function HomePage() {
       <footer className="max-w-4xl mx-auto px-4 py-6 text-center text-gray-400 text-sm">
         MyKafe &copy; {new Date().getFullYear()}
       </footer>
+    </div>
+  )
+}
+
+// ============ LOGIN SCREEN ============
+
+interface HomeLoginScreenProps {
+  onLogin: () => void
+  t: ReturnType<typeof useTranslations<'login'>>
+}
+
+function HomeLoginScreen({ onLogin, t }: HomeLoginScreenProps) {
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!password.trim()) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const { token } = await adminLogin(password)
+      setAuthToken(token)
+      onLogin()
+    } catch {
+      setError(t('invalidPassword'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">MyKafe</h1>
+            <p className="text-gray-500 mt-1">{t('enterPassword')}</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t('password')}
+                className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                autoFocus
+              />
+            </div>
+
+            {error && (
+              <div className="text-red-500 text-sm text-center">{error}</div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !password.trim()}
+              className="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
+            >
+              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+              {loading ? t('loggingIn') : t('login')}
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   )
 }
