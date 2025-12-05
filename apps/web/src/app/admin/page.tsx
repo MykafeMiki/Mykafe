@@ -5,7 +5,15 @@ import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image a
 import { QRCodeSVG } from 'qrcode.react'
 import { useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
-import { getSushiStatus, isSushiTimeActive } from '@/lib/menuTimers'
+import {
+  getSushiStatus,
+  getPaniniStatus,
+  isSushiTimeActive,
+  getTimerConfig,
+  saveTimerConfig,
+  DAYS_OF_WEEK,
+  type TimerConfig
+} from '@/lib/menuTimers'
 import {
   getAdminCategories,
   getTables,
@@ -169,10 +177,12 @@ interface MenuTabProps {
 function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [showItemModal, setShowItemModal] = useState(false)
+  const [showTimerModal, setShowTimerModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [togglingCategory, setTogglingCategory] = useState<string | null>(null)
+  const [timerConfig, setTimerConfig] = useState<TimerConfig>(getTimerConfig())
 
   const handleToggleAvailability = async (item: MenuItem) => {
     try {
@@ -200,13 +210,79 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
     cat.name.toLowerCase().includes('sushi')
   )
 
-  // Get sushi timer status
+  // Get timer status
   const sushiStatus = getSushiStatus()
+  const paniniStatus = getPaniniStatus()
   const isInSushiWindow = isSushiTimeActive()
+
+  // Get day names for display
+  const getStartDayName = () => DAYS_OF_WEEK.find(d => d.value === timerConfig.sushi.startDay)?.label || ''
+  const getEndDayName = () => DAYS_OF_WEEK.find(d => d.value === timerConfig.sushi.endDay)?.label || ''
 
   return (
     <div className="space-y-6">
-      {/* Quick Toggle per categorie speciali (es. Sushi) con Timer */}
+      {/* Timer Configuration Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Timer className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-blue-800">Configurazione Timer Menu</h3>
+          </div>
+          <button
+            onClick={() => setShowTimerModal(true)}
+            className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition flex items-center gap-1"
+          >
+            <Edit className="w-4 h-4" />
+            Modifica Orari
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Sushi Timer */}
+          <div className="bg-white/70 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">🍣</span>
+              <span className="font-medium text-gray-800">Sushi</span>
+              <span className={`ml-auto px-2 py-0.5 rounded-full text-xs ${
+                timerConfig.sushi.enabled
+                  ? (isInSushiWindow ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')
+                  : 'bg-gray-100 text-gray-500'
+              }`}>
+                {timerConfig.sushi.enabled ? (isInSushiWindow ? 'ATTIVO' : 'IN ATTESA') : 'SEMPRE'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-600">
+              {timerConfig.sushi.enabled
+                ? `${getStartDayName()} ${timerConfig.sushi.startHour}:00 → ${getEndDayName()} ${timerConfig.sushi.endHour}:00`
+                : 'Timer disabilitato - controllato solo dal toggle categoria'
+              }
+            </p>
+          </div>
+
+          {/* Panini Timer */}
+          <div className="bg-white/70 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">🥪</span>
+              <span className="font-medium text-gray-800">Panini (Bar)</span>
+              <span className={`ml-auto px-2 py-0.5 rounded-full text-xs ${
+                timerConfig.panini.enabled
+                  ? (paniniStatus.isAvailable ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')
+                  : 'bg-gray-100 text-gray-500'
+              }`}>
+                {timerConfig.panini.enabled ? (paniniStatus.isAvailable ? 'VISIBILI' : 'NASCOSTI') : 'SEMPRE'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-600">
+              {timerConfig.panini.enabled
+                ? `Visibili dalle ${timerConfig.panini.startHour}:00 (solo menu bar/banco)`
+                : 'Timer disabilitato - sempre visibili'
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Toggle per categorie speciali (es. Sushi) */}
       {specialCategories.length > 0 && (
         <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200">
           <div className="flex items-center justify-between mb-3">
@@ -224,9 +300,6 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
 
           <div className="flex flex-wrap gap-3">
             {specialCategories.map((cat) => {
-              // Determine if sushi is actually visible (timer active AND category active)
-              const isVisibleToCustomers = isInSushiWindow && cat.active
-
               return (
                 <button
                   key={cat.id}
@@ -256,22 +329,6 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                 </button>
               )
             })}
-          </div>
-
-          {/* Timer Info */}
-          <div className="mt-3 p-3 bg-white/60 rounded-lg">
-            <div className="flex items-start gap-2">
-              <Clock className="w-4 h-4 text-orange-600 mt-0.5" />
-              <div className="text-xs text-orange-700">
-                <p className="font-medium">Timer automatico: Martedi 18:00 - Mercoledi 17:00</p>
-                <p className="mt-1">
-                  {isInSushiWindow
-                    ? "Il sushi e visibile automaticamente. Puoi disabilitarlo manualmente con il toggle sopra."
-                    : "Il sushi non e visibile fuori dalla finestra oraria. Puoi abilitarlo manualmente con il toggle sopra."
-                  }
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -468,6 +525,256 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
           tc={tc}
         />
       )}
+
+      {/* Timer Configuration Modal */}
+      {showTimerModal && (
+        <TimerConfigModal
+          config={timerConfig}
+          onClose={() => setShowTimerModal(false)}
+          onSave={(newConfig) => {
+            saveTimerConfig(newConfig)
+            setTimerConfig(newConfig)
+            setShowTimerModal(false)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ============ TIMER CONFIG MODAL ============
+
+interface TimerConfigModalProps {
+  config: TimerConfig
+  onClose: () => void
+  onSave: (config: TimerConfig) => void
+}
+
+function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
+  const [localConfig, setLocalConfig] = useState<TimerConfig>(config)
+
+  const handleSave = () => {
+    onSave(localConfig)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white rounded-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
+          <h2 className="text-lg font-bold">Configurazione Timer Menu</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-6">
+          {/* Sushi Timer Configuration */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🍣</span>
+                <h3 className="font-semibold text-gray-900">Timer Sushi</h3>
+              </div>
+              <button
+                onClick={() => setLocalConfig({
+                  ...localConfig,
+                  sushi: { ...localConfig.sushi, enabled: !localConfig.sushi.enabled }
+                })}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                  localConfig.sushi.enabled
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {localConfig.sushi.enabled ? (
+                  <>
+                    <ToggleRight className="w-5 h-5" />
+                    <span className="text-sm">Attivo</span>
+                  </>
+                ) : (
+                  <>
+                    <ToggleLeft className="w-5 h-5" />
+                    <span className="text-sm">Disattivo</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {localConfig.sushi.enabled && (
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <p className="text-sm text-gray-600">
+                  Il sushi sara visibile solo durante la finestra oraria configurata.
+                </p>
+
+                {/* Start Day/Hour */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Giorno Inizio
+                    </label>
+                    <select
+                      value={localConfig.sushi.startDay}
+                      onChange={(e) => setLocalConfig({
+                        ...localConfig,
+                        sushi: { ...localConfig.sushi, startDay: parseInt(e.target.value) }
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      {DAYS_OF_WEEK.map(day => (
+                        <option key={day.value} value={day.value}>{day.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ora Inizio
+                    </label>
+                    <select
+                      value={localConfig.sushi.startHour}
+                      onChange={(e) => setLocalConfig({
+                        ...localConfig,
+                        sushi: { ...localConfig.sushi, startHour: parseInt(e.target.value) }
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* End Day/Hour */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Giorno Fine
+                    </label>
+                    <select
+                      value={localConfig.sushi.endDay}
+                      onChange={(e) => setLocalConfig({
+                        ...localConfig,
+                        sushi: { ...localConfig.sushi, endDay: parseInt(e.target.value) }
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      {DAYS_OF_WEEK.map(day => (
+                        <option key={day.value} value={day.value}>{day.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ora Fine
+                    </label>
+                    <select
+                      value={localConfig.sushi.endHour}
+                      onChange={(e) => setLocalConfig({
+                        ...localConfig,
+                        sushi: { ...localConfig.sushi, endHour: parseInt(e.target.value) }
+                      })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!localConfig.sushi.enabled && (
+              <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+                Timer disabilitato: il sushi sara visibile in base al toggle della categoria nell'elenco menu.
+              </p>
+            )}
+          </div>
+
+          {/* Panini Timer Configuration */}
+          <div className="space-y-4 border-t pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🥪</span>
+                <h3 className="font-semibold text-gray-900">Timer Panini (Bar/Banco)</h3>
+              </div>
+              <button
+                onClick={() => setLocalConfig({
+                  ...localConfig,
+                  panini: { ...localConfig.panini, enabled: !localConfig.panini.enabled }
+                })}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                  localConfig.panini.enabled
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {localConfig.panini.enabled ? (
+                  <>
+                    <ToggleRight className="w-5 h-5" />
+                    <span className="text-sm">Attivo</span>
+                  </>
+                ) : (
+                  <>
+                    <ToggleLeft className="w-5 h-5" />
+                    <span className="text-sm">Disattivo</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {localConfig.panini.enabled && (
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <p className="text-sm text-gray-600">
+                  I panini saranno nascosti sul menu bar/banco prima dell'orario configurato.
+                  Sul menu takeaway (/ordina) sono sempre visibili.
+                </p>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Visibili dalle ore
+                  </label>
+                  <select
+                    value={localConfig.panini.startHour}
+                    onChange={(e) => setLocalConfig({
+                      ...localConfig,
+                      panini: { ...localConfig.panini, startHour: parseInt(e.target.value) }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {!localConfig.panini.enabled && (
+              <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+                Timer disabilitato: i panini saranno sempre visibili su tutti i menu.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 p-4 border-t bg-gray-50">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2 border rounded-lg hover:bg-gray-100"
+          >
+            Annulla
+          </button>
+          <button
+            onClick={handleSave}
+            className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Salva Configurazione
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

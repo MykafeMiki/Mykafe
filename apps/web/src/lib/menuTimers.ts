@@ -2,32 +2,146 @@
  * Menu Timers & Availability Logic
  *
  * This module handles time-based menu filtering:
- * - Sushi: Available Tuesday 18:00 to Wednesday 17:00 (can be disabled by admin)
- * - Panini: Hidden on BAR menu before 11:00 (always visible on takeaway/ordina)
+ * - Sushi: Configurable days and hours (default: Tuesday 18:00 to Wednesday 17:00)
+ * - Panini: Hidden on BAR menu before configurable hour (default: 11:00)
+ *
+ * Configuration is stored in localStorage and can be modified by admin
  */
 
-import type { Category, MenuItem } from '@shared/types'
+import type { Category } from '@shared/types'
 
 // Menu context types
 export type MenuContext = 'bar' | 'takeaway' | 'table'
 
-/**
- * Check if current time is within sushi availability window
- * Tuesday 18:00 to Wednesday 17:00
- */
-export function isSushiTimeActive(): boolean {
-  const now = new Date()
-  const day = now.getDay() // 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday
-  const hour = now.getHours()
+// Day names for UI
+export const DAYS_OF_WEEK = [
+  { value: 0, label: 'Domenica' },
+  { value: 1, label: 'Lunedi' },
+  { value: 2, label: 'Martedi' },
+  { value: 3, label: 'Mercoledi' },
+  { value: 4, label: 'Giovedi' },
+  { value: 5, label: 'Venerdi' },
+  { value: 6, label: 'Sabato' },
+]
 
-  // Tuesday from 18:00 onwards
-  if (day === 2 && hour >= 18) {
-    return true
+// Timer configuration interface
+export interface TimerConfig {
+  sushi: {
+    enabled: boolean
+    startDay: number // 0-6 (Sunday-Saturday)
+    startHour: number // 0-23
+    endDay: number // 0-6
+    endHour: number // 0-23
+  }
+  panini: {
+    enabled: boolean
+    startHour: number // Hour from which panini are visible (default 11)
+  }
+}
+
+// Default configuration
+const DEFAULT_CONFIG: TimerConfig = {
+  sushi: {
+    enabled: true,
+    startDay: 2, // Tuesday
+    startHour: 18, // 18:00
+    endDay: 3, // Wednesday
+    endHour: 17, // 17:00
+  },
+  panini: {
+    enabled: true,
+    startHour: 11, // 11:00
+  },
+}
+
+const CONFIG_STORAGE_KEY = 'mykafe-timer-config'
+
+/**
+ * Get timer configuration from localStorage
+ */
+export function getTimerConfig(): TimerConfig {
+  if (typeof window === 'undefined') {
+    return DEFAULT_CONFIG
   }
 
-  // Wednesday until 17:00
-  if (day === 3 && hour < 17) {
-    return true
+  try {
+    const stored = localStorage.getItem(CONFIG_STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      // Merge with defaults to ensure all fields exist
+      return {
+        sushi: { ...DEFAULT_CONFIG.sushi, ...parsed.sushi },
+        panini: { ...DEFAULT_CONFIG.panini, ...parsed.panini },
+      }
+    }
+  } catch (e) {
+    console.error('Error reading timer config:', e)
+  }
+
+  return DEFAULT_CONFIG
+}
+
+/**
+ * Save timer configuration to localStorage
+ */
+export function saveTimerConfig(config: TimerConfig): void {
+  if (typeof window === 'undefined') return
+
+  try {
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config))
+  } catch (e) {
+    console.error('Error saving timer config:', e)
+  }
+}
+
+/**
+ * Check if current time is within sushi availability window
+ */
+export function isSushiTimeActive(): boolean {
+  const config = getTimerConfig()
+
+  if (!config.sushi.enabled) {
+    return true // If timer disabled, sushi always available (controlled by category.active)
+  }
+
+  const now = new Date()
+  const day = now.getDay() // 0 = Sunday, 1 = Monday, etc.
+  const hour = now.getHours()
+
+  const { startDay, startHour, endDay, endHour } = config.sushi
+
+  // Same day range
+  if (startDay === endDay) {
+    return day === startDay && hour >= startHour && hour < endHour
+  }
+
+  // Cross-day range (e.g., Tuesday 18:00 to Wednesday 17:00)
+  if (startDay < endDay) {
+    // Start day from startHour onwards
+    if (day === startDay && hour >= startHour) {
+      return true
+    }
+    // End day until endHour
+    if (day === endDay && hour < endHour) {
+      return true
+    }
+    // Days in between (if any)
+    if (day > startDay && day < endDay) {
+      return true
+    }
+  }
+
+  // Wrap around week (e.g., Saturday to Monday)
+  if (startDay > endDay) {
+    if (day === startDay && hour >= startHour) {
+      return true
+    }
+    if (day === endDay && hour < endHour) {
+      return true
+    }
+    if (day > startDay || day < endDay) {
+      return true
+    }
   }
 
   return false
@@ -35,14 +149,18 @@ export function isSushiTimeActive(): boolean {
 
 /**
  * Check if panini should be visible based on current time
- * Panini are hidden before 11:00 on BAR menu
  */
 export function isPaniniTimeActive(): boolean {
+  const config = getTimerConfig()
+
+  if (!config.panini.enabled) {
+    return true // If timer disabled, panini always available
+  }
+
   const now = new Date()
   const hour = now.getHours()
 
-  // Available from 11:00 onwards
-  return hour >= 11
+  return hour >= config.panini.startHour
 }
 
 /**
@@ -99,48 +217,28 @@ export function filterCategoriesByTime(
  */
 export function getSushiStatus(): {
   isTimeWindow: boolean
-  nextWindowStart: Date | null
-  nextWindowEnd: Date | null
   statusText: string
+  config: TimerConfig['sushi']
 } {
-  const now = new Date()
+  const config = getTimerConfig()
   const isActive = isSushiTimeActive()
 
-  // Calculate next Tuesday 18:00
-  const nextTuesday = new Date(now)
-  const daysUntilTuesday = (2 - now.getDay() + 7) % 7
-  nextTuesday.setDate(now.getDate() + (daysUntilTuesday === 0 && now.getHours() >= 18 ? 7 : daysUntilTuesday))
-  nextTuesday.setHours(18, 0, 0, 0)
-
-  // Calculate next Wednesday 17:00
-  const nextWednesday = new Date(nextTuesday)
-  nextWednesday.setDate(nextTuesday.getDate() + 1)
-  nextWednesday.setHours(17, 0, 0, 0)
+  const startDayName = DAYS_OF_WEEK.find(d => d.value === config.sushi.startDay)?.label || ''
+  const endDayName = DAYS_OF_WEEK.find(d => d.value === config.sushi.endDay)?.label || ''
 
   let statusText: string
-  if (isActive) {
-    const day = now.getDay()
-    if (day === 2) {
-      statusText = 'Attivo fino a domani ore 17:00'
-    } else {
-      statusText = 'Attivo fino alle 17:00'
-    }
+  if (!config.sushi.enabled) {
+    statusText = 'Timer disabilitato'
+  } else if (isActive) {
+    statusText = `Attivo fino a ${endDayName} ore ${config.sushi.endHour}:00`
   } else {
-    const day = now.getDay()
-    if (day === 2 && now.getHours() < 18) {
-      statusText = 'Si attiva oggi alle 18:00'
-    } else if (day === 3 && now.getHours() >= 17) {
-      statusText = 'Si attiva martedi alle 18:00'
-    } else {
-      statusText = 'Si attiva martedi alle 18:00'
-    }
+    statusText = `Si attiva ${startDayName} alle ${config.sushi.startHour}:00`
   }
 
   return {
     isTimeWindow: isActive,
-    nextWindowStart: isActive ? null : nextTuesday,
-    nextWindowEnd: isActive ? nextWednesday : null,
-    statusText
+    statusText,
+    config: config.sushi
   }
 }
 
@@ -150,14 +248,25 @@ export function getSushiStatus(): {
 export function getPaniniStatus(): {
   isAvailable: boolean
   statusText: string
+  config: TimerConfig['panini']
 } {
+  const config = getTimerConfig()
   const isActive = isPaniniTimeActive()
   const now = new Date()
 
+  let statusText: string
+  if (!config.panini.enabled) {
+    statusText = 'Timer disabilitato - sempre visibili'
+  } else if (isActive) {
+    statusText = 'Panini disponibili'
+  } else {
+    const hoursLeft = config.panini.startHour - now.getHours()
+    statusText = `Disponibili dalle ${config.panini.startHour}:00 (tra ${hoursLeft} ore)`
+  }
+
   return {
     isAvailable: isActive,
-    statusText: isActive
-      ? 'Panini disponibili'
-      : `Panini disponibili dalle 11:00 (tra ${11 - now.getHours()} ore)`
+    statusText,
+    config: config.panini
   }
 }
