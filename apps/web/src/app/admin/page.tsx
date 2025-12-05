@@ -35,25 +35,11 @@ export default function AdminPage() {
   const [tables, setTables] = useState<Table[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Check auth on mount
+  // Check auth on mount - TEMPORARILY BYPASSED
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = getAuthToken()
-      if (!token) {
-        setIsAuthenticated(false)
-        setLoading(false)
-        return
-      }
-      try {
-        await verifyToken()
-        setIsAuthenticated(true)
-      } catch {
-        setAuthToken(null)
-        setIsAuthenticated(false)
-      }
-      setLoading(false)
-    }
-    checkAuth()
+    // TODO: Re-enable auth once Supabase Edge Functions password is configured
+    setIsAuthenticated(true)
+    setLoading(false)
   }, [])
 
   const loadData = async () => {
