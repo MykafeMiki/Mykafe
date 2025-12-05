@@ -95,7 +95,19 @@
   "tableMenu": {
     "loadingMenu": "Loading menu...",
     "orderSent": "Order sent!",
-    "preparing": "We're preparing it for you"
+    "preparing": "We're preparing it for you",
+    "singleTable": "Single table?",
+    "singleTableDesc": "Order only for this table",
+    "mergeTables": "Merge tables",
+    "mergeTablesDesc": "Merge multiple tables into one bill",
+    "enterTableNumbers": "Enter the table numbers to merge",
+    "tableNumbersPlaceholder": "E.g.: 2, 3, 5",
+    "confirmMerge": "Merge tables",
+    "table": "Table",
+    "tables": "Tables",
+    "mergedWith": "Merged with tables",
+    "sessionActive": "Session active",
+    "invalidTableNumbers": "Enter valid table numbers separated by comma"
   },
   "cart": {
     "title": "Your order",

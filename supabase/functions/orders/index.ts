@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
     // POST /orders - Create new order
     if (req.method === 'POST' && subPath.length === 0) {
       const body = await req.json()
-      const { tableId, items, notes, orderType, paymentMethod, customerName, customerPhone, partyCode } = body
+      const { tableId, items, notes, orderType, paymentMethod, customerName, customerPhone, partyCode, tableSessionId } = body
 
       // Verifica se il tavolo è un banco (richiede customerName)
       const { data: table } = await supabase
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
         })
       }
 
-      // Verifica partyCode se fornito
+      // Verifica partyCode se fornito (deprecato)
       let partySessionId: string | null = null
       if (partyCode) {
         const { data: party } = await supabase
@@ -124,6 +124,21 @@ Deno.serve(async (req) => {
           })
         }
         partySessionId = party.id
+      }
+
+      // Verifica tableSessionId se fornito (tavoli uniti)
+      let validTableSessionId: string | null = tableSessionId || null
+      if (tableSessionId) {
+        const { data: session } = await supabase
+          .from('TableSession')
+          .select('id')
+          .eq('id', tableSessionId)
+          .eq('isActive', true)
+          .single()
+
+        if (!session) {
+          validTableSessionId = null // Session expired or invalid, ignore
+        }
       }
 
       const isCard = paymentMethod === 'CARD'
@@ -181,7 +196,8 @@ Deno.serve(async (req) => {
           surcharge,
           totalAmount,
           status: 'PENDING',
-          partySessionId
+          partySessionId,
+          tableSessionId: validTableSessionId
         })
         .select()
         .single()

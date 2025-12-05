@@ -95,7 +95,19 @@
   "tableMenu": {
     "loadingMenu": "טוען תפריט...",
     "orderSent": "ההזמנה נשלחה!",
-    "preparing": "אנחנו מכינים את זה בשבילך"
+    "preparing": "אנחנו מכינים את זה בשבילך",
+    "singleTable": "שולחן אחד?",
+    "singleTableDesc": "הזמן רק לשולחן זה",
+    "mergeTables": "אחד שולחנות",
+    "mergeTablesDesc": "אחד מספר שולחנות לחשבון אחד",
+    "enterTableNumbers": "הכנס את מספרי השולחנות לאיחוד",
+    "tableNumbersPlaceholder": "לדוגמה: 2, 3, 5",
+    "confirmMerge": "אחד שולחנות",
+    "table": "שולחן",
+    "tables": "שולחנות",
+    "mergedWith": "מאוחד עם שולחנות",
+    "sessionActive": "סשן פעיל",
+    "invalidTableNumbers": "הכנס מספרי שולחן תקינים מופרדים בפסיק"
   },
   "cart": {
     "title": "ההזמנה שלך",

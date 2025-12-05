@@ -95,7 +95,19 @@
   "tableMenu": {
     "loadingMenu": "Cargando menú...",
     "orderSent": "¡Pedido enviado!",
-    "preparing": "Lo estamos preparando para ti"
+    "preparing": "Lo estamos preparando para ti",
+    "singleTable": "¿Una sola mesa?",
+    "singleTableDesc": "Pedir solo para esta mesa",
+    "mergeTables": "Unir mesas",
+    "mergeTablesDesc": "Unir varias mesas en una sola cuenta",
+    "enterTableNumbers": "Introduce los números de las mesas a unir",
+    "tableNumbersPlaceholder": "Ej: 2, 3, 5",
+    "confirmMerge": "Unir mesas",
+    "table": "Mesa",
+    "tables": "Mesas",
+    "mergedWith": "Unido con mesas",
+    "sessionActive": "Sesión activa",
+    "invalidTableNumbers": "Introduce números de mesa válidos separados por coma"
   },
   "cart": {
     "title": "Tu pedido",

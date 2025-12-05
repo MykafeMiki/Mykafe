@@ -35,7 +35,19 @@ model MenuItemIngredient {
   @@unique([menuItemId, ingredientId])
 }
 
-// Sessione Festa (conto condiviso)
+// Sessione Tavoli Uniti (conto condiviso per più tavoli)
+model TableSession {
+  id            String   @id @default(cuid())
+  code          String   @unique // Codice 6 caratteri per identificare la sessione
+  hostTableId   String   // Tavolo principale che ha creato la sessione
+  linkedTables  Int[]    // Array di numeri tavoli uniti (es. [2, 3, 5])
+  isActive      Boolean  @default(true)
+  orders        Order[]
+  createdAt     DateTime @default(now())
+  closedAt      DateTime?
+}
+
+// Sessione Festa (conto condiviso) - DEPRECATO, mantenuto per compatibilità
 model PartySession {
   id          String   @id @default(cuid())
   code        String   @unique // Codice 6 caratteri per unirsi
@@ -147,23 +159,25 @@ model Modifier {
 
 // Ordini
 model Order {
-  id             String        @id @default(cuid())
-  tableId        String
-  table          Table         @relation(fields: [tableId], references: [id])
-  items          OrderItem[]
-  status         String        @default("PENDING") // PENDING, PREPARING, READY, SERVED, CANCELLED
-  orderType      String        @default("DINE_IN") // DINE_IN, TAKEAWAY
-  paymentMethod  String?       // CASH, CARD
-  subtotal       Int           @default(0) // Subtotale in centesimi (senza sovrapprezzo)
-  surcharge      Int           @default(0) // Sovrapprezzo carta (3%) in centesimi
-  totalAmount    Int           // Totale finale in centesimi
-  customerName   String?       // Nome cliente per take away o banco
-  customerPhone  String?       // Telefono cliente per take away
-  notes          String?
-  partySessionId String?       // Sessione festa (conto condiviso)
-  partySession   PartySession? @relation(fields: [partySessionId], references: [id])
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  tableId         String
+  table           Table         @relation(fields: [tableId], references: [id])
+  items           OrderItem[]
+  status          String        @default("PENDING") // PENDING, PREPARING, READY, SERVED, CANCELLED
+  orderType       String        @default("DINE_IN") // DINE_IN, TAKEAWAY
+  paymentMethod   String?       // CASH, CARD
+  subtotal        Int           @default(0) // Subtotale in centesimi (senza sovrapprezzo)
+  surcharge       Int           @default(0) // Sovrapprezzo carta (3%) in centesimi
+  totalAmount     Int           // Totale finale in centesimi
+  customerName    String?       // Nome cliente per take away o banco
+  customerPhone   String?       // Telefono cliente per take away
+  notes           String?
+  partySessionId  String?       // Sessione festa (conto condiviso) - DEPRECATO
+  partySession    PartySession? @relation(fields: [partySessionId], references: [id])
+  tableSessionId  String?       // Sessione tavoli uniti
+  tableSession    TableSession? @relation(fields: [tableSessionId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 // Elementi dell'ordine

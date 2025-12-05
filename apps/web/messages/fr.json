@@ -95,7 +95,19 @@
   "tableMenu": {
     "loadingMenu": "Chargement du menu...",
     "orderSent": "Commande envoyée !",
-    "preparing": "Nous la préparons pour vous"
+    "preparing": "Nous la préparons pour vous",
+    "singleTable": "Une seule table ?",
+    "singleTableDesc": "Commander uniquement pour cette table",
+    "mergeTables": "Fusionner les tables",
+    "mergeTablesDesc": "Fusionner plusieurs tables en une seule addition",
+    "enterTableNumbers": "Entrez les numéros des tables à fusionner",
+    "tableNumbersPlaceholder": "Ex : 2, 3, 5",
+    "confirmMerge": "Fusionner les tables",
+    "table": "Table",
+    "tables": "Tables",
+    "mergedWith": "Fusionné avec tables",
+    "sessionActive": "Session active",
+    "invalidTableNumbers": "Entrez des numéros de table valides séparés par des virgules"
   },
   "cart": {
     "title": "Votre commande",

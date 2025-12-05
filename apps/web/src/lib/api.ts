@@ -172,7 +172,7 @@ export const setMenuItemIngredients = (menuItemId: string, ingredientIds: string
 export const getMenuItemIngredients = (menuItemId: string) =>
   fetchApiAuth<{ ingredientId: string; isPrimary: boolean }[]>(`/menu/items/${menuItemId}/ingredients`)
 
-// Party Sessions
+// Party Sessions (deprecated)
 export const createParty = (data: { tableId: string; name?: string }) =>
   fetchApi<PartySession>('/party', {
     method: 'POST',
@@ -193,6 +193,34 @@ export const getPartyBill = (code: string) =>
 
 export const closeParty = (code: string) =>
   fetchApiAuth<PartySession>(`/party/${code}/close`, {
+    method: 'PATCH',
+  })
+
+// Table Sessions (merged tables)
+export interface TableSession {
+  id: string
+  code: string
+  hostTableId: string
+  linkedTables: number[]
+  isActive: boolean
+  createdAt: string
+  closedAt?: string
+}
+
+export const createTableSession = (data: { hostTableId: string; linkedTableNumbers: number[] }) =>
+  fetchApi<TableSession>('/table-sessions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+export const getTableSessionByTable = (tableNumber: number) =>
+  fetchApi<TableSession | null>(`/table-sessions/by-table/${tableNumber}`)
+
+export const getTableSessionByCode = (code: string) =>
+  fetchApi<TableSession>(`/table-sessions/${code}`)
+
+export const closeTableSession = (code: string) =>
+  fetchApi<TableSession>(`/table-sessions/${code}/close`, {
     method: 'PATCH',
   })
 

@@ -8,9 +8,11 @@ import { ConsumeMode } from '@shared/types'
 interface CartStore {
   items: CartItem[]
   tableId: string | null
+  tableSessionId: string | null
   pickupTime: string | null
   customerName: string | null
   setTableId: (tableId: string) => void
+  setTableSessionId: (sessionId: string | null) => void
   setPickupTime: (time: string | null) => void
   setCustomerName: (name: string | null) => void
   addItem: (item: MenuItem, quantity: number, modifiers: Modifier[], notes?: string, consumeMode?: ConsumeMode) => void
@@ -27,10 +29,12 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       tableId: null,
+      tableSessionId: null,
       pickupTime: null,
       customerName: null,
 
       setTableId: (tableId) => set({ tableId }),
+      setTableSessionId: (tableSessionId) => set({ tableSessionId }),
       setPickupTime: (pickupTime) => set({ pickupTime }),
       setCustomerName: (customerName) => set({ customerName }),
 
