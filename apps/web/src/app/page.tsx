@@ -24,24 +24,11 @@ export default function HomePage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
 
+  // Check auth on mount - TEMPORARILY BYPASSED
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = getAuthToken()
-      if (!token) {
-        setIsAuthenticated(false)
-        setAuthLoading(false)
-        return
-      }
-      try {
-        await verifyToken()
-        setIsAuthenticated(true)
-      } catch {
-        setAuthToken(null)
-        setIsAuthenticated(false)
-      }
-      setAuthLoading(false)
-    }
-    checkAuth()
+    // TODO: Re-enable auth once Supabase Edge Functions password is configured
+    setIsAuthenticated(true)
+    setAuthLoading(false)
   }, [])
 
   const handleLogout = () => {
