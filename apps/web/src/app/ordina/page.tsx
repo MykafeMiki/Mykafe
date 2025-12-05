@@ -16,7 +16,7 @@ import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
 import { cn } from '@/lib/utils'
 
-type OrderStep = 'menu' | 'datetime' | 'payment'
+type OrderStep = 'menu' | 'payment' | 'datetime'
 
 function getAvailableDates(): Date[] {
   const dates: Date[] = []
@@ -180,21 +180,20 @@ export default function OrdinaPage() {
     setTimeout(() => setOrderSuccess(false), 5000)
   }
 
-  const handleContinueToPayment = () => {
+  const handleContinueToCart = () => {
     if (selectedTime) {
-      setStep('payment')
+      setIsCartOpen(true)
     }
   }
 
   const handleSelectPayment = (method: PaymentMethod) => {
     setPaymentMethod(method)
-    setIsCartOpen(true)
-    setStep('menu')
+    setStep('datetime')
   }
 
   const handleCheckout = () => {
-    // When user wants to checkout, first select datetime
-    setStep('datetime')
+    // When user wants to checkout, first select payment method
+    setStep('payment')
   }
 
   if (loading) {
@@ -221,8 +220,10 @@ export default function OrdinaPage() {
     )
   }
 
-  // Step 2: Date/Time Selection
+  // Step 3: Date/Time Selection (after payment choice)
   if (step === 'datetime') {
+    const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cash')
+
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-orange-500 text-white p-4">
@@ -234,13 +235,13 @@ export default function OrdinaPage() {
             <LanguageSelectorCompact />
           </div>
           <p className="text-orange-100 text-sm mt-1">
-            {t('subtitle')}
+            {t('subtitle')} • {paymentLabel}
           </p>
         </header>
 
         <main className="flex-1 p-6 max-w-lg mx-auto w-full">
           <button
-            onClick={() => setStep('menu')}
+            onClick={() => setStep('payment')}
             className="text-orange-500 mb-4 text-sm font-medium"
           >
             &larr; {tc('back')}
@@ -328,7 +329,7 @@ export default function OrdinaPage() {
 
           {/* Continue Button */}
           <button
-            onClick={handleContinueToPayment}
+            onClick={handleContinueToCart}
             disabled={!selectedTime}
             className={cn(
               'w-full py-4 rounded-xl font-semibold text-lg transition',
@@ -344,11 +345,8 @@ export default function OrdinaPage() {
     )
   }
 
-  // Step 3: Payment Selection
+  // Step 2: Payment Selection (first step after menu)
   if (step === 'payment') {
-    const [hours, minutes] = selectedTime.split(':')
-    const pickupTimeDisplay = `${formatDate(selectedDate)} ${hours}:${minutes}`
-
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-orange-500 text-white p-4">
@@ -360,17 +358,17 @@ export default function OrdinaPage() {
             <LanguageSelectorCompact />
           </div>
           <p className="text-orange-100 text-sm mt-1">
-            {t('pickup')}: {pickupTimeDisplay}
+            {t('subtitle')}
           </p>
         </header>
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
             <button
-              onClick={() => setStep('datetime')}
+              onClick={() => setStep('menu')}
               className="text-orange-500 mb-4 text-sm font-medium"
             >
-              &larr; {t('changeTime')}
+              &larr; {tc('back')}
             </button>
 
             <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">

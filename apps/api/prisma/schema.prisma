@@ -60,7 +60,15 @@ model Table {
 model Category {
   id          String     @id @default(cuid())
   name        String
+  nameEn      String?    // English translation
+  nameFr      String?    // French translation
+  nameEs      String?    // Spanish translation
+  nameHe      String?    // Hebrew translation
   description String?
+  descriptionEn String?  // English translation
+  descriptionFr String?  // French translation
+  descriptionEs String?  // Spanish translation
+  descriptionHe String?  // Hebrew translation
   imageUrl    String?
   sortOrder   Int        @default(0)
   active      Boolean    @default(true)
@@ -73,7 +81,15 @@ model Category {
 model MenuItem {
   id             String               @id @default(cuid())
   name           String
+  nameEn         String?              // English translation
+  nameFr         String?              // French translation
+  nameEs         String?              // Spanish translation
+  nameHe         String?              // Hebrew translation
   description    String?
+  descriptionEn  String?              // English translation
+  descriptionFr  String?              // French translation
+  descriptionEs  String?              // Spanish translation
+  descriptionHe  String?              // Hebrew translation
   price          Int                  // Prezzo in centesimi
   imageUrl       String?
   available      Boolean              @default(true)
@@ -91,6 +107,10 @@ model MenuItem {
 model ModifierGroup {
   id          String     @id @default(cuid())
   name        String
+  nameEn      String?    // English translation
+  nameFr      String?    // French translation
+  nameEs      String?    // Spanish translation
+  nameHe      String?    // Hebrew translation
   required    Boolean    @default(false)
   multiSelect Boolean    @default(false)
   minSelect   Int        @default(0)
@@ -106,6 +126,10 @@ model ModifierGroup {
 model Modifier {
   id              String              @id @default(cuid())
   name            String
+  nameEn          String?             // English translation
+  nameFr          String?             // French translation
+  nameEs          String?             // Spanish translation
+  nameHe          String?             // Hebrew translation
   price           Int                 @default(0) // Sovrapprezzo in centesimi
   available       Boolean             @default(true)
   modifierGroupId String

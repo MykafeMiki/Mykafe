@@ -74,7 +74,15 @@ export interface Table {
 export interface Category {
   id: string
   name: string
+  nameEn?: string
+  nameFr?: string
+  nameEs?: string
+  nameHe?: string
   description?: string
+  descriptionEn?: string
+  descriptionFr?: string
+  descriptionEs?: string
+  descriptionHe?: string
   imageUrl?: string
   sortOrder: number
   active: boolean
@@ -84,7 +92,15 @@ export interface Category {
 export interface MenuItem {
   id: string
   name: string
+  nameEn?: string
+  nameFr?: string
+  nameEs?: string
+  nameHe?: string
   description?: string
+  descriptionEn?: string
+  descriptionFr?: string
+  descriptionEs?: string
+  descriptionHe?: string
   price: number // in cents
   imageUrl?: string
   available: boolean
@@ -97,6 +113,10 @@ export interface MenuItem {
 export interface ModifierGroup {
   id: string
   name: string
+  nameEn?: string
+  nameFr?: string
+  nameEs?: string
+  nameHe?: string
   required: boolean
   multiSelect: boolean
   minSelect: number
@@ -108,6 +128,10 @@ export interface ModifierGroup {
 export interface Modifier {
   id: string
   name: string
+  nameEn?: string
+  nameFr?: string
+  nameEs?: string
+  nameHe?: string
   price: number // in cents
   available: boolean
   modifierGroupId: string

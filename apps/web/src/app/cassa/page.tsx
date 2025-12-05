@@ -40,7 +40,7 @@ export default function CassaPage() {
   }
 
   if (!isAuthenticated) {
-    return <CassaLoginScreen onLogin={() => setIsAuthenticated(true)} t={tl} />
+    return <CassaLoginScreen onLogin={() => setIsAuthenticated(true)} t={tl} tc={t} />
   }
 
   return (
@@ -64,9 +64,10 @@ export default function CassaPage() {
 interface CassaLoginScreenProps {
   onLogin: () => void
   t: ReturnType<typeof useTranslations<'login'>>
+  tc: ReturnType<typeof useTranslations<'cassa'>>
 }
 
-function CassaLoginScreen({ onLogin, t }: CassaLoginScreenProps) {
+function CassaLoginScreen({ onLogin, t, tc }: CassaLoginScreenProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -97,7 +98,7 @@ function CassaLoginScreen({ onLogin, t }: CassaLoginScreenProps) {
             <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Cassa MyKafe</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{tc('title')}</h1>
             <p className="text-gray-500 mt-1">{t('enterPassword')}</p>
           </div>
 
