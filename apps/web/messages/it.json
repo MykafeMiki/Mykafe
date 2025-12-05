@@ -215,7 +215,19 @@
     "copyLink": "Copia link",
     "tableQrCodes": "QR Tavoli",
     "tableQrNote": "Ogni QR code porta i clienti direttamente al menu del loro tavolo. Stampa e posiziona i QR sui tavoli.",
-    "saveError": "Errore nel salvataggio"
+    "saveError": "Errore nel salvataggio",
+    "ingredients": "Ingredienti",
+    "selectIngredients": "Seleziona ingredienti",
+    "addNewIngredient": "Nuovo ingrediente",
+    "ingredientName": "Nome ingrediente",
+    "translations": "Traduzioni",
+    "translationEn": "Inglese",
+    "translationFr": "Francese",
+    "translationEs": "Spagnolo",
+    "translationHe": "Ebraico",
+    "noIngredients": "Nessun ingrediente disponibile",
+    "createIngredient": "Crea ingrediente",
+    "ingredientCreated": "Ingrediente creato"
   },
   "cassa": {
     "title": "Cassa",

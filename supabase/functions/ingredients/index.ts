@@ -55,12 +55,16 @@ Deno.serve(async (req) => {
     // POST /ingredients - Create ingredient
     if (req.method === 'POST' && subPath.length === 0) {
       const body = await req.json()
-      const { name, menuType } = body
+      const { name, nameEn, nameFr, nameEs, nameHe, menuType } = body
 
       const { data: ingredient, error } = await supabase
         .from('Ingredient')
         .insert({
           name,
+          nameEn: nameEn || null,
+          nameFr: nameFr || null,
+          nameEs: nameEs || null,
+          nameHe: nameHe || null,
           inStock: true,
           menuType: menuType || 'CLASSIC'
         })
@@ -79,11 +83,16 @@ Deno.serve(async (req) => {
     if (req.method === 'PATCH' && subPath[0]) {
       const ingredientId = subPath[0]
       const body = await req.json()
-      const { name, inStock } = body
+      const { name, nameEn, nameFr, nameEs, nameHe, inStock, menuType } = body
 
       const updateData: Record<string, unknown> = {}
       if (name !== undefined) updateData.name = name
+      if (nameEn !== undefined) updateData.nameEn = nameEn
+      if (nameFr !== undefined) updateData.nameFr = nameFr
+      if (nameEs !== undefined) updateData.nameEs = nameEs
+      if (nameHe !== undefined) updateData.nameHe = nameHe
       if (inStock !== undefined) updateData.inStock = inStock
+      if (menuType !== undefined) updateData.menuType = menuType
 
       // Update ingredient
       const { data: ingredient, error } = await supabase

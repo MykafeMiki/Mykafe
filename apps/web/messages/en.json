@@ -215,7 +215,19 @@
     "copyLink": "Copy link",
     "tableQrCodes": "Table QR Codes",
     "tableQrNote": "Each QR code takes customers directly to their table menu. Print and place QR codes on tables.",
-    "saveError": "Error saving"
+    "saveError": "Error saving",
+    "ingredients": "Ingredients",
+    "selectIngredients": "Select ingredients",
+    "addNewIngredient": "New ingredient",
+    "ingredientName": "Ingredient name",
+    "translations": "Translations",
+    "translationEn": "English",
+    "translationFr": "French",
+    "translationEs": "Spanish",
+    "translationHe": "Hebrew",
+    "noIngredients": "No ingredients available",
+    "createIngredient": "Create ingredient",
+    "ingredientCreated": "Ingredient created"
   },
   "cassa": {
     "title": "Cashier",

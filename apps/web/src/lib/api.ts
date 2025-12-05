@@ -127,13 +127,28 @@ export const updateOrderStatus = (id: string, status: string) =>
 // Ingredients
 export const getIngredients = () => fetchApiAuth<Ingredient[]>('/ingredients')
 
-export const createIngredient = (data: { name: string }) =>
+export const createIngredient = (data: {
+  name: string
+  nameEn?: string
+  nameFr?: string
+  nameEs?: string
+  nameHe?: string
+  menuType?: string
+}) =>
   fetchApiAuth<Ingredient>('/ingredients', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 
-export const updateIngredient = (id: string, data: { name?: string; inStock?: boolean }) =>
+export const updateIngredient = (id: string, data: {
+  name?: string
+  nameEn?: string
+  nameFr?: string
+  nameEs?: string
+  nameHe?: string
+  inStock?: boolean
+  menuType?: string
+}) =>
   fetchApiAuth<Ingredient>(`/ingredients/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
@@ -144,6 +159,16 @@ export const setIngredientStock = (id: string, inStock: boolean) =>
     method: 'PATCH',
     body: JSON.stringify({ inStock }),
   })
+
+// Menu Item Ingredients
+export const setMenuItemIngredients = (menuItemId: string, ingredientIds: string[]) =>
+  fetchApiAuth<{ success: boolean }>(`/menu/items/${menuItemId}/ingredients`, {
+    method: 'PUT',
+    body: JSON.stringify({ ingredientIds }),
+  })
+
+export const getMenuItemIngredients = (menuItemId: string) =>
+  fetchApiAuth<{ ingredientId: string; isPrimary: boolean }[]>(`/menu/items/${menuItemId}/ingredients`)
 
 // Party Sessions
 export const createParty = (data: { tableId: string; name?: string }) =>

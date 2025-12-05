@@ -465,6 +465,54 @@ Deno.serve(async (req) => {
       })
     }
 
+    // GET /menu/items/:id/ingredients - Get menu item ingredients
+    if (req.method === 'GET' && subPath[0] === 'items' && subPath[1] && subPath[2] === 'ingredients') {
+      const menuItemId = subPath[1]
+
+      const { data: ingredients, error } = await supabase
+        .from('MenuItemIngredient')
+        .select('ingredientId, isPrimary')
+        .eq('menuItemId', menuItemId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify(ingredients || []), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // PUT /menu/items/:id/ingredients - Set menu item ingredients (replace all)
+    if (req.method === 'PUT' && subPath[0] === 'items' && subPath[1] && subPath[2] === 'ingredients') {
+      const menuItemId = subPath[1]
+      const body = await req.json()
+      const { ingredientIds } = body // array of ingredient IDs
+
+      // Delete existing associations
+      await supabase
+        .from('MenuItemIngredient')
+        .delete()
+        .eq('menuItemId', menuItemId)
+
+      // Insert new associations
+      if (ingredientIds && ingredientIds.length > 0) {
+        const associations = ingredientIds.map((ingredientId: string) => ({
+          menuItemId,
+          ingredientId,
+          isPrimary: false // Default to non-primary
+        }))
+
+        const { error } = await supabase
+          .from('MenuItemIngredient')
+          .insert(associations)
+
+        if (error) throw error
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

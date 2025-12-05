@@ -35,6 +35,10 @@ export type MenuType = 'CLASSIC' | 'SUSHI'
 export interface Ingredient {
   id: string
   name: string
+  nameEn?: string
+  nameFr?: string
+  nameEs?: string
+  nameHe?: string
   inStock: boolean
   menuType: MenuType // CLASSIC o SUSHI - per separare gli stock
   createdAt: Date

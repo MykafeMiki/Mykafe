@@ -215,7 +215,19 @@
     "copyLink": "העתק קישור",
     "tableQrCodes": "QR שולחנות",
     "tableQrNote": "כל קוד QR מוביל לקוחות ישירות לתפריט השולחן שלהם. הדפס והנח קודי QR על השולחנות.",
-    "saveError": "שגיאה בשמירה"
+    "saveError": "שגיאה בשמירה",
+    "ingredients": "רכיבים",
+    "selectIngredients": "בחר רכיבים",
+    "addNewIngredient": "רכיב חדש",
+    "ingredientName": "שם הרכיב",
+    "translations": "תרגומים",
+    "translationEn": "אנגלית",
+    "translationFr": "צרפתית",
+    "translationEs": "ספרדית",
+    "translationHe": "עברית",
+    "noIngredients": "אין רכיבים זמינים",
+    "createIngredient": "צור רכיב",
+    "ingredientCreated": "רכיב נוצר"
   },
   "cassa": {
     "title": "קופה",

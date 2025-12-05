@@ -215,7 +215,19 @@
     "copyLink": "Copier le lien",
     "tableQrCodes": "QR des Tables",
     "tableQrNote": "Chaque code QR amène les clients directement au menu de leur table. Imprimez et placez les QR sur les tables.",
-    "saveError": "Erreur lors de l'enregistrement"
+    "saveError": "Erreur lors de l'enregistrement",
+    "ingredients": "Ingrédients",
+    "selectIngredients": "Sélectionner les ingrédients",
+    "addNewIngredient": "Nouvel ingrédient",
+    "ingredientName": "Nom de l'ingrédient",
+    "translations": "Traductions",
+    "translationEn": "Anglais",
+    "translationFr": "Français",
+    "translationEs": "Espagnol",
+    "translationHe": "Hébreu",
+    "noIngredients": "Aucun ingrédient disponible",
+    "createIngredient": "Créer un ingrédient",
+    "ingredientCreated": "Ingrédient créé"
   },
   "cassa": {
     "title": "Caisse",

@@ -11,6 +11,10 @@ datasource db {
 model Ingredient {
   id            String                @id @default(cuid())
   name          String                @unique
+  nameEn        String?               // English translation
+  nameFr        String?               // French translation
+  nameEs        String?               // Spanish translation
+  nameHe        String?               // Hebrew translation
   inStock       Boolean               @default(true)
   menuType      String                @default("CLASSIC") // CLASSIC, SUSHI - per separare gli stock
   menuItems     MenuItemIngredient[]  // Ingrediente principale dei piatti

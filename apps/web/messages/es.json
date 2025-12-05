@@ -215,7 +215,19 @@
     "copyLink": "Copiar enlace",
     "tableQrCodes": "QR de Mesas",
     "tableQrNote": "Cada código QR lleva a los clientes directamente al menú de su mesa. Imprime y coloca los QR en las mesas.",
-    "saveError": "Error al guardar"
+    "saveError": "Error al guardar",
+    "ingredients": "Ingredientes",
+    "selectIngredients": "Seleccionar ingredientes",
+    "addNewIngredient": "Nuevo ingrediente",
+    "ingredientName": "Nombre del ingrediente",
+    "translations": "Traducciones",
+    "translationEn": "Inglés",
+    "translationFr": "Francés",
+    "translationEs": "Español",
+    "translationHe": "Hebreo",
+    "noIngredients": "No hay ingredientes disponibles",
+    "createIngredient": "Crear ingrediente",
+    "ingredientCreated": "Ingrediente creado"
   },
   "cassa": {
     "title": "Caja",
