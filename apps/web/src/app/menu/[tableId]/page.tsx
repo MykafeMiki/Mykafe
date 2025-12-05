@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { CheckCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -12,7 +12,8 @@ import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
-import type { Category, MenuItem, Modifier } from '@shared/types'
+import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
+import type { Category, MenuItem, Modifier, Table } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
 export default function MenuPage() {
@@ -26,6 +27,7 @@ export default function MenuPage() {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [tableNumber, setTableNumber] = useState<number | null>(null)
+  const [isCounterTable, setIsCounterTable] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,6 +36,16 @@ export default function MenuPage() {
   const setTableIdInCart = useCart((state) => state.setTableId)
   const addToCart = useCart((state) => state.addItem)
 
+  // Determine menu context: counter/bar QR uses 'bar' context, regular tables use 'table'
+  const menuContext: MenuContext = isCounterTable ? 'bar' : 'table'
+
+  // Filter categories based on time and context
+  // Bar/Counter: hides panini before 11:00, respects sushi timer
+  // Table: same behavior as bar (follows same rules)
+  const filteredCategories = useMemo(() => {
+    return filterCategoriesByTime(categories, menuContext)
+  }, [categories, menuContext])
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -41,12 +53,19 @@ export default function MenuPage() {
         const table = await getTableByQr(tableId)
         setTableNumber(table.number)
         setTableIdInCart(table.id)
+        setIsCounterTable(table.isCounter || false)
+
+        // Determine context based on table type
+        const context: MenuContext = table.isCounter ? 'bar' : 'table'
 
         // Load menu
         const menuData = await getMenu()
         setCategories(menuData)
         if (menuData.length > 0) {
-          setActiveCategory(menuData[0].id)
+          const filtered = filterCategoriesByTime(menuData, context)
+          if (filtered.length > 0) {
+            setActiveCategory(filtered[0].id)
+          }
         }
       } catch (err) {
         setError(tc('error'))
@@ -132,14 +151,14 @@ export default function MenuPage() {
 
       {/* Category Navigation */}
       <CategoryNav
-        categories={categories}
+        categories={filteredCategories}
         activeCategory={activeCategory}
         onSelect={scrollToCategory}
       />
 
       {/* Menu Items */}
       <main className="p-4 space-y-8">
-        {categories.map((category) => (
+        {filteredCategories.map((category) => (
           <section
             key={category.id}
             ref={(el) => {

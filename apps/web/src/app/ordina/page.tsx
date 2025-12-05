@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
@@ -11,6 +11,7 @@ import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
+import { filterCategoriesByTime } from '@/lib/menuTimers'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
 import { cn } from '@/lib/utils'
@@ -89,6 +90,11 @@ export default function OrdinaPage() {
   const setPickupTime = useCart((state) => state.setPickupTime)
   const addToCart = useCart((state) => state.addItem)
 
+  // Filter categories - takeaway context shows panini always, but still respects sushi timer
+  const filteredCategories = useMemo(() => {
+    return filterCategoriesByTime(categories, 'takeaway')
+  }, [categories])
+
   const availableDates = getAvailableDates()
   const availableTimeSlots = getAvailableTimeSlots(selectedDate)
   const showWarning = selectedTime && isWithin30Minutes(selectedDate, selectedTime)
@@ -116,7 +122,11 @@ export default function OrdinaPage() {
         const menuData = await getMenu()
         setCategories(menuData)
         if (menuData.length > 0) {
-          setActiveCategory(menuData[0].id)
+          // Set active category to first filtered category
+          const filtered = filterCategoriesByTime(menuData, 'takeaway')
+          if (filtered.length > 0) {
+            setActiveCategory(filtered[0].id)
+          }
         }
       } catch (err) {
         setError(tc('error'))
@@ -433,13 +443,13 @@ export default function OrdinaPage() {
       </header>
 
       <CategoryNav
-        categories={categories}
+        categories={filteredCategories}
         activeCategory={activeCategory}
         onSelect={scrollToCategory}
       />
 
       <main className="p-4 space-y-8">
-        {categories.map((category) => (
+        {filteredCategories.map((category) => (
           <section
             key={category.id}
             ref={(el) => {

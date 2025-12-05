@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image as ImageIcon, Loader2, Lock, LogOut, Download, Printer } from 'lucide-react'
+import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image as ImageIcon, Loader2, Lock, LogOut, Download, Printer, Clock, Timer } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
+import { getSushiStatus, isSushiTimeActive } from '@/lib/menuTimers'
 import {
   getAdminCategories,
   getTables,
@@ -213,42 +214,79 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
     cat.name.toLowerCase().includes('sushi')
   )
 
+  // Get sushi timer status
+  const sushiStatus = getSushiStatus()
+  const isInSushiWindow = isSushiTimeActive()
+
   return (
     <div className="space-y-6">
-      {/* Quick Toggle per categorie speciali (es. Sushi) */}
+      {/* Quick Toggle per categorie speciali (es. Sushi) con Timer */}
       {specialCategories.length > 0 && (
         <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200">
-          <h3 className="text-sm font-medium text-orange-800 mb-3">{t('specialMenus')}</h3>
-          <div className="flex flex-wrap gap-3">
-            {specialCategories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handleToggleCategory(cat)}
-                disabled={togglingCategory === cat.id}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  cat.active
-                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
-                } ${togglingCategory === cat.id ? 'opacity-50' : ''}`}
-              >
-                <span className="text-2xl">🍣</span>
-                <div className="text-left">
-                  <div className="font-semibold">{cat.name}</div>
-                  <div className={`text-xs ${cat.active ? 'text-orange-100' : 'text-gray-400'}`}>
-                    {cat.active ? tc('active') : tc('inactive')}
-                  </div>
-                </div>
-                {cat.active ? (
-                  <ToggleRight className="w-6 h-6 ml-2" />
-                ) : (
-                  <ToggleLeft className="w-6 h-6 ml-2" />
-                )}
-              </button>
-            ))}
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-orange-800">{t('specialMenus')}</h3>
+            {/* Timer Status Badge */}
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+              isInSushiWindow
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              <Timer className="w-3 h-3" />
+              <span>{sushiStatus.statusText}</span>
+            </div>
           </div>
-          <p className="text-xs text-orange-600 mt-2">
-            {t('sushiNote')}
-          </p>
+
+          <div className="flex flex-wrap gap-3">
+            {specialCategories.map((cat) => {
+              // Determine if sushi is actually visible (timer active AND category active)
+              const isVisibleToCustomers = isInSushiWindow && cat.active
+
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => handleToggleCategory(cat)}
+                  disabled={togglingCategory === cat.id}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    cat.active
+                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+                  } ${togglingCategory === cat.id ? 'opacity-50' : ''}`}
+                >
+                  <span className="text-2xl">🍣</span>
+                  <div className="text-left">
+                    <div className="font-semibold">{cat.name}</div>
+                    <div className={`text-xs ${cat.active ? 'text-orange-100' : 'text-gray-400'}`}>
+                      {cat.active
+                        ? (isInSushiWindow ? 'Visibile ai clienti' : 'Timer non attivo')
+                        : 'Disabilitato manualmente'
+                      }
+                    </div>
+                  </div>
+                  {cat.active ? (
+                    <ToggleRight className="w-6 h-6 ml-2" />
+                  ) : (
+                    <ToggleLeft className="w-6 h-6 ml-2" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Timer Info */}
+          <div className="mt-3 p-3 bg-white/60 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Clock className="w-4 h-4 text-orange-600 mt-0.5" />
+              <div className="text-xs text-orange-700">
+                <p className="font-medium">Timer automatico: Martedi 18:00 - Mercoledi 17:00</p>
+                <p className="mt-1">
+                  {isInSushiWindow
+                    ? "Il sushi e visibile automaticamente. Puoi disabilitarlo manualmente con il toggle sopra."
+                    : "Il sushi non e visibile fuori dalla finestra oraria. Puoi abilitarlo manualmente con il toggle sopra."
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

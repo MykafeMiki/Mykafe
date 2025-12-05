@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { CheckCircle, Store, User } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
@@ -11,6 +11,7 @@ import { BancoCartDrawer } from '@/components/cart/BancoCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
+import { filterCategoriesByTime } from '@/lib/menuTimers'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 import { cn } from '@/lib/utils'
@@ -36,6 +37,11 @@ export default function BancoPage() {
   const setCustomerNameInCart = useCart((state) => state.setCustomerName)
   const addToCart = useCart((state) => state.addItem)
 
+  // Filter categories based on time (bar context - hides panini before 11:00, sushi outside window)
+  const filteredCategories = useMemo(() => {
+    return filterCategoriesByTime(categories, 'bar')
+  }, [categories])
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -47,7 +53,11 @@ export default function BancoPage() {
         const menuData = await getMenu()
         setCategories(menuData)
         if (menuData.length > 0) {
-          setActiveCategory(menuData[0].id)
+          // Set active category to first filtered category
+          const filtered = filterCategoriesByTime(menuData, 'bar')
+          if (filtered.length > 0) {
+            setActiveCategory(filtered[0].id)
+          }
         }
       } catch (err) {
         setError(tc('error'))
@@ -213,13 +223,13 @@ export default function BancoPage() {
       </header>
 
       <CategoryNav
-        categories={categories}
+        categories={filteredCategories}
         activeCategory={activeCategory}
         onSelect={scrollToCategory}
       />
 
       <main className="p-4 space-y-8">
-        {categories.map((category) => (
+        {filteredCategories.map((category) => (
           <section
             key={category.id}
             ref={(el) => {
