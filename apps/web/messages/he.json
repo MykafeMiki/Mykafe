@@ -151,6 +151,7 @@
     "subtitle": "נהל תפריט, שולחנות וקודי QR",
     "logout": "יציאה",
     "menuTab": "תפריט",
+    "ingredientsTab": "רכיבים",
     "tablesTab": "שולחנות",
     "qrTab": "קוד QR",
     "menuManagement": "ניהול תפריט",
@@ -227,7 +228,14 @@
     "translationHe": "עברית",
     "noIngredients": "אין רכיבים זמינים",
     "createIngredient": "צור רכיב",
-    "ingredientCreated": "רכיב נוצר"
+    "ingredientCreated": "רכיב נוצר",
+    "ingredientsManagement": "ניהול רכיבים",
+    "searchIngredients": "חפש רכיב...",
+    "outOfStock": "אזל מהמלאי",
+    "availableIngredients": "רכיבים זמינים",
+    "markAvailable": "זמין",
+    "markUnavailable": "לא זמין",
+    "ingredientsInfo": "רכיבים שמסומנים כ'לא זמין' יוצגו עם קו חוצה בתפריט. ניתן לשייך רכיבים למנות ממסך עריכת המנה."
   },
   "cassa": {
     "title": "קופה",

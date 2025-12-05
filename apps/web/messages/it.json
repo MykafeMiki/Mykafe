@@ -151,6 +151,7 @@
     "subtitle": "Gestisci menu, tavoli e QR code",
     "logout": "Esci",
     "menuTab": "Menu",
+    "ingredientsTab": "Ingredienti",
     "tablesTab": "Tavoli",
     "qrTab": "QR Code",
     "menuManagement": "Gestione Menu",
@@ -227,7 +228,14 @@
     "translationHe": "Ebraico",
     "noIngredients": "Nessun ingrediente disponibile",
     "createIngredient": "Crea ingrediente",
-    "ingredientCreated": "Ingrediente creato"
+    "ingredientCreated": "Ingrediente creato",
+    "ingredientsManagement": "Gestione Ingredienti",
+    "searchIngredients": "Cerca ingrediente...",
+    "outOfStock": "Non disponibili",
+    "availableIngredients": "Ingredienti disponibili",
+    "markAvailable": "Disponibile",
+    "markUnavailable": "Non disponibile",
+    "ingredientsInfo": "Gli ingredienti segnati come 'Non disponibile' verranno mostrati barrati nel menu. Puoi associare ingredienti ai piatti dalla modifica piatto."
   },
   "cassa": {
     "title": "Cassa",

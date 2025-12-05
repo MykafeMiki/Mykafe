@@ -151,6 +151,7 @@
     "subtitle": "Manage menu, tables and QR codes",
     "logout": "Logout",
     "menuTab": "Menu",
+    "ingredientsTab": "Ingredients",
     "tablesTab": "Tables",
     "qrTab": "QR Code",
     "menuManagement": "Menu Management",
@@ -227,7 +228,14 @@
     "translationHe": "Hebrew",
     "noIngredients": "No ingredients available",
     "createIngredient": "Create ingredient",
-    "ingredientCreated": "Ingredient created"
+    "ingredientCreated": "Ingredient created",
+    "ingredientsManagement": "Ingredients Management",
+    "searchIngredients": "Search ingredient...",
+    "outOfStock": "Out of Stock",
+    "availableIngredients": "Available ingredients",
+    "markAvailable": "Available",
+    "markUnavailable": "Unavailable",
+    "ingredientsInfo": "Ingredients marked as 'Unavailable' will be shown crossed out in the menu. You can associate ingredients with dishes from the edit dish screen."
   },
   "cassa": {
     "title": "Cashier",

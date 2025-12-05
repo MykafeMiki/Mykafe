@@ -41,11 +41,41 @@ Deno.serve(async (req) => {
     // GET /tables/qr/:qrCode - Get table by QR code
     if (req.method === 'GET' && subPath[0] === 'qr' && subPath[1]) {
       const qrCode = subPath[1]
-      const { data: table, error } = await supabase
+
+      // Try exact match first
+      let { data: table, error } = await supabase
         .from('Table')
         .select('*')
         .eq('qrCode', qrCode)
         .single()
+
+      // If not found, try alternative formats (tavolo1 <-> tavolo-1)
+      if (error || !table) {
+        let altQrCode = qrCode
+        // Convert "tavolo1" to "tavolo-1" or vice versa
+        if (/^tavolo(\d+)$/i.test(qrCode)) {
+          altQrCode = qrCode.replace(/^tavolo(\d+)$/i, 'tavolo-$1')
+        } else if (/^tavolo-(\d+)$/i.test(qrCode)) {
+          altQrCode = qrCode.replace(/^tavolo-(\d+)$/i, 'tavolo$1')
+        }
+        // Also try "table-X" format
+        else if (/^table-(\d+)$/i.test(qrCode)) {
+          altQrCode = qrCode.replace(/^table-(\d+)$/i, 'tavolo-$1')
+        }
+
+        if (altQrCode !== qrCode) {
+          const altResult = await supabase
+            .from('Table')
+            .select('*')
+            .eq('qrCode', altQrCode)
+            .single()
+
+          if (!altResult.error && altResult.data) {
+            table = altResult.data
+            error = null
+          }
+        }
+      }
 
       if (error || !table) {
         return new Response(JSON.stringify({ error: 'Table not found' }), {

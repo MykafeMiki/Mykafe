@@ -32,10 +32,11 @@ import {
   createIngredient,
   setMenuItemIngredients,
   getMenuItemIngredients,
+  setIngredientStock,
 } from '@/lib/api'
 import type { Category, MenuItem, Table, Ingredient } from '@shared/types'
 
-type Tab = 'menu' | 'tables' | 'qr'
+type Tab = 'menu' | 'ingredients' | 'tables' | 'qr'
 
 export default function AdminPage() {
   const t = useTranslations('admin')
@@ -131,6 +132,16 @@ export default function AdminPage() {
             {t('menuTab')}
           </button>
           <button
+            onClick={() => setActiveTab('ingredients')}
+            className={`flex-1 py-4 px-6 font-medium transition ${
+              activeTab === 'ingredients'
+                ? 'text-primary-600 border-b-2 border-primary-500'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t('ingredientsTab')}
+          </button>
+          <button
             onClick={() => setActiveTab('tables')}
             className={`flex-1 py-4 px-6 font-medium transition ${
               activeTab === 'tables'
@@ -157,6 +168,9 @@ export default function AdminPage() {
       <main className="p-4 max-w-4xl mx-auto">
         {activeTab === 'menu' && (
           <MenuTab categories={categories} onUpdate={loadData} t={t} tc={tc} />
+        )}
+        {activeTab === 'ingredients' && (
+          <IngredientsTab t={t} tc={tc} />
         )}
         {activeTab === 'tables' && (
           <TablesTab tables={tables} t={t} />
@@ -1421,6 +1435,181 @@ function TablesTab({ tables, t }: TablesTabProps) {
             </span>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ============ INGREDIENTS TAB ============
+
+interface IngredientsTabProps {
+  t: ReturnType<typeof useTranslations<'admin'>>
+  tc: ReturnType<typeof useTranslations<'common'>>
+}
+
+function IngredientsTab({ t, tc }: IngredientsTabProps) {
+  const [ingredients, setIngredients] = useState<Ingredient[]>([])
+  const [loading, setLoading] = useState(true)
+  const [toggling, setToggling] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+
+  // Load ingredients on mount
+  useEffect(() => {
+    loadIngredients()
+  }, [])
+
+  const loadIngredients = async () => {
+    try {
+      const data = await getIngredients()
+      setIngredients(data)
+    } catch (err) {
+      console.error('Failed to load ingredients:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleToggleStock = async (ingredient: Ingredient) => {
+    setToggling(ingredient.id)
+    try {
+      await setIngredientStock(ingredient.id, !ingredient.inStock)
+      setIngredients(prev =>
+        prev.map(ing =>
+          ing.id === ingredient.id
+            ? { ...ing, inStock: !ing.inStock }
+            : ing
+        )
+      )
+    } catch (err) {
+      console.error('Failed to toggle ingredient stock:', err)
+      alert(t('saveError'))
+    } finally {
+      setToggling(null)
+    }
+  }
+
+  // Filter ingredients
+  const filteredIngredients = ingredients.filter(ing =>
+    ing.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  // Separate in stock and out of stock
+  const outOfStock = filteredIngredients.filter(ing => !ing.inStock)
+  const inStock = filteredIngredients.filter(ing => ing.inStock)
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-gray-900">{t('ingredientsManagement')}</h2>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <input
+          type="text"
+          placeholder={t('searchIngredients')}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        />
+      </div>
+
+      {/* Out of Stock Section - Highlighted */}
+      {outOfStock.length > 0 && (
+        <div className="bg-red-50 rounded-xl p-4 border-2 border-red-200">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+            <h3 className="font-semibold text-red-800">
+              {t('outOfStock')} ({outOfStock.length})
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {outOfStock.map((ingredient) => (
+              <div
+                key={ingredient.id}
+                className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-200"
+              >
+                <div>
+                  <span className="font-medium text-gray-900">{ingredient.name}</span>
+                </div>
+                <button
+                  onClick={() => handleToggleStock(ingredient)}
+                  disabled={toggling === ingredient.id}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                    toggling === ingredient.id
+                      ? 'opacity-50'
+                      : 'bg-green-500 text-white hover:bg-green-600'
+                  }`}
+                >
+                  {toggling === ingredient.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ToggleLeft className="w-4 h-4" />
+                  )}
+                  <span className="text-sm">{t('markAvailable')}</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* In Stock Section */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-gray-50 px-4 py-3 border-b">
+          <h3 className="font-semibold text-gray-900">
+            {t('availableIngredients')} ({inStock.length})
+          </h3>
+        </div>
+        <div className="divide-y max-h-96 overflow-y-auto">
+          {inStock.map((ingredient) => (
+            <div
+              key={ingredient.id}
+              className="flex items-center justify-between p-4 hover:bg-gray-50 transition"
+            >
+              <div>
+                <span className="font-medium text-gray-900">{ingredient.name}</span>
+              </div>
+              <button
+                onClick={() => handleToggleStock(ingredient)}
+                disabled={toggling === ingredient.id}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                  toggling === ingredient.id
+                    ? 'opacity-50'
+                    : 'bg-red-100 text-red-700 hover:bg-red-200'
+                }`}
+              >
+                {toggling === ingredient.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ToggleRight className="w-4 h-4" />
+                )}
+                <span className="text-sm">{t('markUnavailable')}</span>
+              </button>
+            </div>
+          ))}
+
+          {inStock.length === 0 && outOfStock.length === 0 && (
+            <div className="p-8 text-center text-gray-500">
+              {t('noIngredients')}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Info Box */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
+        <p className="text-sm">
+          {t('ingredientsInfo')}
+        </p>
       </div>
     </div>
   )

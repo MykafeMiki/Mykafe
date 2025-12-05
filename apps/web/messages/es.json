@@ -151,6 +151,7 @@
     "subtitle": "Gestionar menú, mesas y códigos QR",
     "logout": "Salir",
     "menuTab": "Menú",
+    "ingredientsTab": "Ingredientes",
     "tablesTab": "Mesas",
     "qrTab": "Código QR",
     "menuManagement": "Gestión del Menú",
@@ -227,7 +228,14 @@
     "translationHe": "Hebreo",
     "noIngredients": "No hay ingredientes disponibles",
     "createIngredient": "Crear ingrediente",
-    "ingredientCreated": "Ingrediente creado"
+    "ingredientCreated": "Ingrediente creado",
+    "ingredientsManagement": "Gestión de Ingredientes",
+    "searchIngredients": "Buscar ingrediente...",
+    "outOfStock": "Agotado",
+    "availableIngredients": "Ingredientes disponibles",
+    "markAvailable": "Disponible",
+    "markUnavailable": "No disponible",
+    "ingredientsInfo": "Los ingredientes marcados como 'No disponible' se mostrarán tachados en el menú. Puedes asociar ingredientes con platos desde la pantalla de edición del plato."
   },
   "cassa": {
     "title": "Caja",
