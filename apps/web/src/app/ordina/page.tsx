@@ -17,7 +17,7 @@ import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
 import { cn } from '@/lib/utils'
 
-type OrderStep = 'menu' | 'payment' | 'datetime'
+type OrderStep = 'payment' | 'datetime' | 'menu'
 
 function getAvailableDates(): Date[] {
   const dates: Date[] = []
@@ -74,7 +74,7 @@ export default function OrdinaPage() {
   const tc = useTranslations('common')
   const locale = useLocale()
 
-  const [step, setStep] = useState<OrderStep>('menu')
+  const [step, setStep] = useState<OrderStep>('payment')
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTime, setSelectedTime] = useState<string>('')
   const [categories, setCategories] = useState<Category[]>([])
@@ -181,9 +181,9 @@ export default function OrdinaPage() {
     setTimeout(() => setOrderSuccess(false), 5000)
   }
 
-  const handleContinueToCart = () => {
+  const handleContinueToMenu = () => {
     if (selectedTime) {
-      setIsCartOpen(true)
+      setStep('menu')
     }
   }
 
@@ -193,8 +193,8 @@ export default function OrdinaPage() {
   }
 
   const handleCheckout = () => {
-    // When user wants to checkout, first select payment method
-    setStep('payment')
+    // Open cart drawer directly since payment and time are already selected
+    setIsCartOpen(true)
   }
 
   if (loading) {
@@ -221,9 +221,9 @@ export default function OrdinaPage() {
     )
   }
 
-  // Step 3: Date/Time Selection (after payment choice)
+  // Step 2: Date/Time Selection (after payment choice)
   if (step === 'datetime') {
-    const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cash')
+    const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cashAtPickup')
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -330,7 +330,7 @@ export default function OrdinaPage() {
 
           {/* Continue Button */}
           <button
-            onClick={handleContinueToCart}
+            onClick={handleContinueToMenu}
             disabled={!selectedTime}
             className={cn(
               'w-full py-4 rounded-xl font-semibold text-lg transition',
@@ -346,7 +346,7 @@ export default function OrdinaPage() {
     )
   }
 
-  // Step 2: Payment Selection (first step after menu)
+  // Step 1: Payment Selection (first step)
   if (step === 'payment') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -365,13 +365,6 @@ export default function OrdinaPage() {
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
-            <button
-              onClick={() => setStep('menu')}
-              className="text-orange-500 mb-4 text-sm font-medium"
-            >
-              &larr; {tc('back')}
-            </button>
-
             <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
               {t('paymentQuestion')}
             </h2>
@@ -420,11 +413,9 @@ export default function OrdinaPage() {
     )
   }
 
-  // Menu view (initial step)
-  // Build pickup time display if already selected
-  const pickupTimeDisplay = selectedTime
-    ? `${formatDate(selectedDate)} ${selectedTime}`
-    : null
+  // Step 3: Menu view (final step)
+  const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cashAtPickup')
+  const pickupTimeDisplay = `${formatDate(selectedDate)} ${selectedTime}`
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -438,6 +429,27 @@ export default function OrdinaPage() {
             </div>
           </div>
           <LanguageSelectorCompact />
+        </div>
+        {/* Show selected payment and pickup time */}
+        <div className="mt-2 flex items-center gap-4 text-sm">
+          <button
+            onClick={() => setStep('datetime')}
+            className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
+          >
+            <Clock className="w-4 h-4" />
+            <span>{pickupTimeDisplay}</span>
+          </button>
+          <button
+            onClick={() => setStep('payment')}
+            className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
+          >
+            {paymentMethod === PaymentMethod.CARD ? (
+              <CreditCard className="w-4 h-4" />
+            ) : (
+              <Banknote className="w-4 h-4" />
+            )}
+            <span>{paymentLabel}</span>
+          </button>
         </div>
       </header>
 
@@ -502,11 +514,9 @@ export default function OrdinaPage() {
           <CheckCircle className="w-6 h-6" />
           <div>
             <p className="font-semibold">{t('orderSent')}</p>
-            {pickupTimeDisplay && (
-              <p className="text-sm text-accent-100">
-                {t('pickupConfirmation', { time: pickupTimeDisplay })}
-              </p>
-            )}
+            <p className="text-sm text-accent-100">
+              {t('pickupConfirmation', { time: pickupTimeDisplay })}
+            </p>
           </div>
         </div>
       )}
