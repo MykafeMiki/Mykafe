@@ -13,21 +13,37 @@ dotenv.config()
 // Configuration
 const API_URL = process.env.API_URL || 'http://localhost:3001'
 const RESTAURANT_NAME = process.env.RESTAURANT_NAME || 'MyKafe'
+
+// Category patterns for each printer section
 const SUSHI_CATEGORIES = (process.env.SUSHI_CATEGORIES || 'Sushi,Sashimi,Roll,Nigiri')
   .split(',')
   .map(s => s.trim().toLowerCase())
 
-// Printer configuration
-const PRINTER_CLASSIC = {
-  type: process.env.PRINTER_CLASSIC_TYPE || 'network',
-  ip: process.env.PRINTER_CLASSIC_IP || '192.168.1.100',
-  port: parseInt(process.env.PRINTER_CLASSIC_PORT || '9100'),
-}
+const PANINI_CATEGORIES = (process.env.PANINI_CATEGORIES || 'Panini,Panino,Sandwich,Toast')
+  .split(',')
+  .map(s => s.trim().toLowerCase())
 
+const CAFFETTERIA_CATEGORIES = (process.env.CAFFETTERIA_CATEGORIES || 'Caffetteria,Bevande,Caffe,Drink,Bibite,Dolci,Dessert')
+  .split(',')
+  .map(s => s.trim().toLowerCase())
+
+// Printer configuration - 3 printers
 const PRINTER_SUSHI = {
   type: process.env.PRINTER_SUSHI_TYPE || 'network',
-  ip: process.env.PRINTER_SUSHI_IP || '192.168.1.101',
+  ip: process.env.PRINTER_SUSHI_IP || '192.168.1.100',
   port: parseInt(process.env.PRINTER_SUSHI_PORT || '9100'),
+}
+
+const PRINTER_PANINI = {
+  type: process.env.PRINTER_PANINI_TYPE || 'network',
+  ip: process.env.PRINTER_PANINI_IP || '192.168.1.101',
+  port: parseInt(process.env.PRINTER_PANINI_PORT || '9100'),
+}
+
+const PRINTER_CAFFETTERIA = {
+  type: process.env.PRINTER_CAFFETTERIA_TYPE || 'network',
+  ip: process.env.PRINTER_CAFFETTERIA_IP || '192.168.1.102',
+  port: parseInt(process.env.PRINTER_CAFFETTERIA_PORT || '9100'),
 }
 
 // Types
@@ -102,8 +118,20 @@ function formatDateTime(isoString: string): string {
   })
 }
 
+// Receipt section type
+type ReceiptSection = 'SUSHI' | 'PANINI' | 'CAFFETTERIA'
+
+// Get section header label
+function getSectionLabel(section: ReceiptSection): string {
+  switch (section) {
+    case 'SUSHI': return '** SUSHI **'
+    case 'PANINI': return '** PANINI **'
+    case 'CAFFETTERIA': return '** CAFFETTERIA **'
+  }
+}
+
 // Generate receipt content
-function generateReceipt(order: Order, items: OrderItem[], printerType: 'CLASSIC' | 'SUSHI'): string {
+function generateReceipt(order: Order, items: OrderItem[], section: ReceiptSection): string {
   const lines: string[] = []
 
   // Header
@@ -111,7 +139,7 @@ function generateReceipt(order: Order, items: OrderItem[], printerType: 'CLASSIC
   lines.push(COMMANDS.ALIGN_CENTER)
   lines.push(COMMANDS.DOUBLE_SIZE)
   lines.push(COMMANDS.BOLD_ON)
-  lines.push(printerType === 'SUSHI' ? '** SUSHI **' : '** CUCINA **')
+  lines.push(getSectionLabel(section))
   lines.push(COMMANDS.NORMAL_SIZE)
   lines.push(COMMANDS.BOLD_OFF)
   lines.push('')
@@ -211,43 +239,40 @@ async function printToNetwork(ip: string, port: number, content: string): Promis
   })
 }
 
-// Separate items by category
-function separateItems(items: OrderItem[]): { classic: OrderItem[], sushi: OrderItem[] } {
-  const classic: OrderItem[] = []
+// Separate items by category into 3 sections
+function separateItems(items: OrderItem[]): {
+  sushi: OrderItem[]
+  panini: OrderItem[]
+  caffetteria: OrderItem[]
+} {
   const sushi: OrderItem[] = []
+  const panini: OrderItem[] = []
+  const caffetteria: OrderItem[] = []
 
   for (const item of items) {
     const categoryName = item.menuItem.category?.name?.toLowerCase() || ''
 
     if (SUSHI_CATEGORIES.some(cat => categoryName.includes(cat))) {
       sushi.push(item)
+    } else if (PANINI_CATEGORIES.some(cat => categoryName.includes(cat))) {
+      panini.push(item)
     } else {
-      classic.push(item)
+      // Everything else goes to caffetteria (beverages, coffee, desserts, etc.)
+      caffetteria.push(item)
     }
   }
 
-  return { classic, sushi }
+  return { sushi, panini, caffetteria }
 }
 
-// Process and print order
+// Process and print order - generates 3 separate receipts
 async function processOrder(order: Order): Promise<void> {
   console.log(`\nProcessing order #${order.id.slice(-6).toUpperCase()}`)
   console.log(`  Type: ${order.orderType}, Items: ${order.items.length}`)
 
-  const { classic, sushi } = separateItems(order.items)
+  const { sushi, panini, caffetteria } = separateItems(order.items)
 
-  // Print classic items
-  if (classic.length > 0) {
-    console.log(`  Printing ${classic.length} CLASSIC items...`)
-    const receipt = generateReceipt(order, classic, 'CLASSIC')
-
-    try {
-      await printToNetwork(PRINTER_CLASSIC.ip, PRINTER_CLASSIC.port, receipt)
-      console.log('  CLASSIC printer: OK')
-    } catch (err) {
-      console.error('  CLASSIC printer: FAILED')
-    }
-  }
+  console.log(`  Split: Sushi=${sushi.length}, Panini=${panini.length}, Caffetteria=${caffetteria.length}`)
 
   // Print sushi items
   if (sushi.length > 0) {
@@ -261,19 +286,53 @@ async function processOrder(order: Order): Promise<void> {
       console.error('  SUSHI printer: FAILED')
     }
   }
+
+  // Print panini items
+  if (panini.length > 0) {
+    console.log(`  Printing ${panini.length} PANINI items...`)
+    const receipt = generateReceipt(order, panini, 'PANINI')
+
+    try {
+      await printToNetwork(PRINTER_PANINI.ip, PRINTER_PANINI.port, receipt)
+      console.log('  PANINI printer: OK')
+    } catch (err) {
+      console.error('  PANINI printer: FAILED')
+    }
+  }
+
+  // Print caffetteria items (beverages, coffee, desserts, etc.)
+  if (caffetteria.length > 0) {
+    console.log(`  Printing ${caffetteria.length} CAFFETTERIA items...`)
+    const receipt = generateReceipt(order, caffetteria, 'CAFFETTERIA')
+
+    try {
+      await printToNetwork(PRINTER_CAFFETTERIA.ip, PRINTER_CAFFETTERIA.port, receipt)
+      console.log('  CAFFETTERIA printer: OK')
+    } catch (err) {
+      console.error('  CAFFETTERIA printer: FAILED')
+    }
+  }
 }
 
 // Main
 function main(): void {
   console.log('========================================')
-  console.log('       MyKafe Print Server v1.0')
+  console.log('       MyKafe Print Server v2.0')
+  console.log('    (3-Receipt Split: Sushi/Panini/Bar)')
   console.log('========================================')
   console.log('')
   console.log('Configuration:')
   console.log(`  API URL: ${API_URL}`)
-  console.log(`  Classic Printer: ${PRINTER_CLASSIC.ip}:${PRINTER_CLASSIC.port}`)
-  console.log(`  Sushi Printer: ${PRINTER_SUSHI.ip}:${PRINTER_SUSHI.port}`)
-  console.log(`  Sushi Categories: ${SUSHI_CATEGORIES.join(', ')}`)
+  console.log('')
+  console.log('Printers:')
+  console.log(`  SUSHI:       ${PRINTER_SUSHI.ip}:${PRINTER_SUSHI.port}`)
+  console.log(`  PANINI:      ${PRINTER_PANINI.ip}:${PRINTER_PANINI.port}`)
+  console.log(`  CAFFETTERIA: ${PRINTER_CAFFETTERIA.ip}:${PRINTER_CAFFETTERIA.port}`)
+  console.log('')
+  console.log('Category Mapping:')
+  console.log(`  Sushi:       ${SUSHI_CATEGORIES.join(', ')}`)
+  console.log(`  Panini:      ${PANINI_CATEGORIES.join(', ')}`)
+  console.log(`  Caffetteria: ${CAFFETTERIA_CATEGORIES.join(', ')} (+ everything else)`)
   console.log('')
 
   // Connect to API
