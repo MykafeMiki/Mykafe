@@ -12,6 +12,7 @@ import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import { filterCategoriesByTime } from '@/lib/menuTimers'
+import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
 import { cn } from '@/lib/utils'
@@ -456,11 +457,11 @@ export default function OrdinaPage() {
             className="scroll-mt-20"
           >
             <h2 className="text-xl font-bold text-gray-900 mb-1">
-              {category.name}
+              {getTranslatedName(category, locale)}
             </h2>
-            {category.description && (
+            {getTranslatedDescription(category, locale) && (
               <p className="text-gray-500 text-sm mb-4">
-                {category.description}
+                {getTranslatedDescription(category, locale)}
               </p>
             )}
 

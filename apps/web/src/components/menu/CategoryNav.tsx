@@ -1,6 +1,8 @@
 'use client'
 
+import { useLocale } from 'next-intl'
 import { cn } from '@/lib/utils'
+import { getTranslatedName } from '@/lib/translations'
 import type { Category } from '@shared/types'
 
 interface CategoryNavProps {
@@ -10,6 +12,8 @@ interface CategoryNavProps {
 }
 
 export function CategoryNav({ categories, activeCategory, onSelect }: CategoryNavProps) {
+  const locale = useLocale()
+
   return (
     <nav className="sticky top-0 z-10 bg-white border-b border-gray-200 overflow-x-auto scrollbar-hide">
       <div className="flex gap-2 p-3">
@@ -24,7 +28,7 @@ export function CategoryNav({ categories, activeCategory, onSelect }: CategoryNa
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             )}
           >
-            {category.name}
+            {getTranslatedName(category, locale)}
           </button>
         ))}
       </div>

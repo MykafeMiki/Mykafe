@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { CheckCircle } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
 import { ItemModal } from '@/components/menu/ItemModal'
@@ -13,12 +13,14 @@ import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
+import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
 export default function MenuPage() {
   const t = useTranslations('tableMenu')
   const tc = useTranslations('common')
+  const locale = useLocale()
   const params = useParams()
   const tableId = params.tableId as string
 
@@ -167,11 +169,11 @@ export default function MenuPage() {
             className="scroll-mt-20"
           >
             <h2 className="text-xl font-bold text-gray-900 mb-1">
-              {category.name}
+              {getTranslatedName(category, locale)}
             </h2>
-            {category.description && (
+            {getTranslatedDescription(category, locale) && (
               <p className="text-gray-500 text-sm mb-4">
-                {category.description}
+                {getTranslatedDescription(category, locale)}
               </p>
             )}
 

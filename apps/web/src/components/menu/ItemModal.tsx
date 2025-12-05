@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { X, Minus, Plus, UtensilsCrossed, ShoppingBag } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 import { formatPrice, cn } from '@/lib/utils'
+import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
@@ -21,10 +23,15 @@ function roundUpToTenCents(amount: number): number {
 }
 
 export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMode.DINE_IN, priceMultiplier = 1, hideConsumeModeSelector = false }: ItemModalProps) {
+  const locale = useLocale()
+  const t = useTranslations('menuItem')
   const [quantity, setQuantity] = useState(1)
   const [selectedModifiers, setSelectedModifiers] = useState<Record<string, Modifier[]>>({})
   const [notes, setNotes] = useState('')
   const [consumeMode, setConsumeMode] = useState<ConsumeMode>(defaultConsumeMode)
+
+  const translatedName = getTranslatedName(item, locale)
+  const translatedDescription = getTranslatedDescription(item, locale)
 
   const toggleModifier = (groupId: string, modifier: Modifier, multiSelect: boolean) => {
     setSelectedModifiers((prev) => {
@@ -78,7 +85,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
       <div className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-bold text-gray-900">{item.name}</h2>
+          <h2 className="text-lg font-bold text-gray-900">{translatedName}</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-gray-100 transition"
@@ -89,18 +96,18 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {item.description && (
-            <p className="text-gray-600">{item.description}</p>
+          {translatedDescription && (
+            <p className="text-gray-600">{translatedDescription}</p>
           )}
 
           {/* Modifier Groups */}
           {item.modifierGroups?.map((group) => (
             <div key={group.id}>
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="font-semibold text-gray-900">{group.name}</h3>
+                <h3 className="font-semibold text-gray-900">{getTranslatedName(group, locale)}</h3>
                 {group.required && (
                   <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
-                    Obbligatorio
+                    {t('required')}
                   </span>
                 )}
                 {group.multiSelect && (
@@ -124,7 +131,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
                         : 'border-gray-200 hover:border-gray-300'
                     )}
                   >
-                    <span className="font-medium">{modifier.name}</span>
+                    <span className="font-medium">{getTranslatedName(modifier, locale)}</span>
                     {modifier.price > 0 && (
                       <span className="text-gray-500">
                         +{formatPrice(priceMultiplier > 1 ? roundUpToTenCents(Math.round(modifier.price * priceMultiplier)) : modifier.price)}
@@ -139,7 +146,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
           {/* Consume Mode */}
           {!hideConsumeModeSelector && (
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Consumazione</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">{t('selectOptions')}</h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setConsumeMode(ConsumeMode.DINE_IN)}
@@ -151,7 +158,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
                   )}
                 >
                   <UtensilsCrossed className="w-5 h-5" />
-                  <span className="font-medium">Al tavolo</span>
+                  <span className="font-medium">{t('eatHere')}</span>
                 </button>
                 <button
                   onClick={() => setConsumeMode(ConsumeMode.TAKEAWAY)}
@@ -163,7 +170,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
                   )}
                 >
                   <ShoppingBag className="w-5 h-5" />
-                  <span className="font-medium">Da asporto</span>
+                  <span className="font-medium">{t('takeaway')}</span>
                 </button>
               </div>
             </div>
@@ -171,11 +178,11 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
 
           {/* Notes */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Note (opzionale)</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">{t('addNotes')}</h3>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Es: senza cipolla, poco sale..."
+              placeholder={t('notesPlaceholder')}
               className="w-full p-3 border border-gray-200 rounded-lg resize-none h-20 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -204,7 +211,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
               onClick={handleAdd}
               className="flex-1 py-3 px-6 bg-primary-500 text-white rounded-lg font-semibold hover:bg-primary-600 transition"
             >
-              Aggiungi {formatPrice(calculateTotal())}
+              {t('addToCart')} {formatPrice(calculateTotal())}
             </button>
           </div>
         </div>
