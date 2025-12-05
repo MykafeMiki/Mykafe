@@ -8,7 +8,7 @@ const corsHeaders = {
 }
 
 const JWT_SECRET = Deno.env.get('JWT_SECRET') || 'mykafe-secret-key-change-in-production'
-const ADMIN_PASSWORD = Deno.env.get('ADMIN_PASSWORD') || 'admin123'
+const ADMIN_PASSWORD = Deno.env.get('ADMIN_PASSWORD') || 'mykafe'
 
 async function generateToken(): Promise<string> {
   const secret = new TextEncoder().encode(JWT_SECRET)
