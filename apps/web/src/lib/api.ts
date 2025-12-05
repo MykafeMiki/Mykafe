@@ -1,4 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://biefwzrprjqusjynqwus.supabase.co/functions/v1'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZWZ3enJwcmpxdXNqeW5xd3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMDgzMTgsImV4cCI6MjA3OTY4NDMxOH0.CfLbUJa3znC9zNYXdYa0zrFzZM4ASvgw9Ousq27ZqCw'
 
 // Token management
 let authToken: string | null = null
@@ -27,6 +28,7 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       ...options?.headers,
     },
   })
@@ -44,7 +46,7 @@ async function fetchApiAuth<T>(endpoint: string, options?: RequestInit): Promise
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
+      'Authorization': `Bearer ${token || SUPABASE_ANON_KEY}`,
       ...options?.headers,
     },
   })
@@ -125,7 +127,7 @@ export const updateOrderStatus = (id: string, status: string) =>
   })
 
 // Ingredients
-export const getIngredients = () => fetchApiAuth<Ingredient[]>('/ingredients')
+export const getIngredients = () => fetchApi<Ingredient[]>('/ingredients')
 
 export const createIngredient = (data: {
   name: string
