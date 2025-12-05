@@ -38,7 +38,9 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url)
     const pathParts = url.pathname.split('/').filter(Boolean)
-    const subPath = pathParts.slice(2) // Remove 'functions' and 'auth'
+    // Path: /functions/v1/auth/... -> find 'auth' and take everything after
+    const authIndex = pathParts.indexOf('auth')
+    const subPath = authIndex >= 0 ? pathParts.slice(authIndex + 1) : []
 
     // POST /auth/login - Login admin
     if (req.method === 'POST' && subPath[0] === 'login') {

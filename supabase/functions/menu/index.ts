@@ -21,8 +21,10 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url)
     const pathParts = url.pathname.split('/').filter(Boolean)
-    // Path: /menu, /menu/items/:id, /menu/categories, /menu/admin/categories
-    const subPath = pathParts.slice(2) // Remove 'functions' and 'menu'
+    // Path: /functions/v1/menu/admin/categories -> pathParts = ['functions', 'v1', 'menu', 'admin', 'categories']
+    // We need to find 'menu' and take everything after it
+    const menuIndex = pathParts.indexOf('menu')
+    const subPath = menuIndex >= 0 ? pathParts.slice(menuIndex + 1) : []
 
     // GET /menu - Get full menu with categories and items
     if (req.method === 'GET' && subPath.length === 0) {

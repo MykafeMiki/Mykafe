@@ -20,7 +20,9 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url)
     const pathParts = url.pathname.split('/').filter(Boolean)
-    const subPath = pathParts.slice(2) // Remove 'functions' and 'ingredients'
+    // Path: /functions/v1/ingredients/... -> find 'ingredients' and take everything after
+    const ingIndex = pathParts.indexOf('ingredients')
+    const subPath = ingIndex >= 0 ? pathParts.slice(ingIndex + 1) : []
 
     // GET /ingredients - Get all ingredients (opzionale ?menuType=CLASSIC|SUSHI)
     if (req.method === 'GET' && subPath.length === 0) {

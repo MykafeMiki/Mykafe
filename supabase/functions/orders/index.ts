@@ -25,7 +25,9 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url)
     const pathParts = url.pathname.split('/').filter(Boolean)
-    const subPath = pathParts.slice(2) // Remove 'functions' and 'orders'
+    // Path: /functions/v1/orders/... -> find 'orders' and take everything after
+    const ordersIndex = pathParts.indexOf('orders')
+    const subPath = ordersIndex >= 0 ? pathParts.slice(ordersIndex + 1) : []
 
     // GET /orders - Get all orders (with optional status filter)
     if (req.method === 'GET' && subPath.length === 0) {

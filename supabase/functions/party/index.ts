@@ -30,7 +30,9 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url)
     const pathParts = url.pathname.split('/').filter(Boolean)
-    const subPath = pathParts.slice(2) // Remove 'functions' and 'party'
+    // Path: /functions/v1/party/... -> find 'party' and take everything after
+    const partyIndex = pathParts.indexOf('party')
+    const subPath = partyIndex >= 0 ? pathParts.slice(partyIndex + 1) : []
 
     // POST /party - Create new party session
     if (req.method === 'POST' && subPath.length === 0) {
