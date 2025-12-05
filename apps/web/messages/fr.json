@@ -76,7 +76,7 @@
     "cashAtPickup": "Paiement au retrait",
     "cashDescription": "Payez quand vous retirez votre commande",
     "card": "Carte",
-    "cardDescription": "Payez maintenant en ligne (+3% de frais)",
+    "cardDescription": "Payez maintenant en ligne",
     "cash": "Espèces",
     "orderSent": "Commande envoyée !",
     "pickupConfirmation": "Nous vous attendons {time}"

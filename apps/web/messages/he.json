@@ -76,7 +76,7 @@
     "cashAtPickup": "מזומן באיסוף",
     "cashDescription": "שלם כשתאסוף את ההזמנה",
     "card": "כרטיס",
-    "cardDescription": "שלם עכשיו באונליין (+3% עמלה)",
+    "cardDescription": "שלם עכשיו באונליין",
     "cash": "מזומן",
     "orderSent": "ההזמנה נשלחה!",
     "pickupConfirmation": "נפגש ב{time}"

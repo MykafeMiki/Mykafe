@@ -76,7 +76,7 @@
     "cashAtPickup": "Alla consegna in cassa",
     "cashDescription": "Paga quando ritiri l'ordine",
     "card": "Carta",
-    "cardDescription": "Paga subito online (+3% commissione)",
+    "cardDescription": "Paga subito online",
     "cash": "Contanti",
     "orderSent": "Ordine inviato!",
     "pickupConfirmation": "Ti aspettiamo {time}"

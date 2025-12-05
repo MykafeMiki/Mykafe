@@ -76,7 +76,7 @@
     "cashAtPickup": "Pago al recoger",
     "cashDescription": "Paga cuando recojas tu pedido",
     "card": "Tarjeta",
-    "cardDescription": "Paga ahora en línea (+3% comisión)",
+    "cardDescription": "Paga ahora en línea",
     "cash": "Efectivo",
     "orderSent": "¡Pedido enviado!",
     "pickupConfirmation": "Te esperamos {time}"

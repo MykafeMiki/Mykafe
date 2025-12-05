@@ -76,7 +76,7 @@
     "cashAtPickup": "Cash at pickup",
     "cashDescription": "Pay when you pick up your order",
     "card": "Card",
-    "cardDescription": "Pay now online (+3% fee)",
+    "cardDescription": "Pay now online",
     "cash": "Cash",
     "orderSent": "Order sent!",
     "pickupConfirmation": "We'll see you {time}"
