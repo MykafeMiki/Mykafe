@@ -40,8 +40,48 @@ export default function KitchenPage() {
 
   const playNotificationSound = useCallback(() => {
     if (soundEnabled) {
-      const audio = new Audio('/notification.mp3')
-      audio.play().catch(() => {})
+      // Use Web Audio API to generate notification sound
+      try {
+        const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+
+        // Create oscillator for the "ding" sound
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+
+        // Two-tone notification (like a doorbell)
+        oscillator.frequency.setValueAtTime(880, audioContext.currentTime) // A5
+        oscillator.frequency.setValueAtTime(1174.66, audioContext.currentTime + 0.1) // D6
+        oscillator.frequency.setValueAtTime(880, audioContext.currentTime + 0.2) // A5
+
+        // Envelope
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4)
+
+        oscillator.start(audioContext.currentTime)
+        oscillator.stop(audioContext.currentTime + 0.4)
+
+        // Play a second "ding" after a short pause
+        setTimeout(() => {
+          const osc2 = audioContext.createOscillator()
+          const gain2 = audioContext.createGain()
+          osc2.connect(gain2)
+          gain2.connect(audioContext.destination)
+
+          osc2.frequency.setValueAtTime(1174.66, audioContext.currentTime)
+          osc2.frequency.setValueAtTime(1396.91, audioContext.currentTime + 0.1)
+
+          gain2.gain.setValueAtTime(0.3, audioContext.currentTime)
+          gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
+
+          osc2.start(audioContext.currentTime)
+          osc2.stop(audioContext.currentTime + 0.3)
+        }, 200)
+      } catch (e) {
+        console.error('Failed to play notification sound:', e)
+      }
     }
   }, [soundEnabled])
 
