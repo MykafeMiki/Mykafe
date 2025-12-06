@@ -1,3 +1,5 @@
 {
-  "imports": {}
+  "imports": {
+    "jose": "npm:jose@5.2.0"
+  }
 }
