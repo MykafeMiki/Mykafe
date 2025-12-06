@@ -195,6 +195,7 @@ export interface OrderItemModifier {
 // API Request/Response types
 export interface CreateOrderRequest {
   tableId: string
+  tableSessionId?: string // ID sessione per tavoli uniti
   items: {
     menuItemId: string
     quantity: number

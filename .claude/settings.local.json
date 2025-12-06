@@ -70,7 +70,9 @@
       "Bash(pnpm run db:seed:*)",
       "Bash(jq -r \".[] | \"\"\\(.name): \\(.items | map(.name) | join(\"\", \"\"))\"\"\")",
       "Bash(python:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "WebFetch(domain:mykafe-app-chi.vercel.app)",
+      "Bash(gh api:*)"
     ],
     "deny": [],
     "ask": []
