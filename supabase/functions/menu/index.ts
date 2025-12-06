@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
             ),
             ingredients:MenuItemIngredient(
               isPrimary,
-              ingredient:Ingredient(inStock)
+              ingredient:Ingredient(id, name, nameEn, nameFr, nameEs, nameHe, inStock)
             )
           )
         `)
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
         items: cat.items
           ?.filter((item: {
             available: boolean,
-            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean } }[]
+            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string, name: string } }[]
           }) => {
             // Check if item is marked as available
             if (!item.available) return false
@@ -73,28 +73,44 @@ Deno.serve(async (req) => {
           ?.sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
           ?.map((item: {
             modifierGroups: { modifiers: { available: boolean, ingredient?: { inStock: boolean } }[] }[],
-            ingredients?: unknown[]
-          }) => ({
-            ...item,
-            // Remove ingredients from response (internal use only)
-            ingredients: undefined,
-            modifierGroups: item.modifierGroups?.map(group => ({
-              ...group,
-              modifiers: group.modifiers?.filter((mod: {
-                available: boolean,
-                ingredient?: { inStock: boolean }
-              }) => {
-                // Filter out unavailable modifiers or those with out-of-stock ingredients
-                if (!mod.available) return false
-                if (mod.ingredient && !mod.ingredient.inStock) return false
-                return true
-              }).map((mod: { ingredient?: unknown }) => {
-                // Remove ingredient details from response
-                const { ingredient, ...rest } = mod
-                return rest
-              })
-            }))
-          }))
+            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[]
+          }) => {
+            // Get list of out-of-stock secondary ingredients
+            const unavailableIngredients = item.ingredients
+              ?.filter(ing => !ing.isPrimary && !ing.ingredient?.inStock)
+              ?.map(ing => ({
+                id: ing.ingredient.id,
+                name: ing.ingredient.name,
+                nameEn: ing.ingredient.nameEn,
+                nameFr: ing.ingredient.nameFr,
+                nameEs: ing.ingredient.nameEs,
+                nameHe: ing.ingredient.nameHe
+              })) || []
+
+            return {
+              ...item,
+              // Include unavailable secondary ingredients for strikethrough display
+              unavailableIngredients,
+              // Remove raw ingredients from response
+              ingredients: undefined,
+              modifierGroups: item.modifierGroups?.map(group => ({
+                ...group,
+                modifiers: group.modifiers?.filter((mod: {
+                  available: boolean,
+                  ingredient?: { inStock: boolean }
+                }) => {
+                  // Filter out unavailable modifiers or those with out-of-stock ingredients
+                  if (!mod.available) return false
+                  if (mod.ingredient && !mod.ingredient.inStock) return false
+                  return true
+                }).map((mod: { ingredient?: unknown }) => {
+                  // Remove ingredient details from response
+                  const { ingredient, ...rest } = mod
+                  return rest
+                })
+              }))
+            }
+          })
       }))
 
       return new Response(JSON.stringify(filteredCategories), {

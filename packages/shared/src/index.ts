@@ -93,6 +93,16 @@ export interface Category {
   items?: MenuItem[]
 }
 
+// Ingrediente non disponibile (per mostrare barrato nella descrizione)
+export interface UnavailableIngredient {
+  id: string
+  name: string
+  nameEn?: string
+  nameFr?: string
+  nameEs?: string
+  nameHe?: string
+}
+
 export interface MenuItem {
   id: string
   name: string
@@ -112,6 +122,7 @@ export interface MenuItem {
   categoryId: string
   modifierGroups?: ModifierGroup[]
   ingredients?: MenuItemIngredient[] // Ingredienti del piatto
+  unavailableIngredients?: UnavailableIngredient[] // Ingredienti secondari esauriti (da mostrare barrati)
 }
 
 export interface ModifierGroup {

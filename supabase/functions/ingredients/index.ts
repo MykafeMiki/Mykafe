@@ -216,6 +216,22 @@ Deno.serve(async (req) => {
       })
     }
 
+    // DELETE /ingredients/:id - Delete ingredient
+    if (req.method === 'DELETE' && subPath[0] && !subPath[1]) {
+      const ingredientId = subPath[0]
+
+      const { error } = await supabase
+        .from('Ingredient')
+        .delete()
+        .eq('id', ingredientId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     // POST /ingredients/:id/modifiers - Associate ingredient with modifier
     if (req.method === 'POST' && subPath[0] && subPath[1] === 'modifiers') {
       const ingredientId = subPath[0]
