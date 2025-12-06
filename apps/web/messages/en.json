@@ -96,6 +96,7 @@
     "loadingMenu": "Loading menu...",
     "orderSent": "Order sent!",
     "preparing": "We're preparing it for you",
+    "estimatedWait": "Estimated time: about {minutes} minutes",
     "singleTable": "Single table?",
     "singleTableDesc": "Order only for this table",
     "mergeTables": "Merge tables",

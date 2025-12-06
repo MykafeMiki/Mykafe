@@ -11,7 +11,7 @@ import { ConsumeMode } from '@shared/types'
 interface CartDrawerProps {
   isOpen: boolean
   onClose: () => void
-  onOrderSuccess: () => void
+  onOrderSuccess: (estimatedWaitMinutes?: number) => void
 }
 
 export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps) {
@@ -28,7 +28,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
     setError(null)
 
     try {
-      await createOrder({
+      const response = await createOrder({
         tableId,
         tableSessionId: tableSessionId || undefined,
         items: items.map((item) => ({
@@ -41,7 +41,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
       })
 
       clearCart()
-      onOrderSuccess()
+      onOrderSuccess(response.estimatedWaitMinutes)
       onClose()
     } catch (err) {
       setError(t('orderError'))

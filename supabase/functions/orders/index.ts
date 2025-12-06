@@ -263,7 +263,27 @@ Deno.serve(async (req) => {
 
       if (fetchError) throw fetchError
 
-      return new Response(JSON.stringify(completeOrder), {
+      // Calculate estimated wait time based on orders in queue
+      const { count: pendingCount } = await supabase
+        .from('Order')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['PENDING', 'PREPARING'])
+        .lt('createdAt', order.createdAt)
+
+      // Base time per order: 5 minutes, minimum 5 minutes, maximum 30 minutes
+      const BASE_TIME_PER_ORDER = 5
+      const MIN_WAIT_TIME = 5
+      const MAX_WAIT_TIME = 30
+      const estimatedWaitMinutes = Math.min(
+        MAX_WAIT_TIME,
+        Math.max(MIN_WAIT_TIME, (pendingCount || 0) * BASE_TIME_PER_ORDER + BASE_TIME_PER_ORDER)
+      )
+
+      return new Response(JSON.stringify({
+        ...completeOrder,
+        estimatedWaitMinutes,
+        queuePosition: (pendingCount || 0) + 1
+      }), {
         status: 201,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })

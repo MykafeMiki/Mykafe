@@ -35,6 +35,7 @@ export default function MenuPage() {
   const [tableDbId, setTableDbId] = useState<string | null>(null)
   const [isCounterTable, setIsCounterTable] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
+  const [estimatedWait, setEstimatedWait] = useState<number | undefined>()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -139,9 +140,13 @@ export default function MenuPage() {
     }
   }
 
-  const handleOrderSuccess = () => {
+  const handleOrderSuccess = (waitMinutes?: number) => {
+    setEstimatedWait(waitMinutes)
     setOrderSuccess(true)
-    setTimeout(() => setOrderSuccess(false), 5000)
+    setTimeout(() => {
+      setOrderSuccess(false)
+      setEstimatedWait(undefined)
+    }, 5000)
   }
 
   const handleSingleTable = () => {
@@ -435,7 +440,9 @@ export default function MenuPage() {
           <div>
             <p className="font-semibold">{t('orderSent')}</p>
             <p className="text-sm text-accent-100">
-              {t('preparing')}
+              {estimatedWait
+                ? t('estimatedWait', { minutes: estimatedWait })
+                : t('preparing')}
             </p>
           </div>
         </div>

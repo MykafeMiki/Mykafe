@@ -96,6 +96,7 @@
     "loadingMenu": "Caricamento menu...",
     "orderSent": "Ordine inviato!",
     "preparing": "Lo stiamo preparando per te",
+    "estimatedWait": "Tempo stimato: circa {minutes} minuti",
     "singleTable": "Un solo tavolo?",
     "singleTableDesc": "Ordina solo per questo tavolo",
     "mergeTables": "Unisci tavoli",

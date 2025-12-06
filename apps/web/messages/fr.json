@@ -96,6 +96,7 @@
     "loadingMenu": "Chargement du menu...",
     "orderSent": "Commande envoyée !",
     "preparing": "Nous la préparons pour vous",
+    "estimatedWait": "Temps estimé : environ {minutes} minutes",
     "singleTable": "Une seule table ?",
     "singleTableDesc": "Commander uniquement pour cette table",
     "mergeTables": "Fusionner les tables",

@@ -115,8 +115,14 @@ export const getTable = (id: string) => fetchApi<Table>(`/tables/${id}`)
 
 // Orders
 export const getActiveOrders = () => fetchApi<Order[]>('/orders/active')
+
+export interface OrderResponse extends Order {
+  estimatedWaitMinutes?: number
+  queuePosition?: number
+}
+
 export const createOrder = (data: CreateOrderRequest) =>
-  fetchApi<Order>('/orders', {
+  fetchApi<OrderResponse>('/orders', {
     method: 'POST',
     body: JSON.stringify(data),
   })

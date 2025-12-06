@@ -96,6 +96,7 @@
     "loadingMenu": "טוען תפריט...",
     "orderSent": "ההזמנה נשלחה!",
     "preparing": "אנחנו מכינים את זה בשבילך",
+    "estimatedWait": "זמן משוער: כ-{minutes} דקות",
     "singleTable": "שולחן אחד?",
     "singleTableDesc": "הזמן רק לשולחן זה",
     "mergeTables": "אחד שולחנות",
