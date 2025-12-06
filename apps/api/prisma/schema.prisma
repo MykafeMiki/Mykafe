@@ -172,6 +172,8 @@ model Order {
   customerName    String?       // Nome cliente per take away o banco
   customerPhone   String?       // Telefono cliente per take away
   notes           String?
+  isPaid          Boolean       @default(false) // Se l'ordine è stato pagato
+  paidAt          DateTime?     // Data/ora pagamento
   partySessionId  String?       // Sessione festa (conto condiviso) - DEPRECATO
   partySession    PartySession? @relation(fields: [partySessionId], references: [id])
   tableSessionId  String?       // Sessione tavoli uniti
