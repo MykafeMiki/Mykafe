@@ -1247,46 +1247,48 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
                 {allIngredients.length === 0 ? (
                   <p className="text-sm text-gray-500 mb-2">{t('noIngredients')}</p>
                 ) : (
-                  <div className="max-h-48 overflow-y-auto border rounded-lg p-2 mb-2 space-y-1">
-                    {allIngredients.map((ing) => {
-                      const selected = selectedIngredients.find(i => i.id === ing.id)
-                      return (
-                        <div
-                          key={ing.id}
-                          className={`flex items-center gap-2 p-2 rounded transition ${
-                            selected ? 'bg-primary-50 border border-primary-200' : 'hover:bg-gray-50'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={!!selected}
-                            onChange={() => handleIngredientToggle(ing.id)}
-                            className="w-4 h-4 text-primary-500 rounded focus:ring-primary-500"
-                          />
-                          <span className="text-sm flex-1">{ing.name}</span>
-                          {selected && (
-                            <button
-                              type="button"
-                              onClick={() => handleTogglePrimary(ing.id)}
-                              className={`text-xs px-2 py-0.5 rounded-full transition ${
-                                selected.isPrimary
-                                  ? 'bg-red-100 text-red-700 font-medium'
-                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                              }`}
-                            >
-                              {selected.isPrimary ? '⚠️ Primario' : 'Secondario'}
-                            </button>
-                          )}
-                          {!ing.inStock && (
-                            <span className="text-xs text-red-500">({tc('unavailable')})</span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <p className="text-xs text-gray-500 mb-2">
-                    <strong>Primario:</strong> se esaurito, nasconde il piatto. <strong>Secondario:</strong> se esaurito, mostra barrato.
-                  </p>
+                  <>
+                    <div className="max-h-48 overflow-y-auto border rounded-lg p-2 mb-2 space-y-1">
+                      {allIngredients.map((ing) => {
+                        const selected = selectedIngredients.find(i => i.id === ing.id)
+                        return (
+                          <div
+                            key={ing.id}
+                            className={`flex items-center gap-2 p-2 rounded transition ${
+                              selected ? 'bg-primary-50 border border-primary-200' : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={!!selected}
+                              onChange={() => handleIngredientToggle(ing.id)}
+                              className="w-4 h-4 text-primary-500 rounded focus:ring-primary-500"
+                            />
+                            <span className="text-sm flex-1">{ing.name}</span>
+                            {selected && (
+                              <button
+                                type="button"
+                                onClick={() => handleTogglePrimary(ing.id)}
+                                className={`text-xs px-2 py-0.5 rounded-full transition ${
+                                  selected.isPrimary
+                                    ? 'bg-red-100 text-red-700 font-medium'
+                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                }`}
+                              >
+                                {selected.isPrimary ? 'Primario' : 'Secondario'}
+                              </button>
+                            )}
+                            {!ing.inStock && (
+                              <span className="text-xs text-red-500">({tc('unavailable')})</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <p className="text-xs text-gray-500 mb-2">
+                      <strong>Primario:</strong> se esaurito, nasconde il piatto. <strong>Secondario:</strong> se esaurito, mostra barrato.
+                    </p>
+                  </>
                 )}
 
                 {/* Add new ingredient button/form */}

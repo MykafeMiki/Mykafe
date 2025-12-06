@@ -72,7 +72,10 @@
       "Bash(python:*)",
       "Bash(node -e:*)",
       "WebFetch(domain:mykafe-app-chi.vercel.app)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(git checkout:*)",
+      "Bash(pnpm --filter web build:*)",
+      "Bash(git stash drop:*)"
     ],
     "deny": [],
     "ask": []
