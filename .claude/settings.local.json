@@ -66,7 +66,11 @@
       "Bash(git restore:*)",
       "Bash(del /f /q \"C:\\Users\\dario\\OneDrive\\Desktop\\MyKafe\\apps\\web\\.vercel\\project.json\")",
       "Bash(del /f /q \"C:\\Users\\dario\\OneDrive\\Desktop\\MyKafe\\apps\\web\\.vercel\\README.txt\")",
-      "Bash(set \"DATABASE_URL=postgresql://postgres:HXziUAS39GTM7DFD@db.biefwzrprjqusjynqwus.supabase.co:6543/postgres?pgbouncer=true\")"
+      "Bash(set \"DATABASE_URL=postgresql://postgres:HXziUAS39GTM7DFD@db.biefwzrprjqusjynqwus.supabase.co:6543/postgres?pgbouncer=true\")",
+      "Bash(pnpm run db:seed:*)",
+      "Bash(jq -r \".[] | \"\"\\(.name): \\(.items | map(.name) | join(\"\", \"\"))\"\"\")",
+      "Bash(python:*)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []

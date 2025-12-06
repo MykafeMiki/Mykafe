@@ -70,14 +70,23 @@ export default function MenuPage() {
         setIsCounterTable(table.isCounter || false)
 
         // Check if there's an active session for this table
-        const existingSession = await getTableSessionByTable(table.number)
-        if (existingSession) {
-          setTableSession(existingSession)
-          setTableSessionInCart(existingSession.id)
-          setStep('menu') // Skip choice, go directly to menu
-        } else if (table.isCounter) {
-          // Counter tables skip the choice screen
-          setStep('menu')
+        try {
+          const existingSession = await getTableSessionByTable(table.number)
+          if (existingSession) {
+            setTableSession(existingSession)
+            setTableSessionInCart(existingSession.id)
+            setStep('menu') // Skip choice, go directly to menu
+          } else if (table.isCounter) {
+            // Counter tables skip the choice screen
+            setStep('menu')
+          }
+          // If no session and not counter, step stays 'choice' (default)
+        } catch {
+          // No session found, that's ok - show choice screen
+          if (table.isCounter) {
+            setStep('menu')
+          }
+          // For regular tables, step stays 'choice' (show table merge option)
         }
 
         // Determine context based on table type
