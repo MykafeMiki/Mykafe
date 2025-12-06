@@ -17,7 +17,7 @@ import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
-type PageStep = 'choice' | 'merge-input' | 'menu'
+type PageStep = 'choice' | 'merge-input' | 'join-group' | 'menu'
 
 export default function MenuPage() {
   const t = useTranslations('tableMenu')
@@ -75,8 +75,17 @@ export default function MenuPage() {
           const existingSession = await getTableSessionByTable(table.number)
           if (existingSession) {
             setTableSession(existingSession)
-            setTableSessionInCart(existingSession.id)
-            setStep('menu') // Skip choice, go directly to menu
+            // Check if this table is the host or a linked table
+            // If linked table, ask if they want to join the group
+            const isHost = existingSession.hostTableId === table.id
+            if (isHost) {
+              // Host table - go directly to menu with session
+              setTableSessionInCart(existingSession.id)
+              setStep('menu')
+            } else {
+              // Linked table - ask if they're part of the group
+              setStep('join-group')
+            }
           } else if (table.isCounter) {
             // Counter tables skip the choice screen
             setStep('menu')
@@ -188,6 +197,21 @@ export default function MenuPage() {
     } finally {
       setCreatingSession(false)
     }
+  }
+
+  const handleJoinGroup = () => {
+    // User confirms they're part of the group
+    if (tableSession) {
+      setTableSessionInCart(tableSession.id)
+    }
+    setStep('menu')
+  }
+
+  const handleNotInGroup = () => {
+    // User is not part of the group - clear session and go to menu without it
+    setTableSession(null)
+    setTableSessionInCart(null)
+    setStep('menu')
   }
 
   if (loading) {
@@ -345,7 +369,80 @@ export default function MenuPage() {
     )
   }
 
-  // Step 3: Menu view
+  // Step 3: Join existing group - ask if they're part of the group
+  if (step === 'join-group' && tableSession) {
+    // Get all table numbers in the group
+    const allGroupTables = [tableSession.linkedTables[0], ...tableSession.linkedTables.slice(1)]
+      .filter(n => n !== tableNumber) // Exclude current table from display
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="bg-primary-500 text-white p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold">MyKafe</h1>
+              {tableNumber && (
+                <p className="text-primary-100">{t('table')} {tableNumber}</p>
+              )}
+            </div>
+            <LanguageSelectorCompact />
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-md space-y-4">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-orange-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {t('groupExists')}
+              </h2>
+              <p className="text-gray-600 mt-2">
+                {t('groupExistsDesc', { tables: tableSession.linkedTables.join(', ') })}
+              </p>
+            </div>
+
+            <button
+              onClick={handleJoinGroup}
+              className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-primary-500 hover:bg-primary-50 transition"
+            >
+              <div className="w-14 h-14 bg-primary-100 rounded-full flex items-center justify-center">
+                <Users className="w-7 h-7 text-primary-600" />
+              </div>
+              <div className="text-left">
+                <span className="block font-semibold text-lg text-gray-900">
+                  {tc('yes')}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {t('joinGroupDesc')}
+                </span>
+              </div>
+            </button>
+
+            <button
+              onClick={handleNotInGroup}
+              className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition"
+            >
+              <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center">
+                <User className="w-7 h-7 text-gray-600" />
+              </div>
+              <div className="text-left">
+                <span className="block font-semibold text-lg text-gray-900">
+                  {tc('no')}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {t('notInGroupDesc')}
+                </span>
+              </div>
+            </button>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  // Step 4: Menu view
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}

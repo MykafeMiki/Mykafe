@@ -108,7 +108,11 @@
     "tables": "Tavoli",
     "mergedWith": "Unito con tavoli",
     "sessionActive": "Sessione attiva",
-    "invalidTableNumbers": "Inserisci numeri di tavolo validi separati da virgola"
+    "invalidTableNumbers": "Inserisci numeri di tavolo validi separati da virgola",
+    "groupExists": "Fai parte di un gruppo?",
+    "groupExistsDesc": "Questo tavolo fa parte di un gruppo con i tavoli {tables}",
+    "joinGroupDesc": "Unisciti al gruppo e condividi il conto",
+    "notInGroupDesc": "Ordina solo per questo tavolo"
   },
   "cart": {
     "title": "Il tuo ordine",

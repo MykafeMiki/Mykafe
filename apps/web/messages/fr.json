@@ -108,7 +108,11 @@
     "tables": "Tables",
     "mergedWith": "Fusionné avec tables",
     "sessionActive": "Session active",
-    "invalidTableNumbers": "Entrez des numéros de table valides séparés par des virgules"
+    "invalidTableNumbers": "Entrez des numéros de table valides séparés par des virgules",
+    "groupExists": "Faites-vous partie d'un groupe ?",
+    "groupExistsDesc": "Cette table fait partie d'un groupe avec les tables {tables}",
+    "joinGroupDesc": "Rejoignez le groupe et partagez l'addition",
+    "notInGroupDesc": "Commander uniquement pour cette table"
   },
   "cart": {
     "title": "Votre commande",

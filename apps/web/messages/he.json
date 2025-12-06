@@ -108,7 +108,11 @@
     "tables": "שולחנות",
     "mergedWith": "מאוחד עם שולחנות",
     "sessionActive": "סשן פעיל",
-    "invalidTableNumbers": "הכנס מספרי שולחן תקינים מופרדים בפסיק"
+    "invalidTableNumbers": "הכנס מספרי שולחן תקינים מופרדים בפסיק",
+    "groupExists": "האם אתה חלק מקבוצה?",
+    "groupExistsDesc": "שולחן זה חלק מקבוצה עם שולחנות {tables}",
+    "joinGroupDesc": "הצטרף לקבוצה ושתף את החשבון",
+    "notInGroupDesc": "הזמן רק לשולחן זה"
   },
   "cart": {
     "title": "ההזמנה שלך",

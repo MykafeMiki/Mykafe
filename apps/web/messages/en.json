@@ -108,7 +108,11 @@
     "tables": "Tables",
     "mergedWith": "Merged with tables",
     "sessionActive": "Session active",
-    "invalidTableNumbers": "Enter valid table numbers separated by comma"
+    "invalidTableNumbers": "Enter valid table numbers separated by comma",
+    "groupExists": "Are you part of a group?",
+    "groupExistsDesc": "This table is part of a group with tables {tables}",
+    "joinGroupDesc": "Join the group and share the bill",
+    "notInGroupDesc": "Order only for this table"
   },
   "cart": {
     "title": "Your order",
