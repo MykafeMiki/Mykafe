@@ -976,7 +976,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
 
   // Ingredients state
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([])
-  const [selectedIngredientIds, setSelectedIngredientIds] = useState<string[]>([])
+  const [selectedIngredients, setSelectedIngredients] = useState<{ id: string; isPrimary: boolean }[]>([])
   const [loadingIngredients, setLoadingIngredients] = useState(false)
   const [showNewIngredient, setShowNewIngredient] = useState(false)
   const [newIngName, setNewIngName] = useState('')
@@ -998,7 +998,10 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
         if (item) {
           try {
             const itemIngredients = await getMenuItemIngredients(item.id)
-            setSelectedIngredientIds(itemIngredients.map(i => i.ingredientId))
+            setSelectedIngredients(itemIngredients.map(i => ({
+              id: i.ingredientId,
+              isPrimary: i.isPrimary || false
+            })))
           } catch (err) {
             console.error('Failed to load item ingredients:', err)
           }
@@ -1029,10 +1032,22 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
   }
 
   const handleIngredientToggle = (ingredientId: string) => {
-    setSelectedIngredientIds(prev =>
-      prev.includes(ingredientId)
-        ? prev.filter(id => id !== ingredientId)
-        : [...prev, ingredientId]
+    setSelectedIngredients(prev => {
+      const existing = prev.find(i => i.id === ingredientId)
+      if (existing) {
+        return prev.filter(i => i.id !== ingredientId)
+      }
+      return [...prev, { id: ingredientId, isPrimary: false }]
+    })
+  }
+
+  const handleTogglePrimary = (ingredientId: string) => {
+    setSelectedIngredients(prev =>
+      prev.map(i =>
+        i.id === ingredientId
+          ? { ...i, isPrimary: !i.isPrimary }
+          : i
+      )
     )
   }
 
@@ -1048,7 +1063,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
         nameHe: newIngNameHe.trim() || undefined,
       })
       setAllIngredients(prev => [...prev, newIng])
-      setSelectedIngredientIds(prev => [...prev, newIng.id])
+      setSelectedIngredients(prev => [...prev, { id: newIng.id, isPrimary: false }])
       setNewIngName('')
       setNewIngNameEn('')
       setNewIngNameFr('')
@@ -1086,9 +1101,9 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
       }
 
       // Save ingredients if we have a valid item ID
-      if (savedItemId && selectedIngredientIds.length > 0) {
+      if (savedItemId) {
         try {
-          await setMenuItemIngredients(savedItemId, selectedIngredientIds)
+          await setMenuItemIngredients(savedItemId, selectedIngredients)
         } catch (err) {
           console.error('Failed to save ingredients:', err)
         }
@@ -1232,25 +1247,46 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
                 {allIngredients.length === 0 ? (
                   <p className="text-sm text-gray-500 mb-2">{t('noIngredients')}</p>
                 ) : (
-                  <div className="max-h-40 overflow-y-auto border rounded-lg p-2 mb-2 space-y-1">
-                    {allIngredients.map((ing) => (
-                      <label
-                        key={ing.id}
-                        className="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedIngredientIds.includes(ing.id)}
-                          onChange={() => handleIngredientToggle(ing.id)}
-                          className="w-4 h-4 text-primary-500 rounded focus:ring-primary-500"
-                        />
-                        <span className="text-sm">{ing.name}</span>
-                        {!ing.inStock && (
-                          <span className="text-xs text-red-500 ml-auto">({tc('unavailable')})</span>
-                        )}
-                      </label>
-                    ))}
+                  <div className="max-h-48 overflow-y-auto border rounded-lg p-2 mb-2 space-y-1">
+                    {allIngredients.map((ing) => {
+                      const selected = selectedIngredients.find(i => i.id === ing.id)
+                      return (
+                        <div
+                          key={ing.id}
+                          className={`flex items-center gap-2 p-2 rounded transition ${
+                            selected ? 'bg-primary-50 border border-primary-200' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!selected}
+                            onChange={() => handleIngredientToggle(ing.id)}
+                            className="w-4 h-4 text-primary-500 rounded focus:ring-primary-500"
+                          />
+                          <span className="text-sm flex-1">{ing.name}</span>
+                          {selected && (
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePrimary(ing.id)}
+                              className={`text-xs px-2 py-0.5 rounded-full transition ${
+                                selected.isPrimary
+                                  ? 'bg-red-100 text-red-700 font-medium'
+                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                              }`}
+                            >
+                              {selected.isPrimary ? '⚠️ Primario' : 'Secondario'}
+                            </button>
+                          )}
+                          {!ing.inStock && (
+                            <span className="text-xs text-red-500">({tc('unavailable')})</span>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
+                  <p className="text-xs text-gray-500 mb-2">
+                    <strong>Primario:</strong> se esaurito, nasconde il piatto. <strong>Secondario:</strong> se esaurito, mostra barrato.
+                  </p>
                 )}
 
                 {/* Add new ingredient button/form */}

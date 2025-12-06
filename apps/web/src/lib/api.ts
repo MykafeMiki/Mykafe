@@ -163,10 +163,10 @@ export const setIngredientStock = (id: string, inStock: boolean) =>
   })
 
 // Menu Item Ingredients
-export const setMenuItemIngredients = (menuItemId: string, ingredientIds: string[]) =>
+export const setMenuItemIngredients = (menuItemId: string, ingredients: { id: string; isPrimary: boolean }[]) =>
   fetchApiAuth<{ success: boolean }>(`/menu/items/${menuItemId}/ingredients`, {
     method: 'PUT',
-    body: JSON.stringify({ ingredientIds }),
+    body: JSON.stringify({ ingredients }),
   })
 
 export const getMenuItemIngredients = (menuItemId: string) =>

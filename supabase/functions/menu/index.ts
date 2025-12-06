@@ -503,7 +503,7 @@ Deno.serve(async (req) => {
     if (req.method === 'PUT' && subPath[0] === 'items' && subPath[1] && subPath[2] === 'ingredients') {
       const menuItemId = subPath[1]
       const body = await req.json()
-      const { ingredientIds } = body // array of ingredient IDs
+      const { ingredients } = body // array of { id, isPrimary }
 
       // Delete existing associations
       await supabase
@@ -512,11 +512,11 @@ Deno.serve(async (req) => {
         .eq('menuItemId', menuItemId)
 
       // Insert new associations
-      if (ingredientIds && ingredientIds.length > 0) {
-        const associations = ingredientIds.map((ingredientId: string) => ({
+      if (ingredients && ingredients.length > 0) {
+        const associations = ingredients.map((ing: { id: string; isPrimary: boolean }) => ({
           menuItemId,
-          ingredientId,
-          isPrimary: false // Default to non-primary
+          ingredientId: ing.id,
+          isPrimary: ing.isPrimary || false
         }))
 
         const { error } = await supabase
