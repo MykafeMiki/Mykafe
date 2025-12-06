@@ -337,6 +337,66 @@ export const deleteImage = async (url: string): Promise<void> => {
   }
 }
 
+// ============ REPORTS ============
+
+export interface TopProduct {
+  menuItemId: string
+  name: string
+  totalQuantity: number
+  totalRevenue: number
+}
+
+export interface TopProductsReport {
+  period: string
+  startDate: string
+  endDate: string
+  products: TopProduct[]
+}
+
+export interface HourlyData {
+  hour: number
+  orderCount: number
+  revenue: number
+}
+
+export interface PeakHoursReport {
+  period: string
+  startDate: string
+  endDate: string
+  hourlyData: HourlyData[]
+  peakHours: number[]
+  totalOrders: number
+  totalRevenue: number
+}
+
+export interface SummaryReport {
+  period: string
+  startDate: string
+  endDate: string
+  totalOrders: number
+  completedOrders: number
+  totalRevenue: number
+  totalItems: number
+  ordersByType: {
+    DINE_IN: number
+    TAKEAWAY: number
+    COUNTER: number
+  }
+  averageOrderValue: number
+}
+
+export const getTopProducts = async (period: 'week' | 'month' = 'week'): Promise<TopProductsReport> => {
+  return fetchApi<TopProductsReport>(`/reports/top-products?period=${period}`)
+}
+
+export const getPeakHours = async (period: 'week' | 'month' = 'week'): Promise<PeakHoursReport> => {
+  return fetchApi<PeakHoursReport>(`/reports/peak-hours?period=${period}`)
+}
+
+export const getSummaryReport = async (period: 'week' | 'month' = 'week'): Promise<SummaryReport> => {
+  return fetchApi<SummaryReport>(`/reports/summary?period=${period}`)
+}
+
 // Types
 import type { Category, MenuItem, Table, Order, Ingredient, PartySession, PartyBillResponse, ModifierGroup, Modifier } from '@shared/types'
 import type { CreateOrderRequest } from '@shared/types'
