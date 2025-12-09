@@ -4,6 +4,7 @@ import { Clock, ChefHat, Check, X, UtensilsCrossed, ShoppingBag, Phone, User, Ba
 import { formatTime, cn } from '@/lib/utils'
 import type { Order } from '@shared/types'
 import { ConsumeMode, OrderType, PaymentMethod, OrderStatus } from '@shared/types'
+import { TranslatedNote } from './TranslatedNote'
 
 interface OrderCardProps {
   order: Order
@@ -150,9 +151,7 @@ export function OrderCard({ order, onStatusChange }: OrderCardProps) {
                 </p>
               )}
               {item.notes && (
-                <p className="text-sm text-orange-600 italic">
-                  "{item.notes}"
-                </p>
+                <TranslatedNote note={item.notes} />
               )}
             </div>
           </div>
@@ -160,9 +159,10 @@ export function OrderCard({ order, onStatusChange }: OrderCardProps) {
 
         {order.notes && (
           <div className="pt-3 border-t">
-            <p className="text-sm text-gray-500">
-              <span className="font-medium">Note:</span> {order.notes}
-            </p>
+            <div className="text-sm text-gray-500">
+              <span className="font-medium">Note ordine:</span>
+              <TranslatedNote note={order.notes} className="mt-1" />
+            </div>
           </div>
         )}
       </div>
