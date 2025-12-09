@@ -75,7 +75,8 @@
       "Bash(gh api:*)",
       "Bash(git checkout:*)",
       "Bash(pnpm --filter web build:*)",
-      "Bash(git stash drop:*)"
+      "Bash(git stash drop:*)",
+      "Bash(pnpm:*)"
     ],
     "deny": [],
     "ask": []

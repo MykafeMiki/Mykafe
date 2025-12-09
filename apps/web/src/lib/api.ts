@@ -451,6 +451,47 @@ export const payTable = (tableId: string, paymentMethod: 'CASH' | 'CARD') =>
 
 export const getCashierHistory = () => fetchApi<CashierHistoryResponse>('/cashier/history')
 
+// ============ TABLE CUSTOMERS ============
+
+export interface TableCustomer {
+  id: string
+  tableId: string
+  name: string
+  isHost: boolean
+  isActive: boolean
+  createdAt: string
+  leftAt?: string
+}
+
+export interface TableWithCustomers extends Table {
+  customers: TableCustomer[]
+}
+
+// Get table by QR with customers
+export const getTableByQrWithCustomers = (qrCode: string) =>
+  fetchApi<TableWithCustomers>(`/tables/qr/${qrCode}`)
+
+// Add customer to table
+export const addCustomerToTable = (tableId: string, name: string) =>
+  fetchApi<TableCustomer>(`/tables/${tableId}/customers`, {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+
+// Get customers at table
+export const getTableCustomers = (tableId: string) =>
+  fetchApi<TableCustomer[]>(`/tables/${tableId}/customers`)
+
+// Get host customer at table
+export const getTableHost = (tableId: string) =>
+  fetchApi<TableCustomer>(`/tables/${tableId}/host`)
+
+// Clear all customers from table (admin/cashier)
+export const clearTableCustomers = (tableId: string) =>
+  fetchApiAuth<{ success: boolean }>(`/tables/${tableId}/customers`, {
+    method: 'DELETE',
+  })
+
 // Types
 import type { Category, MenuItem, Table, Order, Ingredient, PartySession, PartyBillResponse, ModifierGroup, Modifier } from '@shared/types'
 import type { CreateOrderRequest } from '@shared/types'

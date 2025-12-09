@@ -68,8 +68,21 @@ model Table {
   status    String   @default("AVAILABLE") // AVAILABLE, OCCUPIED, RESERVED
   isCounter Boolean  @default(false) // true = banco (richiede customerName)
   orders    Order[]
+  customers TableCustomer[] // Clienti attualmente al tavolo
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Clienti attualmente seduti a un tavolo
+model TableCustomer {
+  id        String   @id @default(cuid())
+  tableId   String
+  table     Table    @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  name      String   // Nome del cliente
+  isHost    Boolean  @default(false) // true = primo che ha scansionato il tavolo
+  isActive  Boolean  @default(true) // false quando il cliente lascia
+  createdAt DateTime @default(now())
+  leftAt    DateTime?
 }
 
 // Categorie del menu (Toast, Salad, etc.)
