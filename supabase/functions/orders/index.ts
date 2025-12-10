@@ -8,37 +8,23 @@ function generateId(): string {
   return `c${timestamp}${randomStr}`
 }
 
-// Check if text might need translation (not Italian)
-function mightNeedTranslation(text: string): boolean {
-  if (!text || text.length < 3) return false
-
-  // Common Italian words that indicate text is already in Italian
-  const italianIndicators = [
-    'senza', 'con', 'poco', 'molto', 'ben', 'cotto', 'crudo', 'freddo', 'caldo',
-    'più', 'meno', 'solo', 'doppio', 'extra', 'niente', 'tutto', 'metà',
-    'grande', 'piccolo', 'leggero', 'pesante', 'dolce', 'salato', 'amaro',
-    'per', 'favore', 'grazie', 'prego'
-  ]
+// Check if text is likely already in Italian (skip translation)
+function isLikelyItalian(text: string): boolean {
+  if (!text || text.length < 3) return true // Too short to translate
 
   const lowerText = text.toLowerCase()
-  for (const word of italianIndicators) {
-    if (lowerText.includes(word)) {
-      return false
-    }
-  }
 
-  // Check for common non-Italian patterns
-  const nonItalianPatterns = [
-    /\bwithout\b/i, /\bwith\b/i, /\bno\b/i, /\bextra\b/i, /\bwell\b/i, /\bdone\b/i,
-    /\bplease\b/i, /\bless\b/i, /\bmore\b/i, /\bhalf\b/i, /\bdouble\b/i,
-    /\bspicy\b/i, /\bhot\b/i, /\bcold\b/i, /\braw\b/i, /\bcooked\b/i,
-    /\bsans\b/i, /\bavec\b/i, /\bpeu\b/i, /\bbeaucoup\b/i, /\bs'il vous plaît\b/i,
-    /\bsin\b/i, /\bpor favor\b/i, /\bmuy\b/i, /\bpoco\b/i,
-    /\bבלי\b/, /\bעם\b/, /\bבבקשה\b/
+  // Common Italian words - if found, assume Italian
+  const italianIndicators = [
+    'senza', 'con ', 'poco', 'molto', 'ben ', 'cotto', 'crudo', 'freddo', 'caldo',
+    'più', 'meno', 'solo', 'doppio', 'niente', 'tutto', 'metà',
+    'grande', 'piccolo', 'leggero', 'pesante', 'dolce', 'salato', 'amaro',
+    'per favore', 'grazie', 'prego', 'vorrei', 'voglio', 'anche', 'ancora',
+    'allergi', 'intolleran', 'glutine', 'lattosio', 'vegetarian', 'vegan'
   ]
 
-  for (const pattern of nonItalianPatterns) {
-    if (pattern.test(text)) {
+  for (const word of italianIndicators) {
+    if (lowerText.includes(word)) {
       return true
     }
   }
@@ -49,7 +35,7 @@ function mightNeedTranslation(text: string): boolean {
 // Translate text to Italian using MyMemory API
 async function translateToItalian(text: string): Promise<string> {
   if (!text || text.trim().length === 0) return text
-  if (!mightNeedTranslation(text)) return text
+  if (isLikelyItalian(text)) return text // Skip if already Italian
 
   try {
     const response = await fetch(
