@@ -100,27 +100,14 @@ export function MenuSections({ onSelectSection }: MenuSectionsProps) {
           onClick={() => onSelectSection(section.id)}
           className="relative aspect-square rounded-2xl overflow-hidden shadow-lg group active:scale-95 transition-transform"
         >
-          {/* Background Image or Placeholder */}
-          {section.image && (section.id === 'panini' || section.id === 'piatti' || section.id === 'caffetteria') ? (
-            <Image
-              src={section.image}
-              alt={section.name}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 50vw, 33vw"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-primary-600">
-              {/* Placeholder icon based on section */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                {section.id === 'bibite' && (
-                  <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 2l2.01 18.23C5.13 21.23 5.97 22 7 22h10c1.03 0 1.87-.77 1.99-1.77L21 2H3zm9 17c-1.66 0-3-1.34-3-3 0-2 3-5.4 3-5.4s3 3.4 3 5.4c0 1.66-1.34 3-3 3zm6.33-11H5.67l-.44-4h13.53l-.43 4z"/>
-                  </svg>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Background Image */}
+          <Image
+            src={section.image}
+            alt={section.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 50vw, 33vw"
+          />
 
           {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
