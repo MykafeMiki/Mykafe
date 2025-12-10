@@ -1,6 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
+// Generate cuid-like ID
+function generateId(): string {
+  const timestamp = Date.now().toString(36)
+  const randomStr = Math.random().toString(36).substring(2, 15)
+  return `c${timestamp}${randomStr}`
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -183,47 +190,67 @@ Deno.serve(async (req) => {
 
       const surcharge = totalAmount - subtotal
 
-      // Create order
+      // Create order - build insert object dynamically to avoid missing column errors
+      const now = new Date().toISOString()
+      const orderData: Record<string, unknown> = {
+        id: generateId(),
+        tableId,
+        notes,
+        orderType: orderType || 'DINE_IN',
+        paymentMethod,
+        customerName,
+        customerPhone,
+        subtotal,
+        surcharge,
+        totalAmount,
+        status: 'PENDING',
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      // Only add optional foreign keys if they have values
+      if (partySessionId) orderData.partySessionId = partySessionId
+      if (validTableSessionId) orderData.tableSessionId = validTableSessionId
+
+      console.log('Creating order with data:', orderData)
       const { data: order, error: orderError } = await supabase
         .from('Order')
-        .insert({
-          tableId,
-          notes,
-          orderType: orderType || 'DINE_IN',
-          paymentMethod,
-          customerName,
-          customerPhone,
-          subtotal,
-          surcharge,
-          totalAmount,
-          status: 'PENDING',
-          partySessionId,
-          tableSessionId: validTableSessionId
-        })
+        .insert(orderData)
         .select()
         .single()
 
-      if (orderError) throw orderError
+      if (orderError) {
+        console.error('Order creation error:', orderError)
+        throw orderError
+      }
+      console.log('Order created:', order.id)
 
       // Create order items
       for (const item of items) {
+        const orderItemId = generateId()
         const { data: orderItem, error: itemError } = await supabase
           .from('OrderItem')
           .insert({
+            id: orderItemId,
             orderId: order.id,
             menuItemId: item.menuItemId,
             quantity: item.quantity,
             notes: item.notes,
-            consumeMode: item.consumeMode || 'DINE_IN'
+            consumeMode: item.consumeMode || 'DINE_IN',
+            createdAt: now
           })
           .select()
           .single()
 
-        if (itemError) throw itemError
+        if (itemError) {
+          console.error('OrderItem creation error:', itemError)
+          throw itemError
+        }
 
         // Create order item modifiers
         if (item.modifierIds && item.modifierIds.length > 0) {
           const modifierInserts = item.modifierIds.map((modId: string) => ({
+            id: generateId(),
             orderItemId: orderItem.id,
             modifierId: modId
           }))
@@ -232,7 +259,10 @@ Deno.serve(async (req) => {
             .from('OrderItemModifier')
             .insert(modifierInserts)
 
-          if (modError) throw modError
+          if (modError) {
+            console.error('OrderItemModifier creation error:', modError)
+            throw modError
+          }
         }
       }
 
@@ -335,7 +365,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error)
     return new Response(JSON.stringify({ error: 'Internal server error', details: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

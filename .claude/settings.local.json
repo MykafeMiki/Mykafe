@@ -76,7 +76,9 @@
       "Bash(git checkout:*)",
       "Bash(pnpm --filter web build:*)",
       "Bash(git stash drop:*)",
-      "Bash(pnpm:*)"
+      "Bash(pnpm:*)",
+      "Bash(echo:*)",
+      "Bash(node test-api.mjs:*)"
     ],
     "deny": [],
     "ask": []
