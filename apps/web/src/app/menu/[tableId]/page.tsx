@@ -12,13 +12,13 @@ import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
-import { getMenu, getTableByQrWithCustomers, getTableSessionByTable, createTableSession, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
+import { getMenu, getTableByQr, getTableSessionByTable, createTableSession, type TableSession } from '@/lib/api'
 import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
-type PageStep = 'enter-name' | 'join-existing' | 'choice' | 'merge-input' | 'join-group' | 'sections' | 'menu'
+type PageStep = 'enter-name' | 'choice' | 'merge-input' | 'join-group' | 'sections' | 'menu'
 
 export default function MenuPage() {
   const t = useTranslations('tableMenu')
@@ -43,9 +43,6 @@ export default function MenuPage() {
 
   // Customer name state
   const [customerName, setCustomerName] = useState('')
-  const [existingCustomers, setExistingCustomers] = useState<TableCustomer[]>([])
-  const [hostCustomer, setHostCustomer] = useState<TableCustomer | null>(null)
-  const [savingName, setSavingName] = useState(false)
 
   // Table session state
   const [tableSession, setTableSession] = useState<TableSession | null>(null)
@@ -82,32 +79,19 @@ export default function MenuPage() {
       if (!tableId) return
 
       try {
-        // Load table info with customers
-        const table = await getTableByQrWithCustomers(tableId)
+        // Load table info
+        const table = await getTableByQr(tableId)
         setTableNumber(table.number)
         setTableDbId(table.id)
         setTableIdInCart(table.id)
         setIsCounterTable(table.isCounter || false)
 
-        // Check for existing customers at this table
-        const activeCustomers = table.customers || []
-        setExistingCustomers(activeCustomers)
-
-        // Find the host customer if any
-        const host = activeCustomers.find(c => c.isHost)
-        if (host) {
-          setHostCustomer(host)
-        }
-
         // Determine initial step based on table state
         if (table.isCounter) {
-          // Counter tables go directly to sections (they use customerName in order)
+          // Counter tables go directly to sections
           setStep('sections')
-        } else if (activeCustomers.length > 0) {
-          // Table already has customers - ask if joining them
-          setStep('join-existing')
         } else {
-          // Empty table - ask for name first
+          // Regular tables - ask for name first, then go to sections
           setStep('enter-name')
         }
 
@@ -181,46 +165,10 @@ export default function MenuPage() {
   }
 
   // Handle name submission for new customer
-  const handleSubmitName = async () => {
-    if (!customerName.trim() || !tableDbId) return
-
-    setSavingName(true)
-    try {
-      await addCustomerToTable(tableDbId, customerName.trim())
-      // After saving name, ask about table sharing
-      setStep('choice')
-    } catch (err) {
-      console.error('Error saving customer name:', err)
-      // Still proceed even if saving fails
-      setStep('choice')
-    } finally {
-      setSavingName(false)
-    }
-  }
-
-  // Handle joining existing customers at table
-  const handleJoinExisting = async () => {
-    if (!customerName.trim() || !tableDbId) return
-
-    setSavingName(true)
-    try {
-      await addCustomerToTable(tableDbId, customerName.trim())
-      // Go directly to sections since table is already set up
-      setStep('sections')
-    } catch (err) {
-      console.error('Error saving customer name:', err)
-      setStep('sections')
-    } finally {
-      setSavingName(false)
-    }
-  }
-
-  // Handle not joining existing customers (separate order)
-  const handleNotJoinExisting = () => {
-    // Still need their name
-    setStep('enter-name')
-    // Clear host reference since they're not joining
-    setHostCustomer(null)
+  const handleSubmitName = () => {
+    if (!customerName.trim()) return
+    // After entering name, ask about table sharing
+    setStep('choice')
   }
 
   const handleSingleTable = () => {
@@ -363,109 +311,15 @@ export default function MenuPage() {
 
             <button
               onClick={handleSubmitName}
-              disabled={!customerName.trim() || savingName}
+              disabled={!customerName.trim()}
               className={`w-full mt-6 py-4 rounded-xl font-semibold text-lg transition ${
-                customerName.trim() && !savingName
+                customerName.trim()
                   ? 'bg-primary-500 text-white hover:bg-primary-600'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {savingName ? tc('loading') : tc('continue')}
+              {tc('continue')}
             </button>
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  // Step 0.5: Join existing customers at table
-  if (step === 'join-existing' && hostCustomer) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">MyKafe</h1>
-              {tableNumber && (
-                <p className="text-primary-100">{t('table')} {tableNumber}</p>
-              )}
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
-
-        <main className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-6">
-              <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-10 h-10 text-primary-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {t('tableOccupied')}
-              </h2>
-              <p className="text-gray-600 mt-2 text-lg">
-                {t('areYouWith')} <span className="font-bold text-primary-600">{hostCustomer.name}</span>?
-              </p>
-              {existingCustomers.length > 1 && (
-                <p className="text-gray-500 text-sm mt-1">
-                  {t('andOthers', { count: existingCustomers.length - 1 })}
-                </p>
-              )}
-            </div>
-
-            {/* Name input for joining */}
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2 text-center">{t('yourName')}:</p>
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder={t('namePlaceholder')}
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary-500 focus:outline-none text-lg text-center"
-                autoFocus
-              />
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={handleJoinExisting}
-                disabled={!customerName.trim() || savingName}
-                className={`w-full flex items-center gap-4 p-5 rounded-xl border-2 transition ${
-                  customerName.trim() && !savingName
-                    ? 'bg-white border-gray-200 hover:border-primary-500 hover:bg-primary-50'
-                    : 'bg-gray-100 border-gray-200 cursor-not-allowed'
-                }`}
-              >
-                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-primary-600" />
-                </div>
-                <div className="text-left">
-                  <span className="block font-semibold text-gray-900">
-                    {tc('yes')}, {t('imWithThem')}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {t('joinTableDesc')}
-                  </span>
-                </div>
-              </button>
-
-              <button
-                onClick={handleNotJoinExisting}
-                className="w-full flex items-center gap-4 p-5 bg-white rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition"
-              >
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-gray-600" />
-                </div>
-                <div className="text-left">
-                  <span className="block font-semibold text-gray-900">
-                    {tc('no')}, {t('separateOrder')}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {t('separateOrderDesc')}
-                  </span>
-                </div>
-              </button>
-            </div>
           </div>
         </main>
       </div>
