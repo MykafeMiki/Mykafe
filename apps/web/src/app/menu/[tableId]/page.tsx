@@ -53,6 +53,7 @@ export default function MenuPage() {
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
   const setTableIdInCart = useCart((state) => state.setTableId)
   const setTableSessionInCart = useCart((state) => state.setTableSessionId)
+  const setCustomerNameInCart = useCart((state) => state.setCustomerName)
   const checkAndClearStale = useCart((state) => state.checkAndClearStale)
   const addToCart = useCart((state) => state.addItem)
 
@@ -171,6 +172,8 @@ export default function MenuPage() {
   // Handle name submission for new customer
   const handleSubmitName = () => {
     if (!customerName.trim()) return
+    // Save name to cart store so it's included in orders
+    setCustomerNameInCart(customerName.trim())
     // After entering name, ask about table sharing
     setStep('choice')
   }

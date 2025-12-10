@@ -17,7 +17,7 @@ interface CartDrawerProps {
 export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps) {
   const t = useTranslations('cart')
   const tm = useTranslations('menuItem')
-  const { items, tableId, tableSessionId, updateQuantity, updateConsumeMode, removeItem, clearCart, getTotal } = useCart()
+  const { items, tableId, tableSessionId, customerName, updateQuantity, updateConsumeMode, removeItem, clearCart, getTotal } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,6 +31,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
       const response = await createOrder({
         tableId,
         tableSessionId: tableSessionId || undefined,
+        customerName: customerName || undefined,
         items: items.map((item) => ({
           menuItemId: item.menuItem.id,
           quantity: item.quantity,

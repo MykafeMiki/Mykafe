@@ -112,9 +112,17 @@ export function OrderCard({ order, onStatusChange }: OrderCardProps) {
               )}
             </div>
           ) : (
-            <span className="text-2xl font-bold">
-              #{order.table?.number || '?'}
-            </span>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold">
+                #{order.table?.number || '?'}
+              </span>
+              {order.customerName && (
+                <span className="text-sm text-gray-600 flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {order.customerName}
+                </span>
+              )}
+            </div>
           )}
           <div className="flex items-center gap-1 text-sm text-gray-600">
             <StatusIcon className="w-4 h-4" />
