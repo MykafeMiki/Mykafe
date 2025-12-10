@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
 import { ItemModal } from '@/components/menu/ItemModal'
+import { MenuSections, menuSections, categoryToSectionMap, getSectionName } from '@/components/menu/MenuSections'
 import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
@@ -17,7 +18,7 @@ import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
-type PageStep = 'enter-name' | 'join-existing' | 'choice' | 'merge-input' | 'join-group' | 'menu'
+type PageStep = 'enter-name' | 'join-existing' | 'choice' | 'merge-input' | 'join-group' | 'sections' | 'menu'
 
 export default function MenuPage() {
   const t = useTranslations('tableMenu')
@@ -27,6 +28,7 @@ export default function MenuPage() {
   const tableId = params.tableId as string
 
   const [step, setStep] = useState<PageStep>('enter-name')
+  const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('')
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
@@ -66,6 +68,15 @@ export default function MenuPage() {
     return filterCategoriesByTime(categories, menuContext)
   }, [categories, menuContext])
 
+  // Filter categories for the selected section
+  const sectionCategories = useMemo(() => {
+    if (!selectedSection) return filteredCategories
+    return filteredCategories.filter(cat => {
+      const sectionId = categoryToSectionMap[cat.name]
+      return sectionId === selectedSection
+    })
+  }, [filteredCategories, selectedSection])
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -88,8 +99,8 @@ export default function MenuPage() {
 
         // Determine initial step based on table state
         if (table.isCounter) {
-          // Counter tables go directly to menu (they use customerName in order)
-          setStep('menu')
+          // Counter tables go directly to sections (they use customerName in order)
+          setStep('sections')
         } else if (activeCustomers.length > 0) {
           // Table already has customers - ask if joining them
           setStep('join-existing')
@@ -192,11 +203,11 @@ export default function MenuPage() {
     setSavingName(true)
     try {
       await addCustomerToTable(tableDbId, customerName.trim())
-      // Go directly to menu since table is already set up
-      setStep('menu')
+      // Go directly to sections since table is already set up
+      setStep('sections')
     } catch (err) {
       console.error('Error saving customer name:', err)
-      setStep('menu')
+      setStep('sections')
     } finally {
       setSavingName(false)
     }
@@ -211,7 +222,7 @@ export default function MenuPage() {
   }
 
   const handleSingleTable = () => {
-    setStep('menu')
+    setStep('sections')
   }
 
   const handleMergeTables = () => {
@@ -242,7 +253,7 @@ export default function MenuPage() {
       })
       setTableSession(session)
       setTableSessionInCart(session.id)
-      setStep('menu')
+      setStep('sections')
     } catch (err) {
       console.error('Failed to create session:', err)
       setMergeError(tc('error'))
@@ -256,14 +267,33 @@ export default function MenuPage() {
     if (tableSession) {
       setTableSessionInCart(tableSession.id)
     }
-    setStep('menu')
+    setStep('sections')
   }
 
   const handleNotInGroup = () => {
-    // User is not part of the group - clear session and go to menu without it
+    // User is not part of the group - clear session and go to sections without it
     setTableSession(null)
     setTableSessionInCart(null)
+    setStep('sections')
+  }
+
+  // Handle section selection
+  const handleSelectSection = (sectionId: string) => {
+    setSelectedSection(sectionId)
+    // Set active category to first category in section
+    const firstCategoryInSection = filteredCategories.find(cat =>
+      categoryToSectionMap[cat.name] === sectionId
+    )
+    if (firstCategoryInSection) {
+      setActiveCategory(firstCategoryInSection.id)
+    }
     setStep('menu')
+  }
+
+  // Handle back to sections
+  const handleBackToSections = () => {
+    setSelectedSection(null)
+    setStep('sections')
   }
 
   if (loading) {
@@ -644,24 +674,87 @@ export default function MenuPage() {
     )
   }
 
-  // Step 4: Menu view
+  // Step 4: Sections view
+  if (step === 'sections') {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        {/* Header */}
+        <header className="bg-primary-500 text-white p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
+              {tableNumber !== null && tableNumber > 0 && (
+                <p className="text-primary-100">{t('table')} {tableNumber}</p>
+              )}
+            </div>
+            <LanguageSelectorCompact />
+          </div>
+        </header>
+
+        {/* Sections Grid */}
+        <MenuSections onSelectSection={handleSelectSection} />
+
+        {/* Cart Button */}
+        <CartButton onClick={() => setIsCartOpen(true)} />
+
+        {/* Cart Drawer */}
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          onOrderSuccess={handleOrderSuccess}
+        />
+
+        {/* Order Success Toast */}
+        {orderSuccess && (
+          <div className="fixed top-4 left-4 right-4 z-50 bg-accent-500 text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top">
+            <CheckCircle className="w-6 h-6" />
+            <div>
+              <p className="font-semibold">{t('orderSent')}</p>
+              <p className="text-sm text-accent-100">
+                {estimatedWait
+                  ? t('estimatedWait', { minutes: estimatedWait })
+                  : t('preparing')}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Step 5: Menu view (filtered by section)
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
       <header className="bg-primary-500 text-white p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">MyKafe</h1>
-            {tableNumber && (
-              <p className="text-primary-100">
-                {t('table')} {tableNumber}
-                {tableSession && tableSession.linkedTables.length > 0 && (
-                  <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
-                    + {tableSession.linkedTables.join(', ')}
-                  </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackToSections}
+              className="p-2 -ml-2 hover:bg-primary-600 rounded-lg transition"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-xl font-display font-semibold italic">
+                {selectedSection && getSectionName(
+                  menuSections.find(s => s.id === selectedSection)!,
+                  locale
                 )}
-              </p>
-            )}
+              </h1>
+              {tableNumber !== null && tableNumber > 0 && (
+                <p className="text-primary-100 text-sm">
+                  {t('table')} {tableNumber}
+                  {tableSession && tableSession.linkedTables.length > 0 && (
+                    <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
+                      + {tableSession.linkedTables.join(', ')}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
           </div>
           <LanguageSelectorCompact />
         </div>
@@ -674,16 +767,16 @@ export default function MenuPage() {
         )}
       </header>
 
-      {/* Category Navigation */}
+      {/* Category Navigation (only categories in selected section) */}
       <CategoryNav
-        categories={filteredCategories}
+        categories={sectionCategories}
         activeCategory={activeCategory}
         onSelect={scrollToCategory}
       />
 
       {/* Menu Items */}
       <main className="p-4 space-y-8">
-        {filteredCategories.map((category) => (
+        {sectionCategories.map((category) => (
           <section
             key={category.id}
             ref={(el) => {
