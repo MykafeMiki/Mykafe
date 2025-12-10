@@ -91,6 +91,7 @@ Deno.serve(async (req) => {
     // POST /orders - Create new order
     if (req.method === 'POST' && subPath.length === 0) {
       const body = await req.json()
+      console.log('Creating order with body:', JSON.stringify(body))
       const { tableId, items, notes, orderType, paymentMethod, customerName, customerPhone, partyCode, tableSessionId } = body
 
       // Verifica se il tavolo è un banco (richiede customerName)
@@ -334,7 +335,8 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return new Response(JSON.stringify({ error: 'Internal server error', details: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
