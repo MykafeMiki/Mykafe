@@ -123,7 +123,10 @@
     "groupExists": "Faites-vous partie d'un groupe ?",
     "groupExistsDesc": "Cette table fait partie d'un groupe avec les tables {tables}",
     "joinGroupDesc": "Rejoignez le groupe et partagez l'addition",
-    "notInGroupDesc": "Commander uniquement pour cette table"
+    "notInGroupDesc": "Commander uniquement pour cette table",
+    "selectOrEnterName": "Sélectionnez votre nom ou ajoutez-en un nouveau",
+    "alreadyAtTable": "Qui êtes-vous ?",
+    "orNewName": "ou ajoutez un nouveau nom"
   },
   "cart": {
     "title": "Votre commande",

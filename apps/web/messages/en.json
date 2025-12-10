@@ -123,7 +123,10 @@
     "groupExists": "Are you part of a group?",
     "groupExistsDesc": "This table is part of a group with tables {tables}",
     "joinGroupDesc": "Join the group and share the bill",
-    "notInGroupDesc": "Order only for this table"
+    "notInGroupDesc": "Order only for this table",
+    "selectOrEnterName": "Select your name or add a new one",
+    "alreadyAtTable": "Who are you?",
+    "orNewName": "or add a new name"
   },
   "cart": {
     "title": "Your order",

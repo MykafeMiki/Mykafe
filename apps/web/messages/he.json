@@ -123,7 +123,10 @@
     "groupExists": "האם אתה חלק מקבוצה?",
     "groupExistsDesc": "שולחן זה חלק מקבוצה עם שולחנות {tables}",
     "joinGroupDesc": "הצטרף לקבוצה ושתף את החשבון",
-    "notInGroupDesc": "הזמן רק לשולחן זה"
+    "notInGroupDesc": "הזמן רק לשולחן זה",
+    "selectOrEnterName": "בחר את שמך או הוסף שם חדש",
+    "alreadyAtTable": "מי את/ה?",
+    "orNewName": "או הוסף שם חדש"
   },
   "cart": {
     "title": "ההזמנה שלך",

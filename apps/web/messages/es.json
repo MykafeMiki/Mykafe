@@ -123,7 +123,10 @@
     "groupExists": "¿Eres parte de un grupo?",
     "groupExistsDesc": "Esta mesa es parte de un grupo con las mesas {tables}",
     "joinGroupDesc": "Únete al grupo y comparte la cuenta",
-    "notInGroupDesc": "Pedir solo para esta mesa"
+    "notInGroupDesc": "Pedir solo para esta mesa",
+    "selectOrEnterName": "Selecciona tu nombre o añade uno nuevo",
+    "alreadyAtTable": "¿Quién eres?",
+    "orNewName": "o añade un nuevo nombre"
   },
   "cart": {
     "title": "Tu pedido",

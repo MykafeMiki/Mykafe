@@ -12,7 +12,7 @@ import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
-import { getMenu, getTableByQr, getTableSessionByTable, createTableSession, type TableSession } from '@/lib/api'
+import { getMenu, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
 import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
@@ -43,6 +43,9 @@ export default function MenuPage() {
 
   // Customer name state
   const [customerName, setCustomerName] = useState('')
+  const [existingCustomers, setExistingCustomers] = useState<TableCustomer[]>([])
+  const [isSelectingExisting, setIsSelectingExisting] = useState(false)
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
 
   // Table session state
   const [tableSession, setTableSession] = useState<TableSession | null>(null)
@@ -90,6 +93,15 @@ export default function MenuPage() {
         setTableDbId(table.id)
         setTableIdInCart(table.id)
         setIsCounterTable(table.isCounter || false)
+
+        // Fetch existing customers at this table
+        try {
+          const customers = await getTableCustomers(table.id)
+          setExistingCustomers(customers || [])
+        } catch {
+          // No customers found, that's ok
+          setExistingCustomers([])
+        }
 
         // Determine initial step based on table state
         if (table.isCounter) {
@@ -170,11 +182,33 @@ export default function MenuPage() {
   }
 
   // Handle name submission for new customer
-  const handleSubmitName = () => {
-    if (!customerName.trim()) return
-    // Save name to cart store so it's included in orders
-    setCustomerNameInCart(customerName.trim())
-    // After entering name, ask about table sharing
+  const handleSubmitName = async () => {
+    if (!customerName.trim() || !tableDbId) return
+
+    setLoadingCustomers(true)
+    try {
+      // Register customer with the table backend
+      await addCustomerToTable(tableDbId, customerName.trim())
+      // Save name to cart store so it's included in orders
+      setCustomerNameInCart(customerName.trim())
+      // After entering name, ask about table sharing
+      setStep('choice')
+    } catch (err) {
+      console.error('Failed to register customer:', err)
+      // Still proceed even if backend fails - name is saved locally
+      setCustomerNameInCart(customerName.trim())
+      setStep('choice')
+    } finally {
+      setLoadingCustomers(false)
+    }
+  }
+
+  // Handle selecting an existing customer name
+  const handleSelectExistingCustomer = (customer: TableCustomer) => {
+    setCustomerName(customer.name)
+    setCustomerNameInCart(customer.name)
+    setIsSelectingExisting(false)
+    // Skip to choice directly since customer is already registered
     setStep('choice')
   }
 
@@ -279,6 +313,8 @@ export default function MenuPage() {
 
   // Step 0: Enter name - First step for empty tables
   if (step === 'enter-name') {
+    const hasExistingCustomers = existingCustomers.length > 0
+
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-primary-500 text-white p-4">
@@ -303,9 +339,43 @@ export default function MenuPage() {
                 {t('welcome')}
               </h2>
               <p className="text-gray-600 mt-2">
-                {t('enterYourName')}
+                {hasExistingCustomers ? t('selectOrEnterName') : t('enterYourName')}
               </p>
             </div>
+
+            {/* Show existing customers if any */}
+            {hasExistingCustomers && !isSelectingExisting && (
+              <div className="mb-6">
+                <p className="text-sm text-gray-500 mb-3 text-center">{t('alreadyAtTable')}</p>
+                <div className="space-y-2">
+                  {existingCustomers.map((customer) => (
+                    <button
+                      key={customer.id}
+                      onClick={() => handleSelectExistingCustomer(customer)}
+                      className="w-full flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-primary-500 hover:bg-primary-50 transition"
+                    >
+                      <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-primary-600" />
+                      </div>
+                      <span className="font-medium text-gray-900">{customer.name}</span>
+                      {customer.isHost && (
+                        <span className="ml-auto text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full">
+                          Host
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-gray-50 text-gray-500">{t('orNewName')}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <input
               type="text"
@@ -313,19 +383,19 @@ export default function MenuPage() {
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder={t('namePlaceholder')}
               className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 focus:outline-none text-lg text-center"
-              autoFocus
+              autoFocus={!hasExistingCustomers}
             />
 
             <button
               onClick={handleSubmitName}
-              disabled={!customerName.trim()}
+              disabled={!customerName.trim() || loadingCustomers}
               className={`w-full mt-6 py-4 rounded-xl font-semibold text-lg transition ${
-                customerName.trim()
+                customerName.trim() && !loadingCustomers
                   ? 'bg-primary-500 text-white hover:bg-primary-600'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {tc('continue')}
+              {loadingCustomers ? tc('loading') : tc('continue')}
             </button>
           </div>
         </main>

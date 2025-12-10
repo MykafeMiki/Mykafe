@@ -1,6 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
+// Generate cuid-like ID
+function generateId(): string {
+  const timestamp = Date.now().toString(36)
+  const randomStr = Math.random().toString(36).substring(2, 15)
+  return `c${timestamp}${randomStr}`
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -164,6 +171,103 @@ Deno.serve(async (req) => {
       if (error) throw error
 
       return new Response(JSON.stringify(table), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // GET /tables/:id/customers - Get active customers at table
+    if (req.method === 'GET' && subPath[0] && subPath[1] === 'customers') {
+      const tableId = subPath[0]
+
+      const { data: customers, error } = await supabase
+        .from('TableCustomer')
+        .select('*')
+        .eq('tableId', tableId)
+        .eq('isActive', true)
+        .order('createdAt', { ascending: true })
+
+      if (error) throw error
+
+      return new Response(JSON.stringify(customers || []), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // POST /tables/:id/customers - Add customer to table
+    if (req.method === 'POST' && subPath[0] && subPath[1] === 'customers') {
+      const tableId = subPath[0]
+      const body = await req.json()
+      const { name } = body
+
+      if (!name || !name.trim()) {
+        return new Response(JSON.stringify({ error: 'Name is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Check if this name already exists and is active at this table
+      const { data: existing } = await supabase
+        .from('TableCustomer')
+        .select('*')
+        .eq('tableId', tableId)
+        .eq('name', name.trim())
+        .eq('isActive', true)
+        .single()
+
+      if (existing) {
+        // Name already exists, just return it
+        return new Response(JSON.stringify(existing), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Check if this is the first customer (will be host)
+      const { count } = await supabase
+        .from('TableCustomer')
+        .select('*', { count: 'exact', head: true })
+        .eq('tableId', tableId)
+        .eq('isActive', true)
+
+      const isHost = (count || 0) === 0
+      const now = new Date().toISOString()
+
+      const { data: customer, error } = await supabase
+        .from('TableCustomer')
+        .insert({
+          id: generateId(),
+          tableId,
+          name: name.trim(),
+          isHost,
+          isActive: true,
+          createdAt: now
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return new Response(JSON.stringify(customer), {
+        status: 201,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // DELETE /tables/:id/customers - Clear all customers from table (when table is freed)
+    if (req.method === 'DELETE' && subPath[0] && subPath[1] === 'customers') {
+      const tableId = subPath[0]
+
+      // Mark all customers as inactive
+      const now = new Date().toISOString()
+      const { error } = await supabase
+        .from('TableCustomer')
+        .update({ isActive: false, leftAt: now })
+        .eq('tableId', tableId)
+        .eq('isActive', true)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }

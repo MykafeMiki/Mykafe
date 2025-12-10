@@ -123,7 +123,10 @@
     "groupExists": "Fai parte di un gruppo?",
     "groupExistsDesc": "Questo tavolo fa parte di un gruppo con i tavoli {tables}",
     "joinGroupDesc": "Unisciti al gruppo e condividi il conto",
-    "notInGroupDesc": "Ordina solo per questo tavolo"
+    "notInGroupDesc": "Ordina solo per questo tavolo",
+    "selectOrEnterName": "Seleziona il tuo nome o aggiungine uno nuovo",
+    "alreadyAtTable": "Chi sei?",
+    "orNewName": "o aggiungi un nuovo nome"
   },
   "cart": {
     "title": "Il tuo ordine",
