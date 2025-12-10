@@ -79,6 +79,8 @@ export default function MenuPage() {
 
   useEffect(() => {
     async function loadData() {
+      if (!tableId) return
+
       try {
         // Load table info with customers
         const table = await getTableByQrWithCustomers(tableId)
