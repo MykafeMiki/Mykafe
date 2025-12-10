@@ -8,6 +8,74 @@ function generateId(): string {
   return `c${timestamp}${randomStr}`
 }
 
+// Check if text might need translation (not Italian)
+function mightNeedTranslation(text: string): boolean {
+  if (!text || text.length < 3) return false
+
+  // Common Italian words that indicate text is already in Italian
+  const italianIndicators = [
+    'senza', 'con', 'poco', 'molto', 'ben', 'cotto', 'crudo', 'freddo', 'caldo',
+    'più', 'meno', 'solo', 'doppio', 'extra', 'niente', 'tutto', 'metà',
+    'grande', 'piccolo', 'leggero', 'pesante', 'dolce', 'salato', 'amaro',
+    'per', 'favore', 'grazie', 'prego'
+  ]
+
+  const lowerText = text.toLowerCase()
+  for (const word of italianIndicators) {
+    if (lowerText.includes(word)) {
+      return false
+    }
+  }
+
+  // Check for common non-Italian patterns
+  const nonItalianPatterns = [
+    /\bwithout\b/i, /\bwith\b/i, /\bno\b/i, /\bextra\b/i, /\bwell\b/i, /\bdone\b/i,
+    /\bplease\b/i, /\bless\b/i, /\bmore\b/i, /\bhalf\b/i, /\bdouble\b/i,
+    /\bspicy\b/i, /\bhot\b/i, /\bcold\b/i, /\braw\b/i, /\bcooked\b/i,
+    /\bsans\b/i, /\bavec\b/i, /\bpeu\b/i, /\bbeaucoup\b/i, /\bs'il vous plaît\b/i,
+    /\bsin\b/i, /\bpor favor\b/i, /\bmuy\b/i, /\bpoco\b/i,
+    /\bבלי\b/, /\bעם\b/, /\bבבקשה\b/
+  ]
+
+  for (const pattern of nonItalianPatterns) {
+    if (pattern.test(text)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+// Translate text to Italian using MyMemory API
+async function translateToItalian(text: string): Promise<string> {
+  if (!text || text.trim().length === 0) return text
+  if (!mightNeedTranslation(text)) return text
+
+  try {
+    const response = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=autodetect|it`
+    )
+
+    if (!response.ok) {
+      console.warn('Translation API error:', response.status)
+      return text
+    }
+
+    const data = await response.json()
+
+    if (data.responseStatus === 200 && data.responseData?.translatedText) {
+      const translated = data.responseData.translatedText
+      console.log(`Translated "${text}" -> "${translated}"`)
+      return translated
+    }
+
+    return text
+  } catch (error) {
+    console.warn('Translation failed:', error)
+    return text
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -190,12 +258,22 @@ Deno.serve(async (req) => {
 
       const surcharge = totalAmount - subtotal
 
+      // Translate order notes to Italian for kitchen
+      const translatedOrderNotes = notes ? await translateToItalian(notes) : null
+
+      // Translate item notes to Italian
+      for (const item of items) {
+        if (item.notes) {
+          item.notes = await translateToItalian(item.notes)
+        }
+      }
+
       // Create order - build insert object dynamically to avoid missing column errors
       const now = new Date().toISOString()
       const orderData: Record<string, unknown> = {
         id: generateId(),
         tableId,
-        notes,
+        notes: translatedOrderNotes,
         orderType: orderType || 'DINE_IN',
         paymentMethod,
         customerName,

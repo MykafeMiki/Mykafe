@@ -53,6 +53,7 @@ export default function MenuPage() {
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
   const setTableIdInCart = useCart((state) => state.setTableId)
   const setTableSessionInCart = useCart((state) => state.setTableSessionId)
+  const checkAndClearStale = useCart((state) => state.checkAndClearStale)
   const addToCart = useCart((state) => state.addItem)
 
   // Determine menu context: counter/bar QR uses 'bar' context, regular tables use 'table'
@@ -75,6 +76,9 @@ export default function MenuPage() {
   }, [filteredCategories, selectedSection])
 
   useEffect(() => {
+    // Clear stale cart data (>1 hour old)
+    checkAndClearStale()
+
     async function loadData() {
       if (!tableId) return
 
@@ -126,7 +130,7 @@ export default function MenuPage() {
     }
 
     loadData()
-  }, [tableId, setTableIdInCart, setTableSessionInCart, tc])
+  }, [tableId, setTableIdInCart, setTableSessionInCart, checkAndClearStale, tc])
 
   const scrollToCategory = (categoryId: string) => {
     setActiveCategory(categoryId)

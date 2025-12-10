@@ -11,6 +11,7 @@ interface CartStore {
   tableSessionId: string | null
   pickupTime: string | null
   customerName: string | null
+  lastActivity: number | null // timestamp of last activity
   setTableId: (tableId: string) => void
   setTableSessionId: (sessionId: string | null) => void
   setPickupTime: (time: string | null) => void
@@ -20,9 +21,13 @@ interface CartStore {
   updateQuantity: (index: number, quantity: number) => void
   updateConsumeMode: (index: number, consumeMode: ConsumeMode) => void
   clearCart: () => void
+  clearAll: () => void // Clear cart AND table info
+  checkAndClearStale: () => void // Clear if stale (>1 hour)
   getTotal: () => number
   getItemCount: () => number
 }
+
+const CART_EXPIRY_MS = 60 * 60 * 1000 // 1 hour
 
 export const useCart = create<CartStore>()(
   persist(
@@ -32,11 +37,26 @@ export const useCart = create<CartStore>()(
       tableSessionId: null,
       pickupTime: null,
       customerName: null,
+      lastActivity: null,
 
-      setTableId: (tableId) => set({ tableId }),
-      setTableSessionId: (tableSessionId) => set({ tableSessionId }),
-      setPickupTime: (pickupTime) => set({ pickupTime }),
-      setCustomerName: (customerName) => set({ customerName }),
+      setTableId: (tableId) => {
+        const state = get()
+        // If changing to a different table, clear the cart
+        if (state.tableId && state.tableId !== tableId) {
+          set({
+            items: [],
+            tableId,
+            tableSessionId: null,
+            customerName: null,
+            lastActivity: Date.now()
+          })
+        } else {
+          set({ tableId, lastActivity: Date.now() })
+        }
+      },
+      setTableSessionId: (tableSessionId) => set({ tableSessionId, lastActivity: Date.now() }),
+      setPickupTime: (pickupTime) => set({ pickupTime, lastActivity: Date.now() }),
+      setCustomerName: (customerName) => set({ customerName, lastActivity: Date.now() }),
 
       addItem: (menuItem, quantity, selectedModifiers, notes, consumeMode = ConsumeMode.DINE_IN) => {
         set((state) => ({
@@ -44,12 +64,14 @@ export const useCart = create<CartStore>()(
             ...state.items,
             { menuItem, quantity, selectedModifiers, notes, consumeMode },
           ],
+          lastActivity: Date.now(),
         }))
       },
 
       removeItem: (index) => {
         set((state) => ({
           items: state.items.filter((_, i) => i !== index),
+          lastActivity: Date.now(),
         }))
       },
 
@@ -62,6 +84,7 @@ export const useCart = create<CartStore>()(
           items: state.items.map((item, i) =>
             i === index ? { ...item, quantity } : item
           ),
+          lastActivity: Date.now(),
         }))
       },
 
@@ -70,10 +93,35 @@ export const useCart = create<CartStore>()(
           items: state.items.map((item, i) =>
             i === index ? { ...item, consumeMode } : item
           ),
+          lastActivity: Date.now(),
         }))
       },
 
-      clearCart: () => set({ items: [] }),
+      clearCart: () => set({ items: [], lastActivity: Date.now() }),
+
+      clearAll: () => set({
+        items: [],
+        tableId: null,
+        tableSessionId: null,
+        pickupTime: null,
+        customerName: null,
+        lastActivity: null
+      }),
+
+      checkAndClearStale: () => {
+        const state = get()
+        if (state.lastActivity && Date.now() - state.lastActivity > CART_EXPIRY_MS) {
+          // Cart is stale, clear everything
+          set({
+            items: [],
+            tableId: null,
+            tableSessionId: null,
+            pickupTime: null,
+            customerName: null,
+            lastActivity: null
+          })
+        }
+      },
 
       getTotal: () => {
         return get().items.reduce((total, item) => {
