@@ -298,12 +298,19 @@ Deno.serve(async (req) => {
     if (req.method === 'PATCH' && subPath[0] === 'items' && subPath[1]) {
       const itemId = subPath[1]
       const body = await req.json()
-      const { name, description, price, imageUrl, sortOrder, available } = body
+      const { name, description, price, priceTakeaway, priceTakeawayRemote, imageUrl, sortOrder, available } = body
 
       const updateData: Record<string, unknown> = {}
       if (name !== undefined) updateData.name = name
       if (description !== undefined) updateData.description = description
       if (price !== undefined) updateData.price = Math.round(price * 100)
+      // priceTakeaway e priceTakeawayRemote: null = usa prezzo base, numero = prezzo specifico
+      if (priceTakeaway !== undefined) {
+        updateData.priceTakeaway = priceTakeaway !== null ? Math.round(priceTakeaway * 100) : null
+      }
+      if (priceTakeawayRemote !== undefined) {
+        updateData.priceTakeawayRemote = priceTakeawayRemote !== null ? Math.round(priceTakeawayRemote * 100) : null
+      }
       if (imageUrl !== undefined) updateData.imageUrl = imageUrl
       if (sortOrder !== undefined) updateData.sortOrder = sortOrder
       if (available !== undefined) updateData.available = available
