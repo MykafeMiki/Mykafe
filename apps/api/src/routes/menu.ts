@@ -132,13 +132,15 @@ router.patch('/categories/:id', async (req, res) => {
 // Admin: Update menu item
 router.patch('/items/:id', async (req, res) => {
   try {
-    const { name, description, price, imageUrl, sortOrder, available } = req.body
+    const { name, description, price, priceTakeaway, priceTakeawayRemote, imageUrl, sortOrder, available } = req.body
     const item = await prisma.menuItem.update({
       where: { id: req.params.id },
       data: {
         ...(name !== undefined && { name }),
         ...(description !== undefined && { description }),
         ...(price !== undefined && { price: Math.round(price * 100) }),
+        ...(priceTakeaway !== undefined && { priceTakeaway: priceTakeaway !== null ? Math.round(priceTakeaway * 100) : null }),
+        ...(priceTakeawayRemote !== undefined && { priceTakeawayRemote: priceTakeawayRemote !== null ? Math.round(priceTakeawayRemote * 100) : null }),
         ...(imageUrl !== undefined && { imageUrl }),
         ...(sortOrder !== undefined && { sortOrder }),
         ...(available !== undefined && { available }),

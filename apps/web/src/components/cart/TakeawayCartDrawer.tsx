@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { X, Minus, Plus, Trash2, Loader2, User, Phone } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
-import { formatPrice } from '@/lib/utils'
+import { formatPrice, getItemPrice as getContextPrice } from '@/lib/utils'
 import { createOrder } from '@/lib/api'
 import { PaymentMethod, OrderType, ConsumeMode } from '@shared/types'
+import type { MenuItem } from '@shared/types'
 
 interface TakeawayCartDrawerProps {
   isOpen: boolean
@@ -23,7 +24,7 @@ function roundUpToTenCents(amount: number): number {
 }
 
 // Calcola il prezzo di un item con eventuale maggiorazione carta
-function getItemPrice(basePrice: number, modifiersPrice: number, quantity: number, isCard: boolean): number {
+function calculateItemPrice(basePrice: number, modifiersPrice: number, quantity: number, isCard: boolean): number {
   const itemTotal = (basePrice + modifiersPrice) * quantity
   if (isCard) {
     return roundUpToTenCents(Math.round(itemTotal * CARD_MULTIPLIER))
@@ -33,7 +34,7 @@ function getItemPrice(basePrice: number, modifiersPrice: number, quantity: numbe
 
 export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMethod }: TakeawayCartDrawerProps) {
   const t = useTranslations('cart')
-  const { items, tableId, updateQuantity, removeItem, clearCart } = useCart()
+  const { items, tableId, priceContext, updateQuantity, removeItem, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [customerName, setCustomerName] = useState('')
@@ -43,8 +44,9 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
 
   // Calcola il totale con i prezzi già maggiorati per carta
   const total = items.reduce((sum, item) => {
+    const basePrice = getContextPrice(item.menuItem, priceContext)
     const modifiersPrice = item.selectedModifiers.reduce((s, m) => s + m.price, 0)
-    return sum + getItemPrice(item.menuItem.price, modifiersPrice, item.quantity, isCard)
+    return sum + calculateItemPrice(basePrice, modifiersPrice, item.quantity, isCard)
   }, 0)
 
   const handleSubmitOrder = async () => {
@@ -141,8 +143,8 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                       )}
                       <p className="font-semibold text-primary-600 mt-1">
                         {formatPrice(
-                          getItemPrice(
-                            item.menuItem.price,
+                          calculateItemPrice(
+                            getContextPrice(item.menuItem, priceContext),
                             item.selectedModifiers.reduce((s, m) => s + m.price, 0),
                             item.quantity,
                             isCard

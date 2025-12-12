@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X, Minus, Plus, UtensilsCrossed, ShoppingBag } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { formatPrice, cn } from '@/lib/utils'
+import { formatPrice, cn, getItemPrice, type PriceContext } from '@/lib/utils'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
@@ -14,6 +14,7 @@ interface ItemModalProps {
   onAdd: (quantity: number, modifiers: Modifier[], notes?: string, consumeMode?: ConsumeMode) => void
   defaultConsumeMode?: ConsumeMode
   priceMultiplier?: number
+  priceContext?: PriceContext
   hideConsumeModeSelector?: boolean
 }
 
@@ -22,7 +23,7 @@ function roundUpToTenCents(amount: number): number {
   return Math.ceil(amount / 10) * 10
 }
 
-export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMode.DINE_IN, priceMultiplier = 1, hideConsumeModeSelector = false }: ItemModalProps) {
+export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMode.DINE_IN, priceMultiplier = 1, priceContext = 'dine-in', hideConsumeModeSelector = false }: ItemModalProps) {
   const locale = useLocale()
   const t = useTranslations('menuItem')
   const [quantity, setQuantity] = useState(1)
@@ -32,6 +33,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
 
   const translatedName = getTranslatedName(item, locale)
   const translatedDescription = getTranslatedDescription(item, locale)
+  const baseItemPrice = getItemPrice(item, priceContext)
 
   const toggleModifier = (groupId: string, modifier: Modifier, multiSelect: boolean) => {
     setSelectedModifiers((prev) => {
@@ -67,7 +69,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
       (sum, mod) => sum + mod.price,
       0
     )
-    const baseTotal = (item.price + modifiersTotal) * quantity
+    const baseTotal = (baseItemPrice + modifiersTotal) * quantity
     return priceMultiplier > 1
       ? roundUpToTenCents(Math.round(baseTotal * priceMultiplier))
       : baseTotal

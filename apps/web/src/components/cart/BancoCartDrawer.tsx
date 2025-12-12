@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { X, Minus, Plus, Trash2, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
-import { formatPrice } from '@/lib/utils'
+import { formatPrice, getItemPrice } from '@/lib/utils'
 import { createOrder } from '@/lib/api'
 import { PaymentMethod, OrderType, ConsumeMode } from '@shared/types'
 
@@ -18,13 +18,14 @@ interface BancoCartDrawerProps {
 export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName }: BancoCartDrawerProps) {
   const t = useTranslations('cart')
   const tb = useTranslations('banco')
-  const { items, tableId, updateQuantity, removeItem, clearCart } = useCart()
+  const { items, tableId, priceContext, updateQuantity, removeItem, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const total = items.reduce((sum, item) => {
+    const basePrice = getItemPrice(item.menuItem, priceContext)
     const modifiersPrice = item.selectedModifiers.reduce((s, m) => s + m.price, 0)
-    return sum + (item.menuItem.price + modifiersPrice) * item.quantity
+    return sum + (basePrice + modifiersPrice) * item.quantity
   }, 0)
 
   const handleSubmitOrder = async () => {
@@ -109,7 +110,7 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
                     )}
                     <p className="font-semibold text-primary-600 mt-1">
                       {formatPrice(
-                        (item.menuItem.price +
+                        (getItemPrice(item.menuItem, priceContext) +
                           item.selectedModifiers.reduce((s, m) => s + m.price, 0)) *
                           item.quantity
                       )}

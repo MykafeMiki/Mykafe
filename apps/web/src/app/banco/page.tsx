@@ -37,6 +37,7 @@ export default function BancoPage() {
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
   const setTableIdInCart = useCart((state) => state.setTableId)
   const setCustomerNameInCart = useCart((state) => state.setCustomerName)
+  const setPriceContext = useCart((state) => state.setPriceContext)
   const addToCart = useCart((state) => state.addItem)
 
   // Filter categories based on time (bar context - hides panini before 11:00, sushi outside window)
@@ -50,6 +51,7 @@ export default function BancoPage() {
         // Load counter/takeaway table
         const table = await getTableByQr('takeaway')
         setTableIdInCart(table.id)
+        setPriceContext('takeaway-counter')
 
         // Load menu
         const menuData = await getMenu()
@@ -70,7 +72,7 @@ export default function BancoPage() {
     }
 
     loadData()
-  }, [setTableIdInCart])
+  }, [setTableIdInCart, setPriceContext])
 
   const scrollToCategory = (categoryId: string) => {
     setActiveCategory(categoryId)
@@ -254,6 +256,7 @@ export default function BancoPage() {
                   key={item.id}
                   item={item}
                   onAdd={handleAddItem}
+                  priceContext="takeaway-counter"
                 />
               ))}
             </div>
@@ -276,6 +279,7 @@ export default function BancoPage() {
           onClose={() => setSelectedItem(null)}
           onAdd={handleAddWithModifiers}
           defaultConsumeMode={ConsumeMode.TAKEAWAY}
+          priceContext="takeaway-counter"
           hideConsumeModeSelector={true}
         />
       )}

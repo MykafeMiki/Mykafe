@@ -89,6 +89,7 @@ export default function OrdinaPage() {
   const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
   const setTableIdInCart = useCart((state) => state.setTableId)
   const setPickupTime = useCart((state) => state.setPickupTime)
+  const setPriceContext = useCart((state) => state.setPriceContext)
   const addToCart = useCart((state) => state.addItem)
 
   // Filter categories - takeaway context shows panini always, but still respects sushi timer
@@ -119,6 +120,7 @@ export default function OrdinaPage() {
       try {
         const table = await getTableByQr('takeaway')
         setTableIdInCart(table.id)
+        setPriceContext('takeaway-remote')
 
         const menuData = await getMenu()
         setCategories(menuData)
@@ -138,7 +140,7 @@ export default function OrdinaPage() {
     }
 
     loadData()
-  }, [setTableIdInCart, tc])
+  }, [setTableIdInCart, setPriceContext, tc])
 
   useEffect(() => {
     if (selectedDate && selectedTime) {
@@ -483,6 +485,7 @@ export default function OrdinaPage() {
                   key={item.id}
                   item={item}
                   onAdd={handleAddItem}
+                  priceContext="takeaway-remote"
                 />
               ))}
             </div>
@@ -505,6 +508,7 @@ export default function OrdinaPage() {
           onClose={() => setSelectedItem(null)}
           onAdd={handleAddWithModifiers}
           defaultConsumeMode={ConsumeMode.TAKEAWAY}
+          priceContext="takeaway-remote"
           hideConsumeModeSelector={true}
         />
       )}

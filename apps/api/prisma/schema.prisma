@@ -108,28 +108,30 @@ model Category {
 
 // Piatti del menu
 model MenuItem {
-  id             String               @id @default(cuid())
-  name           String
-  nameEn         String?              // English translation
-  nameFr         String?              // French translation
-  nameEs         String?              // Spanish translation
-  nameHe         String?              // Hebrew translation
-  description    String?
-  descriptionEn  String?              // English translation
-  descriptionFr  String?              // French translation
-  descriptionEs  String?              // Spanish translation
-  descriptionHe  String?              // Hebrew translation
-  price          Int                  // Prezzo in centesimi
-  imageUrl       String?
-  available      Boolean              @default(true)
-  sortOrder      Int                  @default(0)
-  categoryId     String
-  category       Category             @relation(fields: [categoryId], references: [id])
-  modifierGroups ModifierGroup[]
-  orderItems     OrderItem[]
-  ingredients    MenuItemIngredient[] // Ingredienti del piatto
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id                   String               @id @default(cuid())
+  name                 String
+  nameEn               String?              // English translation
+  nameFr               String?              // French translation
+  nameEs               String?              // Spanish translation
+  nameHe               String?              // Hebrew translation
+  description          String?
+  descriptionEn        String?              // English translation
+  descriptionFr        String?              // French translation
+  descriptionEs        String?              // Spanish translation
+  descriptionHe        String?              // Hebrew translation
+  price                Int                  // Prezzo consumazione al tavolo (centesimi)
+  priceTakeaway        Int?                 // Prezzo takeaway in loco/banco (centesimi) - se null usa price
+  priceTakeawayRemote  Int?                 // Prezzo takeaway da remoto /ordina (centesimi) - se null usa priceTakeaway o price
+  imageUrl             String?
+  available            Boolean              @default(true)
+  sortOrder            Int                  @default(0)
+  categoryId           String
+  category             Category             @relation(fields: [categoryId], references: [id])
+  modifierGroups       ModifierGroup[]
+  orderItems           OrderItem[]
+  ingredients          MenuItemIngredient[] // Ingredienti del piatto
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 }
 
 // Gruppi di modificatori (es. "Extra ingredienti")

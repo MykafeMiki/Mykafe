@@ -115,7 +115,9 @@ export interface MenuItem {
   descriptionFr?: string
   descriptionEs?: string
   descriptionHe?: string
-  price: number // in cents
+  price: number // prezzo consumazione al tavolo (in cents)
+  priceTakeaway?: number // prezzo takeaway in loco/banco (in cents) - se null usa price
+  priceTakeawayRemote?: number // prezzo takeaway da remoto /ordina (in cents) - se null usa priceTakeaway o price
   imageUrl?: string
   available: boolean
   sortOrder: number

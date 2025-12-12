@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { MenuItem, Modifier, CartItem } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
+import { getItemPrice, type PriceContext } from './utils'
 
 interface CartStore {
   items: CartItem[]
@@ -11,11 +12,13 @@ interface CartStore {
   tableSessionId: string | null
   pickupTime: string | null
   customerName: string | null
+  priceContext: PriceContext // contesto prezzo corrente
   lastActivity: number | null // timestamp of last activity
   setTableId: (tableId: string) => void
   setTableSessionId: (sessionId: string | null) => void
   setPickupTime: (time: string | null) => void
   setCustomerName: (name: string | null) => void
+  setPriceContext: (context: PriceContext) => void
   addItem: (item: MenuItem, quantity: number, modifiers: Modifier[], notes?: string, consumeMode?: ConsumeMode) => void
   removeItem: (index: number) => void
   updateQuantity: (index: number, quantity: number) => void
@@ -37,6 +40,7 @@ export const useCart = create<CartStore>()(
       tableSessionId: null,
       pickupTime: null,
       customerName: null,
+      priceContext: 'dine-in' as PriceContext,
       lastActivity: null,
 
       setTableId: (tableId) => {
@@ -57,6 +61,7 @@ export const useCart = create<CartStore>()(
       setTableSessionId: (tableSessionId) => set({ tableSessionId, lastActivity: Date.now() }),
       setPickupTime: (pickupTime) => set({ pickupTime, lastActivity: Date.now() }),
       setCustomerName: (customerName) => set({ customerName, lastActivity: Date.now() }),
+      setPriceContext: (priceContext) => set({ priceContext, lastActivity: Date.now() }),
 
       addItem: (menuItem, quantity, selectedModifiers, notes, consumeMode = ConsumeMode.DINE_IN) => {
         set((state) => ({
@@ -105,6 +110,7 @@ export const useCart = create<CartStore>()(
         tableSessionId: null,
         pickupTime: null,
         customerName: null,
+        priceContext: 'dine-in' as PriceContext,
         lastActivity: null
       }),
 
@@ -118,14 +124,16 @@ export const useCart = create<CartStore>()(
             tableSessionId: null,
             pickupTime: null,
             customerName: null,
+            priceContext: 'dine-in' as PriceContext,
             lastActivity: null
           })
         }
       },
 
       getTotal: () => {
-        return get().items.reduce((total, item) => {
-          const itemPrice = item.menuItem.price
+        const state = get()
+        return state.items.reduce((total, item) => {
+          const itemPrice = getItemPrice(item.menuItem, state.priceContext)
           const modifiersPrice = item.selectedModifiers.reduce(
             (sum, mod) => sum + mod.price,
             0

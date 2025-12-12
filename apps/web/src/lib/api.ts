@@ -98,7 +98,7 @@ export const createMenuItem = (data: { name: string; description?: string; price
     body: JSON.stringify(data),
   })
 
-export const updateMenuItem = (id: string, data: { name?: string; description?: string; price?: number; imageUrl?: string; sortOrder?: number; available?: boolean }) =>
+export const updateMenuItem = (id: string, data: { name?: string; description?: string; price?: number; priceTakeaway?: number | null; priceTakeawayRemote?: number | null; imageUrl?: string; sortOrder?: number; available?: boolean }) =>
   fetchApi<MenuItem>(`/menu/items/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),

@@ -2,7 +2,7 @@
 
 import { Plus } from 'lucide-react'
 import { useLocale } from 'next-intl'
-import { formatPrice } from '@/lib/utils'
+import { formatPrice, getItemPrice, type PriceContext } from '@/lib/utils'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { MenuItem, UnavailableIngredient } from '@shared/types'
 
@@ -10,6 +10,7 @@ interface MenuItemCardProps {
   item: MenuItem
   onAdd: (item: MenuItem) => void
   priceMultiplier?: number // es: 1.03 per +3%
+  priceContext?: PriceContext // contesto prezzo: dine-in, takeaway-counter, takeaway-remote
 }
 
 // Arrotonda ai 10 centesimi per eccesso
@@ -75,11 +76,12 @@ function renderDescriptionWithStrikethrough(
   return result.length > 0 ? result : description
 }
 
-export function MenuItemCard({ item, onAdd, priceMultiplier = 1 }: MenuItemCardProps) {
+export function MenuItemCard({ item, onAdd, priceMultiplier = 1, priceContext = 'dine-in' }: MenuItemCardProps) {
   const locale = useLocale()
+  const basePrice = getItemPrice(item, priceContext)
   const displayPrice = priceMultiplier > 1
-    ? roundUpToTenCents(Math.round(item.price * priceMultiplier))
-    : item.price
+    ? roundUpToTenCents(Math.round(basePrice * priceMultiplier))
+    : basePrice
 
   const translatedName = getTranslatedName(item, locale)
   const translatedDescription = getTranslatedDescription(item, locale)
