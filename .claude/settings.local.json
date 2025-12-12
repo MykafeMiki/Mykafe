@@ -79,7 +79,10 @@
       "Bash(pnpm:*)",
       "Bash(echo:*)",
       "Bash(node test-api.mjs:*)",
-      "Bash(copy \"C:\\Users\\dario\\OneDrive\\Desktop\\MyKafe\\seedream-4.0_Un_bagel_farcit0_con_salmone_affumicato_e_avocado_tagliato_a_metà_servita_su_un-0.jpg\" \"C:\\Users\\dario\\OneDrive\\Desktop\\MyKafe\\apps\\web\\public\\images\\panini-section.jpg\")"
+      "Bash(copy \"C:\\Users\\dario\\OneDrive\\Desktop\\MyKafe\\seedream-4.0_Un_bagel_farcit0_con_salmone_affumicato_e_avocado_tagliato_a_metà_servita_su_un-0.jpg\" \"C:\\Users\\dario\\OneDrive\\Desktop\\MyKafe\\apps\\web\\public\\images\\panini-section.jpg\")",
+      "Bash(node apply-schema.mjs:*)",
+      "Bash(node update-takeaway-prices.mjs:*)",
+      "Bash(node reorganize-menu.mjs:*)"
     ],
     "deny": [],
     "ask": []
