@@ -90,7 +90,12 @@
     "orderFor": "Order for",
     "orderSent": "Order sent, {name}!",
     "orderConfirmation": "We'll call you when it's ready",
-    "payAtCounter": "Pay at counter when picking up"
+    "payAtCounter": "Pay at counter when picking up",
+    "serviceQuestion": "Where will you eat?",
+    "takeaway": "Takeaway",
+    "takeawayDesc": "I'll take it to go",
+    "dineIn": "Dine in",
+    "dineInDesc": "I'll eat here"
   },
   "tableMenu": {
     "loadingMenu": "Loading menu...",

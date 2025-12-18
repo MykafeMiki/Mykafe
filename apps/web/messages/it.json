@@ -90,7 +90,12 @@
     "orderFor": "Ordine per",
     "orderSent": "Ordine inviato, {name}!",
     "orderConfirmation": "Ti chiameremo quando sarà pronto",
-    "payAtCounter": "Pagamento in cassa al ritiro"
+    "payAtCounter": "Pagamento in cassa al ritiro",
+    "serviceQuestion": "Dove consumi?",
+    "takeaway": "Porto via",
+    "takeawayDesc": "Ordino e porto via",
+    "dineIn": "Mi siedo al tavolo",
+    "dineInDesc": "Consumo qui in locale"
   },
   "tableMenu": {
     "loadingMenu": "Caricamento menu...",

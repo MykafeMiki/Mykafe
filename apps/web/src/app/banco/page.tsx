@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, Store, User } from 'lucide-react'
+import { CheckCircle, Store, User, ShoppingBag, UtensilsCrossed } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -17,7 +17,8 @@ import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 import { cn } from '@/lib/utils'
 
-type OrderStep = 'name' | 'menu'
+type OrderStep = 'name' | 'choice' | 'menu'
+type ServiceMode = 'takeaway' | 'dine-in'
 
 export default function BancoPage() {
   const t = useTranslations('banco')
@@ -26,6 +27,7 @@ export default function BancoPage() {
 
   const [step, setStep] = useState<OrderStep>('name')
   const [customerName, setCustomerNameLocal] = useState('')
+  const [serviceMode, setServiceMode] = useState<ServiceMode>('takeaway')
   const [categories, setCategories] = useState<Category[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('')
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
@@ -82,11 +84,15 @@ export default function BancoPage() {
     })
   }
 
+  // Get the correct consume mode based on service selection
+  const currentConsumeMode = serviceMode === 'dine-in' ? ConsumeMode.DINE_IN : ConsumeMode.TAKEAWAY
+  const currentPriceContext = serviceMode === 'dine-in' ? 'dine-in' : 'takeaway-counter'
+
   const handleAddItem = (item: MenuItem) => {
     if (item.modifierGroups && item.modifierGroups.length > 0) {
       setSelectedItem(item)
     } else {
-      addToCart(item, 1, [], undefined, ConsumeMode.TAKEAWAY)
+      addToCart(item, 1, [], undefined, currentConsumeMode)
     }
   }
 
@@ -97,7 +103,7 @@ export default function BancoPage() {
     consumeMode?: ConsumeMode
   ) => {
     if (selectedItem) {
-      addToCart(selectedItem, quantity, modifiers, notes, ConsumeMode.TAKEAWAY)
+      addToCart(selectedItem, quantity, modifiers, notes, currentConsumeMode)
     }
   }
 
@@ -108,14 +114,26 @@ export default function BancoPage() {
       setOrderSuccess(false)
       setStep('name')
       setCustomerNameLocal('')
+      setServiceMode('takeaway')
     }, 5000)
   }
 
-  const handleContinueToMenu = () => {
+  const handleContinueToChoice = () => {
     if (customerName.trim()) {
       setCustomerNameInCart(customerName.trim())
-      setStep('menu')
+      setStep('choice')
     }
+  }
+
+  const handleSelectServiceMode = (mode: ServiceMode) => {
+    setServiceMode(mode)
+    // Update price context based on mode
+    if (mode === 'dine-in') {
+      setPriceContext('dine-in')
+    } else {
+      setPriceContext('takeaway-counter')
+    }
+    setStep('menu')
   }
 
   if (loading) {
@@ -178,7 +196,7 @@ export default function BancoPage() {
                 value={customerName}
                 onChange={(e) => setCustomerNameLocal(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleContinueToMenu()
+                  if (e.key === 'Enter') handleContinueToChoice()
                 }}
                 placeholder={t('namePlaceholder')}
                 autoFocus
@@ -186,7 +204,7 @@ export default function BancoPage() {
               />
 
               <button
-                onClick={handleContinueToMenu}
+                onClick={handleContinueToChoice}
                 disabled={!customerName.trim()}
                 className={cn(
                   'w-full py-4 rounded-xl font-semibold text-lg transition',
@@ -204,7 +222,69 @@ export default function BancoPage() {
     )
   }
 
-  // Step 2: Menu
+  // Step 2: Choice - Takeaway or Dine-in
+  if (step === 'choice') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="bg-primary-500 text-white p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Store className="w-6 h-6" />
+              <h1 className="text-xl font-bold">MyKafe</h1>
+            </div>
+            <LanguageSelectorCompact />
+          </div>
+          <p className="text-primary-100 text-sm mt-1">
+            {t('title')} • {customerName}
+          </p>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-md space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
+              {t('serviceQuestion')}
+            </h2>
+
+            <button
+              onClick={() => handleSelectServiceMode('takeaway')}
+              className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition"
+            >
+              <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center">
+                <ShoppingBag className="w-7 h-7 text-orange-600" />
+              </div>
+              <div className="text-left">
+                <span className="block font-semibold text-lg text-gray-900">
+                  {t('takeaway')}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {t('takeawayDesc')}
+                </span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => handleSelectServiceMode('dine-in')}
+              className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-primary-500 hover:bg-primary-50 transition"
+            >
+              <div className="w-14 h-14 bg-primary-100 rounded-full flex items-center justify-center">
+                <UtensilsCrossed className="w-7 h-7 text-primary-600" />
+              </div>
+              <div className="text-left">
+                <span className="block font-semibold text-lg text-gray-900">
+                  {t('dineIn')}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {t('dineInDesc')}
+                </span>
+              </div>
+            </button>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  // Step 3: Menu
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <header className="bg-primary-500 text-white p-4">
@@ -256,7 +336,7 @@ export default function BancoPage() {
                   key={item.id}
                   item={item}
                   onAdd={handleAddItem}
-                  priceContext="takeaway-counter"
+                  priceContext={currentPriceContext}
                 />
               ))}
             </div>
@@ -278,8 +358,8 @@ export default function BancoPage() {
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
           onAdd={handleAddWithModifiers}
-          defaultConsumeMode={ConsumeMode.TAKEAWAY}
-          priceContext="takeaway-counter"
+          defaultConsumeMode={currentConsumeMode}
+          priceContext={currentPriceContext}
           hideConsumeModeSelector={true}
         />
       )}
