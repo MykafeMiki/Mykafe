@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, Store, User, ShoppingBag, UtensilsCrossed } from 'lucide-react'
+import { CheckCircle, Store, User, ShoppingBag, UtensilsCrossed, ArrowLeft } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
 import { ItemModal } from '@/components/menu/ItemModal'
+import { MenuSections, categoryToSectionMap, getSectionName, menuSections } from '@/components/menu/MenuSections'
 import { CartButton } from '@/components/cart/CartButton'
 import { BancoCartDrawer } from '@/components/cart/BancoCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
@@ -17,7 +18,7 @@ import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 import { cn } from '@/lib/utils'
 
-type OrderStep = 'name' | 'choice' | 'menu'
+type OrderStep = 'name' | 'choice' | 'sections' | 'menu'
 type ServiceMode = 'takeaway' | 'dine-in'
 
 export default function BancoPage() {
@@ -28,6 +29,7 @@ export default function BancoPage() {
   const [step, setStep] = useState<OrderStep>('name')
   const [customerName, setCustomerNameLocal] = useState('')
   const [serviceMode, setServiceMode] = useState<ServiceMode>('takeaway')
+  const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('')
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
@@ -46,6 +48,39 @@ export default function BancoPage() {
   const filteredCategories = useMemo(() => {
     return filterCategoriesByTime(categories, 'bar')
   }, [categories])
+
+  // Filter categories for the selected section
+  // For "toast" section, merge all toast categories into one sorted list
+  const sectionCategories = useMemo(() => {
+    if (!selectedSection) return filteredCategories
+
+    const sectionCats = filteredCategories.filter(cat => {
+      const sectionId = categoryToSectionMap[cat.name]
+      return sectionId === selectedSection
+    })
+
+    // Special handling for "toast" section: merge all items and sort by number
+    if (selectedSection === 'toast' && sectionCats.length > 1) {
+      const allToastItems = sectionCats.flatMap(cat => cat.items || [])
+      allToastItems.sort((a, b) => {
+        const numA = parseInt(a.name.match(/\d+/)?.[0] || '0')
+        const numB = parseInt(b.name.match(/\d+/)?.[0] || '0')
+        return numA - numB
+      })
+      return [{
+        ...sectionCats[0],
+        id: 'toast-merged',
+        name: 'Toast',
+        nameEn: 'Toast',
+        nameFr: 'Toast',
+        nameEs: 'Tostadas',
+        nameHe: 'טוסט',
+        items: allToastItems
+      }]
+    }
+
+    return sectionCats
+  }, [filteredCategories, selectedSection])
 
   useEffect(() => {
     async function loadData() {
@@ -132,6 +167,19 @@ export default function BancoPage() {
       setPriceContext('dine-in')
     } else {
       setPriceContext('takeaway-counter')
+    }
+    setStep('sections')
+  }
+
+  const handleSelectSection = (sectionId: string) => {
+    setSelectedSection(sectionId)
+    // Set active category to first category in section
+    const sectionCats = filteredCategories.filter(cat => {
+      const catSectionId = categoryToSectionMap[cat.name]
+      return catSectionId === sectionId
+    })
+    if (sectionCats.length > 0) {
+      setActiveCategory(sectionCats[0].id)
     }
     setStep('menu')
   }
@@ -228,13 +276,21 @@ export default function BancoPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-primary-500 text-white p-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Store className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe</h1>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setStep('name')}
+                className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                <Store className="w-6 h-6" />
+                <h1 className="text-xl font-bold">MyKafe</h1>
+              </div>
             </div>
             <LanguageSelectorCompact />
           </div>
-          <p className="text-primary-100 text-sm mt-1">
+          <p className="text-primary-100 text-sm mt-1 ml-10">
             {t('title')} • {customerName}
           </p>
         </header>
@@ -284,14 +340,71 @@ export default function BancoPage() {
     )
   }
 
-  // Step 3: Menu
+  // Step 3: Sections
+  if (step === 'sections') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="bg-primary-500 text-white p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setStep('choice')}
+                className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                <Store className="w-6 h-6" />
+                <h1 className="text-xl font-bold">MyKafe</h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
+                <User className="w-4 h-4" />
+                <span className="text-sm font-medium">{customerName}</span>
+              </div>
+              <LanguageSelectorCompact />
+            </div>
+          </div>
+          <p className="text-primary-100 text-sm mt-1 ml-10">
+            {t('title')} • {serviceMode === 'takeaway' ? t('takeaway') : t('dineIn')}
+          </p>
+        </header>
+
+        <main className="flex-1 p-4">
+          <MenuSections
+            onSelectSection={handleSelectSection}
+          />
+        </main>
+
+        <CartButton onClick={() => setIsCartOpen(true)} />
+
+        <BancoCartDrawer
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          onOrderSuccess={handleOrderSuccess}
+          customerName={customerName}
+        />
+      </div>
+    )
+  }
+
+  // Step 4: Menu
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <header className="bg-primary-500 text-white p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Store className="w-6 h-6" />
-            <h1 className="text-xl font-bold">MyKafe</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setStep('sections')}
+              className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Store className="w-6 h-6" />
+              <h1 className="text-xl font-bold">MyKafe</h1>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
@@ -301,19 +414,21 @@ export default function BancoPage() {
             <LanguageSelectorCompact />
           </div>
         </div>
-        <p className="text-primary-100 text-sm mt-1">
-          {t('title')}
+        <p className="text-primary-100 text-sm mt-1 ml-10">
+          {selectedSection
+            ? getSectionName(menuSections.find(s => s.id === selectedSection)!, locale)
+            : t('title')}
         </p>
       </header>
 
       <CategoryNav
-        categories={filteredCategories}
+        categories={sectionCategories}
         activeCategory={activeCategory}
         onSelect={scrollToCategory}
       />
 
       <main className="p-4 space-y-8">
-        {filteredCategories.map((category) => (
+        {sectionCategories.map((category) => (
           <section
             key={category.id}
             ref={(el) => {

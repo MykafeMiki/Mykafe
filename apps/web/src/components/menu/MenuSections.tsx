@@ -15,6 +15,7 @@ export interface MenuSection {
 }
 
 // Definizione delle macro-sezioni del menu
+// Note: alcune immagini usano placeholder temporanei (panini.jpg o piatti.jpg)
 export const menuSections: MenuSection[] = [
   {
     id: 'toast',
@@ -24,7 +25,7 @@ export const menuSections: MenuSection[] = [
     nameEs: 'Tostadas',
     nameHe: 'טוסט',
     image: '/sections/panini.jpg',
-    categoryIds: [] // Panini, Bagel, Focaccia Farcita, Focaccia e Pizza
+    categoryIds: [] // Panini, Bagel, Focaccia Farcita
   },
   {
     id: 'piadine',
@@ -33,18 +34,68 @@ export const menuSections: MenuSection[] = [
     nameFr: 'Piadines',
     nameEs: 'Piadinas',
     nameHe: 'פיאדינות',
-    image: '/sections/panini.jpg',
+    image: '/sections/panini.jpg', // placeholder
     categoryIds: [] // Piadina
   },
   {
-    id: 'piatti',
-    name: 'Piatti',
-    nameEn: 'Dishes',
-    nameFr: 'Plats',
-    nameEs: 'Platos',
-    nameHe: 'מנות',
-    image: '/sections/piatti.jpg',
-    categoryIds: [] // Insalate, Caprese, Affumicato, Bruschetta
+    id: 'pizze-focacce',
+    name: 'Pizze e Focacce',
+    nameEn: 'Pizza & Focaccia',
+    nameFr: 'Pizzas et Focaccias',
+    nameEs: 'Pizzas y Focaccias',
+    nameHe: 'פיצה ופוקאצ\'ה',
+    image: '/sections/piatti.jpg', // placeholder
+    categoryIds: [] // Focaccia e Pizza
+  },
+  {
+    id: 'bruschette',
+    name: 'Bruschette',
+    nameEn: 'Bruschetta',
+    nameFr: 'Bruschetta',
+    nameEs: 'Bruschetta',
+    nameHe: 'ברוסקטה',
+    image: '/sections/piatti.jpg', // placeholder
+    categoryIds: [] // Bruschetta
+  },
+  {
+    id: 'affumicato',
+    name: 'Affumicato',
+    nameEn: 'Smoked',
+    nameFr: 'Fumé',
+    nameEs: 'Ahumado',
+    nameHe: 'מעושן',
+    image: '/sections/piatti.jpg', // placeholder
+    categoryIds: [] // Affumicato
+  },
+  {
+    id: 'caprese',
+    name: 'Caprese',
+    nameEn: 'Caprese',
+    nameFr: 'Caprese',
+    nameEs: 'Caprese',
+    nameHe: 'קפרזה',
+    image: '/sections/piatti.jpg', // placeholder
+    categoryIds: [] // Caprese
+  },
+  {
+    id: 'salad',
+    name: 'Salad',
+    nameEn: 'Salad',
+    nameFr: 'Salade',
+    nameEs: 'Ensalada',
+    nameHe: 'סלט',
+    image: '/sections/piatti.jpg', // placeholder
+    categoryIds: [] // Insalate
+  },
+  {
+    id: 'bibite',
+    name: 'Bibite',
+    nameEn: 'Beverages',
+    nameFr: 'Boissons',
+    nameEs: 'Bebidas',
+    nameHe: 'משקאות',
+    image: '/sections/bibite.jpg',
+    categoryIds: [] // Bibite, Bevande
   },
   {
     id: 'caffetteria',
@@ -55,38 +106,36 @@ export const menuSections: MenuSection[] = [
     nameHe: 'קפה',
     image: '/sections/caffetteria.jpg',
     categoryIds: [] // Caffetteria
-  },
-  {
-    id: 'bevande',
-    name: 'Bevande',
-    nameEn: 'Beverages',
-    nameFr: 'Boissons',
-    nameEs: 'Bebidas',
-    nameHe: 'משקאות',
-    image: '/sections/bibite.jpg',
-    categoryIds: [] // Bibite
   }
 ]
 
 // Mappa per associare le categorie alle sezioni basandosi sul nome della categoria
 export const categoryToSectionMap: Record<string, string> = {
-  // Sezione Toast (tutti i panini farciti)
+  // Sezione Toast (panini, bagel, focacce farcite)
   'Panini': 'toast',
   'Bagel': 'toast',
   'Focaccia Farcita': 'toast',
-  'Focaccia e Pizza': 'toast',
   // Sezione Piadine
   'Piadina': 'piadine',
-  // Sezione Piatti
-  'Insalate': 'piatti',
-  'Affumicato': 'piatti',
-  'Caprese': 'piatti',
-  'Bruschetta': 'piatti',
+  // Sezione Pizze e Focacce
+  'Focaccia e Pizza': 'pizze-focacce',
+  'Pizza': 'pizze-focacce',
+  'Focaccia': 'pizze-focacce',
+  // Sezione Bruschette
+  'Bruschetta': 'bruschette',
+  'Bruschette': 'bruschette',
+  // Sezione Affumicato
+  'Affumicato': 'affumicato',
+  // Sezione Caprese
+  'Caprese': 'caprese',
+  // Sezione Salad
+  'Insalate': 'salad',
+  'Salad': 'salad',
+  // Sezione Bibite
+  'Bibite': 'bibite',
+  'Bevande': 'bibite',
   // Caffetteria
-  'Caffetteria': 'caffetteria',
-  // Bevande
-  'Bibite': 'bevande',
-  'Bevande': 'bevande'
+  'Caffetteria': 'caffetteria'
 }
 
 export function getSectionName(section: MenuSection, locale: string): string {

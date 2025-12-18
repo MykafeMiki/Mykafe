@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
-import { CheckCircle, Users, User, Link2, UserCircle } from 'lucide-react'
+import { CheckCircle, Users, User, Link2, UserCircle, ArrowLeft } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -71,12 +71,41 @@ export default function MenuPage() {
   }, [categories, menuContext])
 
   // Filter categories for the selected section
+  // For "toast" section, merge all toast categories into one sorted list
   const sectionCategories = useMemo(() => {
     if (!selectedSection) return filteredCategories
-    return filteredCategories.filter(cat => {
+
+    const sectionCats = filteredCategories.filter(cat => {
       const sectionId = categoryToSectionMap[cat.name]
       return sectionId === selectedSection
     })
+
+    // Special handling for "toast" section: merge all items and sort by number
+    if (selectedSection === 'toast' && sectionCats.length > 1) {
+      // Collect all items from all toast categories
+      const allToastItems = sectionCats.flatMap(cat => cat.items || [])
+
+      // Sort by extracting number from name (e.g., "Toast 02" -> 2)
+      allToastItems.sort((a, b) => {
+        const numA = parseInt(a.name.match(/\d+/)?.[0] || '0')
+        const numB = parseInt(b.name.match(/\d+/)?.[0] || '0')
+        return numA - numB
+      })
+
+      // Return a single "virtual" category with all items
+      return [{
+        ...sectionCats[0],
+        id: 'toast-merged',
+        name: 'Toast',
+        nameEn: 'Toast',
+        nameFr: 'Toast',
+        nameEs: 'Tostadas',
+        nameHe: 'טוסט',
+        items: allToastItems
+      }]
+    }
+
+    return sectionCats
   }, [filteredCategories, selectedSection])
 
   useEffect(() => {
@@ -613,6 +642,11 @@ export default function MenuPage() {
     )
   }
 
+  // Handle back to choice
+  const handleBackToChoice = () => {
+    setStep('choice')
+  }
+
   // Step 4: Sections view
   if (step === 'sections') {
     return (
@@ -620,11 +654,19 @@ export default function MenuPage() {
         {/* Header */}
         <header className="bg-primary-500 text-white p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
-              {tableNumber !== null && tableNumber > 0 && (
-                <p className="text-primary-100">{t('table')} {tableNumber}</p>
-              )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleBackToChoice}
+                className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
+                {tableNumber !== null && tableNumber > 0 && (
+                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
+                )}
+              </div>
             </div>
             <LanguageSelectorCompact />
           </div>
@@ -667,18 +709,26 @@ export default function MenuPage() {
       {/* Header */}
       <header className="bg-primary-500 text-white p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
-            {tableNumber !== null && tableNumber > 0 && (
-              <p className="text-primary-100">
-                {t('table')} {tableNumber}
-                {tableSession && tableSession.linkedTables.length > 0 && (
-                  <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
-                    + {tableSession.linkedTables.join(', ')}
-                  </span>
-                )}
-              </p>
-            )}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackToSections}
+              className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
+              {tableNumber !== null && tableNumber > 0 && (
+                <p className="text-primary-100">
+                  {t('table')} {tableNumber}
+                  {tableSession && tableSession.linkedTables.length > 0 && (
+                    <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
+                      + {tableSession.linkedTables.join(', ')}
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
           </div>
           <LanguageSelectorCompact />
         </div>

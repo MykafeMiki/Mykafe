@@ -28,6 +28,13 @@ Deno.serve(async (req) => {
 
     // GET /menu - Get full menu with categories and items
     if (req.method === 'GET' && subPath.length === 0) {
+      // Fetch all out-of-stock ingredients for description matching
+      const { data: allIngredients } = await supabase
+        .from('Ingredient')
+        .select('id, name, nameEn, nameFr, nameEs, nameHe, inStock')
+
+      const outOfStockIngredients = allIngredients?.filter(ing => !ing.inStock) || []
+
       const { data: categories, error } = await supabase
         .from('Category')
         .select(`
@@ -72,24 +79,38 @@ Deno.serve(async (req) => {
           })
           ?.sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
           ?.map((item: {
+            description?: string,
+            descriptionEn?: string,
+            descriptionFr?: string,
+            descriptionEs?: string,
+            descriptionHe?: string,
             modifierGroups: { modifiers: { available: boolean, ingredient?: { inStock: boolean } }[] }[],
             ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[]
           }) => {
-            // Get list of out-of-stock secondary ingredients
-            const unavailableIngredients = item.ingredients
-              ?.filter(ing => !ing.isPrimary && !ing.ingredient?.inStock)
-              ?.map(ing => ({
-                id: ing.ingredient.id,
-                name: ing.ingredient.name,
-                nameEn: ing.ingredient.nameEn,
-                nameFr: ing.ingredient.nameFr,
-                nameEs: ing.ingredient.nameEs,
-                nameHe: ing.ingredient.nameHe
-              })) || []
+            // Find unavailable ingredients by matching description text
+            // This works without explicit ingredient associations
+            const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[] = []
+
+            for (const ing of outOfStockIngredients) {
+              const descLower = (item.description || '').toLowerCase()
+              const ingNameLower = ing.name.toLowerCase()
+
+              // Check if ingredient name appears in description
+              if (descLower.includes(ingNameLower)) {
+                unavailableIngredients.push({
+                  id: ing.id,
+                  name: ing.name,
+                  nameEn: ing.nameEn,
+                  nameFr: ing.nameFr,
+                  nameEs: ing.nameEs,
+                  nameHe: ing.nameHe
+                })
+              }
+            }
 
             return {
               ...item,
-              // Include unavailable secondary ingredients for strikethrough display
+              // Include unavailable ingredients found in description
               unavailableIngredients,
               // Remove raw ingredients from response
               ingredients: undefined,
@@ -118,8 +139,24 @@ Deno.serve(async (req) => {
       })
     }
 
+    // GET /menu/items/:id/ingredients - Get menu item ingredients (must be BEFORE /menu/items/:id)
+    if (req.method === 'GET' && subPath[0] === 'items' && subPath[1] && subPath[2] === 'ingredients') {
+      const menuItemId = subPath[1]
+
+      const { data: ingredients, error } = await supabase
+        .from('MenuItemIngredient')
+        .select('ingredientId, isPrimary')
+        .eq('menuItemId', menuItemId)
+
+      if (error) throw error
+
+      return new Response(JSON.stringify(ingredients || []), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     // GET /menu/items/:id - Get single menu item
-    if (req.method === 'GET' && subPath[0] === 'items' && subPath[1]) {
+    if (req.method === 'GET' && subPath[0] === 'items' && subPath[1] && !subPath[2]) {
       const itemId = subPath[1]
       const { data: item, error } = await supabase
         .from('MenuItem')
@@ -486,22 +523,6 @@ Deno.serve(async (req) => {
       if (error) throw error
 
       return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    // GET /menu/items/:id/ingredients - Get menu item ingredients
-    if (req.method === 'GET' && subPath[0] === 'items' && subPath[1] && subPath[2] === 'ingredients') {
-      const menuItemId = subPath[1]
-
-      const { data: ingredients, error } = await supabase
-        .from('MenuItemIngredient')
-        .select('ingredientId, isPrimary')
-        .eq('menuItemId', menuItemId)
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(ingredients || []), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }

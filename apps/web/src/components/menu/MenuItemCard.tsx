@@ -29,51 +29,31 @@ function getUnavailableIngredientName(ing: UnavailableIngredient, locale: string
   }
 }
 
-// Funzione per mostrare la descrizione con ingredienti non disponibili barrati
-function renderDescriptionWithStrikethrough(
+// Funzione per rimuovere gli ingredienti non disponibili dalla descrizione
+function removeUnavailableIngredients(
   description: string,
   unavailableIngredients: UnavailableIngredient[],
   locale: string
-): React.ReactNode {
+): string {
   if (!unavailableIngredients || unavailableIngredients.length === 0) {
     return description
   }
 
-  // Crea una regex per trovare gli ingredienti non disponibili nella descrizione
+  // Splitta la descrizione per virgole
+  const parts = description.split(',').map(p => p.trim())
+
+  // Ottieni i nomi degli ingredienti non disponibili (in minuscolo per confronto)
   const unavailableNames = unavailableIngredients.map(ing =>
     getUnavailableIngredientName(ing, locale).toLowerCase()
   )
 
-  // Splitta la descrizione e cerca match
-  let result: React.ReactNode[] = []
-  let remaining = description
-  let key = 0
+  // Filtra le parti che non contengono ingredienti non disponibili
+  const filteredParts = parts.filter(part => {
+    const partLower = part.toLowerCase()
+    return !unavailableNames.some(name => partLower.includes(name))
+  })
 
-  for (const unavailableName of unavailableNames) {
-    const lowerRemaining = remaining.toLowerCase()
-    const index = lowerRemaining.indexOf(unavailableName.toLowerCase())
-
-    if (index !== -1) {
-      // Testo prima del match
-      if (index > 0) {
-        result.push(<span key={key++}>{remaining.slice(0, index)}</span>)
-      }
-      // Testo barrato
-      result.push(
-        <span key={key++} className="line-through text-gray-400">
-          {remaining.slice(index, index + unavailableName.length)}
-        </span>
-      )
-      remaining = remaining.slice(index + unavailableName.length)
-    }
-  }
-
-  // Aggiungi il resto
-  if (remaining) {
-    result.push(<span key={key++}>{remaining}</span>)
-  }
-
-  return result.length > 0 ? result : description
+  return filteredParts.join(', ')
 }
 
 export function MenuItemCard({ item, onAdd, priceMultiplier = 1, priceContext = 'dine-in' }: MenuItemCardProps) {
@@ -82,6 +62,7 @@ export function MenuItemCard({ item, onAdd, priceMultiplier = 1, priceContext = 
   const displayPrice = priceMultiplier > 1
     ? roundUpToTenCents(Math.round(basePrice * priceMultiplier))
     : basePrice
+
 
   const translatedName = getTranslatedName(item, locale)
   const translatedDescription = getTranslatedDescription(item, locale)
@@ -102,7 +83,7 @@ export function MenuItemCard({ item, onAdd, priceMultiplier = 1, priceContext = 
         <h3 className="font-semibold text-gray-900 truncate">{translatedName}</h3>
         {translatedDescription && (
           <p className="text-sm text-gray-500 line-clamp-2 mt-0.5">
-            {renderDescriptionWithStrikethrough(
+            {removeUnavailableIngredients(
               translatedDescription,
               item.unavailableIngredients || [],
               locale

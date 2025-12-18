@@ -90,7 +90,12 @@
     "orderFor": "הזמנה עבור",
     "orderSent": "ההזמנה נשלחה, {name}!",
     "orderConfirmation": "נקרא לך כשיהיה מוכן",
-    "payAtCounter": "תשלום בקופה באיסוף"
+    "payAtCounter": "תשלום בקופה באיסוף",
+    "serviceQuestion": "איפה תאכל?",
+    "takeaway": "לקחת",
+    "takeawayDesc": "אני לוקח איתי",
+    "dineIn": "לאכול כאן",
+    "dineInDesc": "אני אוכל כאן"
   },
   "tableMenu": {
     "loadingMenu": "טוען תפריט...",
@@ -110,11 +115,11 @@
     "separateOrderDesc": "הזמן לבד",
     "singleTable": "שולחן אחד?",
     "singleTableDesc": "הזמן רק לשולחן זה",
-    "mergeTables": "להצטרף לשולחנות",
+    "mergeTables": "לחבר שולחנות",
     "mergeTablesDesc": "לחבר מספר שולחנות לחשבון אחד",
-    "enterTableNumbers": "הכנס את מספרי השולחנות להצטרפות",
+    "enterTableNumbers": "הכנס את מספרי השולחנות לחיבור",
     "tableNumbersPlaceholder": "לדוגמה: 2, 3, 5",
-    "confirmMerge": "הצטרף לשולחנות",
+    "confirmMerge": "חבר שולחנות",
     "table": "שולחן",
     "tables": "שולחנות",
     "mergedWith": "מאוחד עם שולחנות",

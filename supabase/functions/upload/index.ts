@@ -27,7 +27,8 @@ Deno.serve(async (req) => {
 
     // POST /upload/items - Upload image for menu items
     // POST /upload/categories - Upload image for categories
-    if (req.method === 'POST' && (subPath[0] === 'items' || subPath[0] === 'categories')) {
+    // POST /upload/sections/:sectionId - Upload image for menu sections (grid)
+    if (req.method === 'POST' && (subPath[0] === 'items' || subPath[0] === 'categories' || subPath[0] === 'sections')) {
       const folder = subPath[0]
 
       const formData = await req.formData()
@@ -54,16 +55,28 @@ Deno.serve(async (req) => {
         })
       }
 
-      // Generate unique filename
-      const ext = file.name.split('.').pop() || 'jpg'
-      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
+      let fileName: string
+
+      // For sections, use a fixed filename based on sectionId
+      if (folder === 'sections' && subPath[1]) {
+        const sectionId = subPath[1]
+        const ext = file.name.split('.').pop() || 'jpg'
+        fileName = `sections/${sectionId}.${ext}`
+
+        // Delete existing file first (upsert doesn't always work)
+        await supabase.storage.from('menu-images').remove([fileName])
+      } else {
+        // Generate unique filename for items/categories
+        const ext = file.name.split('.').pop() || 'jpg'
+        fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
+      }
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from('menu-images')
         .upload(fileName, file, {
           contentType: file.type,
-          upsert: false
+          upsert: true
         })
 
       if (error) throw error

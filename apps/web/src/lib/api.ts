@@ -323,6 +323,26 @@ export const uploadCategoryImage = async (file: File): Promise<UploadResult> => 
   return res.json()
 }
 
+export const uploadSectionImage = async (sectionId: string, file: File): Promise<UploadResult> => {
+  const token = getAuthToken()
+  const formData = new FormData()
+  formData.append('image', file)
+
+  const res = await fetch(`${API_URL}/upload/sections/${sectionId}`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  })
+
+  if (!res.ok) {
+    throw new Error(`Upload Error: ${res.status}`)
+  }
+
+  return res.json()
+}
+
 export const deleteImage = async (url: string): Promise<void> => {
   const token = getAuthToken()
   const res = await fetch(`${API_URL}/upload`, {

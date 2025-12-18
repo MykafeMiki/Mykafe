@@ -24,6 +24,7 @@ import {
   updateItemAvailability,
   uploadCategoryImage,
   uploadItemImage,
+  uploadSectionImage,
   adminLogin,
   verifyToken,
   setAuthToken,
@@ -41,6 +42,7 @@ import {
   type SummaryReport,
 } from '@/lib/api'
 import type { Category, MenuItem, Table, Ingredient } from '@shared/types'
+import { menuSections, type MenuSection } from '@/components/menu/MenuSections'
 
 type Tab = 'menu' | 'ingredients' | 'tables' | 'qr' | 'reports' | 'prices'
 
@@ -233,6 +235,40 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [togglingCategory, setTogglingCategory] = useState<string | null>(null)
   const [timerConfig, setTimerConfig] = useState<TimerConfig>(getTimerConfig())
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
+  const [uploadingSectionId, setUploadingSectionId] = useState<string | null>(null)
+  const [sectionImageVersions, setSectionImageVersions] = useState<Record<string, number>>({})
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const sectionFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  const handleInlineImageUpload = async (itemId: string, file: File) => {
+    setUploadingItemId(itemId)
+    try {
+      const result = await uploadItemImage(file)
+      await updateMenuItem(itemId, { imageUrl: result.url })
+      await onUpdate()
+    } catch (err) {
+      console.error('Failed to upload image:', err)
+    } finally {
+      setUploadingItemId(null)
+    }
+  }
+
+  const handleSectionImageUpload = async (sectionId: string, file: File) => {
+    setUploadingSectionId(sectionId)
+    try {
+      await uploadSectionImage(sectionId, file)
+      // Update version to force image refresh (cache busting)
+      setSectionImageVersions(prev => ({
+        ...prev,
+        [sectionId]: Date.now()
+      }))
+    } catch (err) {
+      console.error('Failed to upload section image:', err)
+    } finally {
+      setUploadingSectionId(null)
+    }
+  }
 
   const handleToggleAvailability = async (item: MenuItem) => {
     try {
@@ -383,6 +419,70 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
         </div>
       )}
 
+      {/* Section Images Management for Grid Menu (/banco) */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+        <div className="flex items-center gap-2 mb-4">
+          <ImageIcon className="w-5 h-5 text-purple-600" />
+          <h3 className="font-semibold text-purple-800">Immagini Sezioni Menu (Griglia)</h3>
+        </div>
+        <p className="text-xs text-purple-600 mb-4">
+          Gestisci le immagini delle sezioni mostrate nella pagina /banco e /takeaway
+        </p>
+
+        <div className="grid grid-cols-3 gap-3">
+          {menuSections.map((section) => {
+            const version = sectionImageVersions[section.id]
+            const imageUrl = version
+              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/menu-images/sections/${section.id}.jpg?v=${version}`
+              : section.image
+
+            return (
+              <div key={section.id} className="relative group">
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={(el) => { sectionFileInputRefs.current[section.id] = el }}
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      handleSectionImageUpload(section.id, file)
+                      e.target.value = ''
+                    }
+                  }}
+                />
+
+                <button
+                  onClick={() => sectionFileInputRefs.current[section.id]?.click()}
+                  disabled={uploadingSectionId === section.id}
+                  className="w-full aspect-square rounded-xl overflow-hidden relative border-2 border-transparent hover:border-purple-400 transition"
+                >
+                  <img
+                    src={imageUrl}
+                    alt={section.name}
+                    className="w-full h-full object-cover"
+                  />
+
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                    {uploadingSectionId === section.id ? (
+                      <Loader2 className="w-8 h-8 text-white animate-spin" />
+                    ) : (
+                      <Upload className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </div>
+
+                  {/* Section name */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                    <span className="text-white text-sm font-medium">{section.name}</span>
+                  </div>
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">{t('menuManagement')}</h2>
         <div className="flex gap-2">
@@ -465,23 +565,62 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
           </div>
 
           <div className="divide-y">
-            {category.items?.map((item) => (
+            {/* Sort items by number for toast categories */}
+            {[...(category.items || [])].sort((a, b) => {
+              // Extract number from name (e.g., "Toast 02" -> 2)
+              const numA = parseInt(a.name.match(/\d+/)?.[0] || '999')
+              const numB = parseInt(b.name.match(/\d+/)?.[0] || '999')
+              return numA - numB
+            }).map((item) => (
               <div
                 key={item.id}
                 className="p-4 flex items-center justify-between hover:bg-gray-50 transition"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {item.imageUrl ? (
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                  {/* Image with upload overlay */}
+                  <div className="relative flex-shrink-0 group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={(el) => { fileInputRefs.current[item.id] = el }}
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          handleInlineImageUpload(item.id, file)
+                          e.target.value = '' // Reset input
+                        }
+                      }}
                     />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      <ImageIcon className="w-6 h-6 text-gray-300" />
-                    </div>
-                  )}
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-12 h-12 rounded-lg object-cover cursor-pointer"
+                        onClick={() => fileInputRefs.current[item.id]?.click()}
+                      />
+                    ) : (
+                      <div
+                        className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition"
+                        onClick={() => fileInputRefs.current[item.id]?.click()}
+                      >
+                        <ImageIcon className="w-6 h-6 text-gray-300" />
+                      </div>
+                    )}
+                    {/* Upload overlay */}
+                    {uploadingItemId === item.id ? (
+                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      </div>
+                    ) : (
+                      <div
+                        className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                        onClick={() => fileInputRefs.current[item.id]?.click()}
+                      >
+                        <Upload className="w-5 h-5 text-white" />
+                      </div>
+                    )}
+                  </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-gray-900">{item.name}</h4>

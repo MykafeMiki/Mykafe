@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle } from 'lucide-react'
+import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle, ArrowLeft } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -231,24 +231,26 @@ export default function OrdinaPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-orange-500 text-white p-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setStep('payment')}
+                className="p-2 -ml-2 rounded-full hover:bg-orange-400 transition"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="w-6 h-6" />
+                <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+              </div>
             </div>
             <LanguageSelectorCompact />
           </div>
-          <p className="text-orange-100 text-sm mt-1">
+          <p className="text-orange-100 text-sm mt-1 ml-10">
             {t('subtitle')} • {paymentLabel}
           </p>
         </header>
 
         <main className="flex-1 p-6 max-w-lg mx-auto w-full">
-          <button
-            onClick={() => setStep('payment')}
-            className="text-orange-500 mb-4 text-sm font-medium"
-          >
-            &larr; {tc('back')}
-          </button>
 
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             {t('pickupQuestion')}
@@ -423,11 +425,19 @@ export default function OrdinaPage() {
     <div className="min-h-screen bg-gray-50 pb-24">
       <header className="bg-orange-500 text-white p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="w-6 h-6" />
-            <div>
-              <h1 className="text-xl font-bold">MyKafe</h1>
-              <p className="text-orange-100 text-sm">{t('subtitle')}</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setStep('datetime')}
+              className="p-2 -ml-2 rounded-full hover:bg-orange-400 transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-6 h-6" />
+              <div>
+                <h1 className="text-xl font-bold">MyKafe</h1>
+                <p className="text-orange-100 text-sm">{t('subtitle')}</p>
+              </div>
             </div>
           </div>
           <LanguageSelectorCompact />
