@@ -105,10 +105,11 @@ export default function MenuPage() {
 
         // Determine initial step based on table state
         if (table.isCounter) {
-          // Counter tables go directly to sections
-          setStep('sections')
+          // Counter tables go directly to menu (skip sections)
+          setSelectedSection(null)
+          setStep('menu')
         } else {
-          // Regular tables - ask for name first, then go to sections
+          // Regular tables - ask for name first
           setStep('enter-name')
         }
 
@@ -213,7 +214,9 @@ export default function MenuPage() {
   }
 
   const handleSingleTable = () => {
-    setStep('sections')
+    // Skip sections, go directly to full menu
+    setSelectedSection(null)
+    setStep('menu')
   }
 
   const handleMergeTables = () => {
@@ -244,7 +247,8 @@ export default function MenuPage() {
       })
       setTableSession(session)
       setTableSessionInCart(session.id)
-      setStep('sections')
+      setSelectedSection(null)
+      setStep('menu')
     } catch (err) {
       console.error('Failed to create session:', err)
       setMergeError(tc('error'))
@@ -258,14 +262,16 @@ export default function MenuPage() {
     if (tableSession) {
       setTableSessionInCart(tableSession.id)
     }
-    setStep('sections')
+    setSelectedSection(null)
+    setStep('menu')
   }
 
   const handleNotInGroup = () => {
-    // User is not part of the group - clear session and go to sections without it
+    // User is not part of the group - clear session and go to menu without it
     setTableSession(null)
     setTableSessionInCart(null)
-    setStep('sections')
+    setSelectedSection(null)
+    setStep('menu')
   }
 
   // Handle section selection
@@ -655,39 +661,24 @@ export default function MenuPage() {
     )
   }
 
-  // Step 5: Menu view (filtered by section)
+  // Step 5: Menu view (all categories)
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
       <header className="bg-primary-500 text-white p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleBackToSections}
-              className="p-2 -ml-2 hover:bg-primary-600 rounded-lg transition"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <div>
-              <h1 className="text-xl font-display font-semibold italic">
-                {selectedSection && getSectionName(
-                  menuSections.find(s => s.id === selectedSection)!,
-                  locale
+          <div>
+            <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
+            {tableNumber !== null && tableNumber > 0 && (
+              <p className="text-primary-100">
+                {t('table')} {tableNumber}
+                {tableSession && tableSession.linkedTables.length > 0 && (
+                  <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
+                    + {tableSession.linkedTables.join(', ')}
+                  </span>
                 )}
-              </h1>
-              {tableNumber !== null && tableNumber > 0 && (
-                <p className="text-primary-100 text-sm">
-                  {t('table')} {tableNumber}
-                  {tableSession && tableSession.linkedTables.length > 0 && (
-                    <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
-                      + {tableSession.linkedTables.join(', ')}
-                    </span>
-                  )}
-                </p>
-              )}
-            </div>
+              </p>
+            )}
           </div>
           <LanguageSelectorCompact />
         </div>
