@@ -37,6 +37,10 @@ export interface TimerConfig {
     enabled: boolean
     startHour: number // Hour from which panini are visible (default 11)
   }
+  takeaway: {
+    openingHour: number // Earliest pickup hour (default 11)
+    closingHour: number // Latest pickup hour (default 20)
+  }
 }
 
 // Default configuration
@@ -51,6 +55,10 @@ const DEFAULT_CONFIG: TimerConfig = {
   panini: {
     enabled: true,
     startHour: 11, // 11:00
+  },
+  takeaway: {
+    openingHour: 11, // Pickup from 11:00
+    closingHour: 20, // Until 20:00
   },
 }
 
@@ -72,6 +80,7 @@ export function getTimerConfig(): TimerConfig {
       return {
         sushi: { ...DEFAULT_CONFIG.sushi, ...parsed.sushi },
         panini: { ...DEFAULT_CONFIG.panini, ...parsed.panini },
+        takeaway: { ...DEFAULT_CONFIG.takeaway, ...parsed.takeaway },
       }
     }
   } catch (e) {
@@ -269,4 +278,12 @@ export function getPaniniStatus(): {
     statusText,
     config: config.panini
   }
+}
+
+/**
+ * Get takeaway pickup hours config
+ */
+export function getTakeawayConfig(): TimerConfig['takeaway'] {
+  const config = getTimerConfig()
+  return config.takeaway
 }

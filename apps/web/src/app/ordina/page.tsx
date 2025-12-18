@@ -11,7 +11,7 @@ import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
-import { filterCategoriesByTime } from '@/lib/menuTimers'
+import { filterCategoriesByTime, getTakeawayConfig } from '@/lib/menuTimers'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
@@ -32,13 +32,10 @@ function getAvailableDates(): Date[] {
   return dates
 }
 
-function getAvailableTimeSlots(selectedDate: Date): string[] {
+function getAvailableTimeSlots(selectedDate: Date, openingHour: number, closingHour: number): string[] {
   const slots: string[] = []
   const now = new Date()
   const isToday = selectedDate.toDateString() === now.toDateString()
-
-  const openingHour = 8
-  const closingHour = 20
 
   for (let hour = openingHour; hour < closingHour; hour++) {
     for (let minute = 0; minute < 60; minute += 15) {
@@ -97,8 +94,11 @@ export default function OrdinaPage() {
     return filterCategoriesByTime(categories, 'takeaway')
   }, [categories])
 
+  // Get takeaway pickup hours config
+  const takeawayConfig = getTakeawayConfig()
+
   const availableDates = getAvailableDates()
-  const availableTimeSlots = getAvailableTimeSlots(selectedDate)
+  const availableTimeSlots = getAvailableTimeSlots(selectedDate, takeawayConfig.openingHour, takeawayConfig.closingHour)
   const showWarning = selectedTime && isWithin30Minutes(selectedDate, selectedTime)
 
   const formatDate = (date: Date): string => {

@@ -807,6 +807,62 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
               </p>
             )}
           </div>
+
+          {/* Takeaway Pickup Hours Configuration */}
+          <div className="space-y-4 border-t pt-6">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🛒</span>
+              <h3 className="font-semibold text-gray-900">Orari Ritiro Takeaway</h3>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+              <p className="text-sm text-gray-600">
+                Configura gli orari disponibili per il ritiro degli ordini takeaway online (/ordina).
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Orario apertura
+                  </label>
+                  <select
+                    value={localConfig.takeaway.openingHour}
+                    onChange={(e) => setLocalConfig({
+                      ...localConfig,
+                      takeaway: { ...localConfig.takeaway, openingHour: parseInt(e.target.value) }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Orario chiusura
+                  </label>
+                  <select
+                    value={localConfig.takeaway.closingHour}
+                    onChange={(e) => setLocalConfig({
+                      ...localConfig,
+                      takeaway: { ...localConfig.takeaway, closingHour: parseInt(e.target.value) }
+                    })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500">
+                I clienti potranno selezionare orari di ritiro compresi tra le {localConfig.takeaway.openingHour.toString().padStart(2, '0')}:00 e le {localConfig.takeaway.closingHour.toString().padStart(2, '0')}:00.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Actions */}

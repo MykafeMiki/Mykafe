@@ -128,6 +128,14 @@ Deno.serve(async (req) => {
           .from('Modifier')
           .update({ available: false })
           .eq('ingredientId', ingredientId)
+
+        // 3. Rimuovi automaticamente l'ingrediente dai piatti dove NON è primario
+        // (gli ingredienti primari non vengono rimossi automaticamente)
+        await supabase
+          .from('MenuItemIngredient')
+          .delete()
+          .eq('ingredientId', ingredientId)
+          .eq('isPrimary', false)
       } else if (inStock === true) {
         // Se l'ingrediente torna disponibile, riabilita i modifier collegati
         await supabase
