@@ -60,17 +60,19 @@ export const menuSections: MenuSection[] = [
 
 // Mappa per associare le categorie alle sezioni basandosi sul nome della categoria
 export const categoryToSectionMap: Record<string, string> = {
-  // Panini Farciti
-  'Panini Farciti': 'panini',
-  'Piadine': 'panini',
-  'Focacce e Pizze': 'panini',
-  // Piatti
+  // Sezione Panini
+  'Panini': 'panini',
+  'Bagel': 'panini',
+  'Focaccia Farcita': 'panini',
+  'Piadina': 'panini',
+  'Focaccia e Pizza': 'panini',
+  // Sezione Piatti
   'Insalate': 'piatti',
   'Affumicato': 'piatti',
   'Caprese': 'piatti',
-  'Bruschette': 'piatti',
+  'Bruschetta': 'piatti',
   // Caffetteria
-  'Caffetteria e Dolci': 'caffetteria',
+  'Caffetteria': 'caffetteria',
   // Bibite
   'Bevande': 'bibite'
 }

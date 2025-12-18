@@ -21,7 +21,12 @@
     "db:studio": "pnpm --filter api db:studio",
     "postinstall": "pnpm --filter api db:generate"
   },
-  "keywords": ["restaurant", "ordering", "qrcode", "kitchen-display"],
+  "keywords": [
+    "restaurant",
+    "ordering",
+    "qrcode",
+    "kitchen-display"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@9.0.0",
@@ -30,5 +35,8 @@
   },
   "devDependencies": {
     "next": "14.2.33"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.88.0"
   }
 }
