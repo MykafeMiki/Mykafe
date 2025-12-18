@@ -17,14 +17,24 @@ export interface MenuSection {
 // Definizione delle macro-sezioni del menu
 export const menuSections: MenuSection[] = [
   {
-    id: 'panini',
-    name: 'Panini Farciti',
-    nameEn: 'Stuffed Sandwiches',
-    nameFr: 'Sandwichs Garnis',
-    nameEs: 'Bocadillos Rellenos',
-    nameHe: 'כריכים ממולאים',
+    id: 'toast',
+    name: 'Toast',
+    nameEn: 'Toast',
+    nameFr: 'Toast',
+    nameEs: 'Tostadas',
+    nameHe: 'טוסט',
     image: '/sections/panini.jpg',
-    categoryIds: [] // Verrà popolato dinamicamente basandosi sui nomi delle categorie
+    categoryIds: [] // Panini, Bagel, Focaccia Farcita, Focaccia e Pizza
+  },
+  {
+    id: 'piadine',
+    name: 'Piadine',
+    nameEn: 'Piadinas',
+    nameFr: 'Piadines',
+    nameEs: 'Piadinas',
+    nameHe: 'פיאדינות',
+    image: '/sections/panini.jpg',
+    categoryIds: [] // Piadina
   },
   {
     id: 'piatti',
@@ -34,38 +44,39 @@ export const menuSections: MenuSection[] = [
     nameEs: 'Platos',
     nameHe: 'מנות',
     image: '/sections/piatti.jpg',
-    categoryIds: []
+    categoryIds: [] // Insalate, Caprese, Affumicato, Bruschetta
   },
   {
     id: 'caffetteria',
     name: 'Caffetteria',
-    nameEn: 'Coffee Shop',
+    nameEn: 'Coffee',
     nameFr: 'Café',
-    nameEs: 'Cafeteria',
-    nameHe: 'בית קפה',
+    nameEs: 'Cafetería',
+    nameHe: 'קפה',
     image: '/sections/caffetteria.jpg',
-    categoryIds: []
+    categoryIds: [] // Caffetteria
   },
   {
-    id: 'bibite',
-    name: 'Bibite',
+    id: 'bevande',
+    name: 'Bevande',
     nameEn: 'Beverages',
     nameFr: 'Boissons',
     nameEs: 'Bebidas',
     nameHe: 'משקאות',
     image: '/sections/bibite.jpg',
-    categoryIds: []
+    categoryIds: [] // Bibite
   }
 ]
 
 // Mappa per associare le categorie alle sezioni basandosi sul nome della categoria
 export const categoryToSectionMap: Record<string, string> = {
-  // Sezione Panini
-  'Panini': 'panini',
-  'Bagel': 'panini',
-  'Focaccia Farcita': 'panini',
-  'Piadina': 'panini',
-  'Focaccia e Pizza': 'panini',
+  // Sezione Toast (tutti i panini farciti)
+  'Panini': 'toast',
+  'Bagel': 'toast',
+  'Focaccia Farcita': 'toast',
+  'Focaccia e Pizza': 'toast',
+  // Sezione Piadine
+  'Piadina': 'piadine',
   // Sezione Piatti
   'Insalate': 'piatti',
   'Affumicato': 'piatti',
@@ -73,8 +84,9 @@ export const categoryToSectionMap: Record<string, string> = {
   'Bruschetta': 'piatti',
   // Caffetteria
   'Caffetteria': 'caffetteria',
-  // Bibite
-  'Bevande': 'bibite'
+  // Bevande
+  'Bibite': 'bevande',
+  'Bevande': 'bevande'
 }
 
 export function getSectionName(section: MenuSection, locale: string): string {

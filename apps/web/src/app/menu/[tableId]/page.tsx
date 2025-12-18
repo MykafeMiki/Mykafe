@@ -214,9 +214,9 @@ export default function MenuPage() {
   }
 
   const handleSingleTable = () => {
-    // Skip sections, go directly to full menu
+    // Go to sections view with images
     setSelectedSection(null)
-    setStep('menu')
+    setStep('sections')
   }
 
   const handleMergeTables = () => {

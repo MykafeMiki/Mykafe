@@ -14,19 +14,14 @@ interface MenuSectionDef {
 
 const menuSectionDefs: MenuSectionDef[] = [
   {
-    id: 'panini',
-    label: { it: 'Panini', en: 'Sandwiches', fr: 'Sandwichs', es: 'Bocadillos', he: 'כריכים' },
-    categories: ['Panini', 'Bagel', 'Focaccia Farcita']
+    id: 'toast',
+    label: { it: 'Toast', en: 'Toast', fr: 'Toast', es: 'Tostadas', he: 'טוסט' },
+    categories: ['Panini', 'Bagel', 'Focaccia Farcita', 'Focaccia e Pizza']
   },
   {
     id: 'piadine',
     label: { it: 'Piadine', en: 'Piadinas', fr: 'Piadines', es: 'Piadinas', he: 'פיאדינות' },
     categories: ['Piadina']
-  },
-  {
-    id: 'focacce',
-    label: { it: 'Focacce', en: 'Focaccias', fr: 'Focaccias', es: 'Focaccias', he: 'פוקצ\'ות' },
-    categories: ['Focaccia e Pizza']
   },
   {
     id: 'piatti',
