@@ -7,6 +7,14 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
 }
 
+// Generate a cuid-like id (similar to Prisma's cuid)
+function generateCuid(): string {
+  const timestamp = Date.now().toString(36)
+  const randomPart = Math.random().toString(36).substring(2, 9)
+  const randomPart2 = Math.random().toString(36).substring(2, 9)
+  return `c${timestamp}${randomPart}${randomPart2}`
+}
+
 function generateSessionCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   let code = ''
@@ -73,15 +81,20 @@ Deno.serve(async (req) => {
       const { data: session, error } = await supabase
         .from('TableSession')
         .insert({
+          id: generateCuid(),
           code,
           hostTableId,
           linkedTables: linkedTableNumbers,
-          isActive: true
+          isActive: true,
+          createdAt: new Date().toISOString()
         })
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error creating TableSession:', error)
+        throw error
+      }
 
       return new Response(JSON.stringify({
         ...session,
