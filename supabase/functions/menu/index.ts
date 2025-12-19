@@ -87,16 +87,68 @@ Deno.serve(async (req) => {
             modifierGroups: { modifiers: { available: boolean, ingredient?: { inStock: boolean } }[] }[],
             ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[]
           }) => {
-            // Find unavailable ingredients by matching description text
-            // This works without explicit ingredient associations
+            // Find unavailable ingredients from:
+            // 1. Associated secondary ingredients that are out of stock
+            // 2. Description text matching (fallback)
             const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[] = []
+            const addedIds = new Set<string>()
 
+            // First, add secondary ingredients that are out of stock
+            if (item.ingredients) {
+              for (const assoc of item.ingredients) {
+                if (!assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock) {
+                  if (!addedIds.has(assoc.ingredient.id)) {
+                    addedIds.add(assoc.ingredient.id)
+                    unavailableIngredients.push({
+                      id: assoc.ingredient.id,
+                      name: assoc.ingredient.name,
+                      nameEn: assoc.ingredient.nameEn,
+                      nameFr: assoc.ingredient.nameFr,
+                      nameEs: assoc.ingredient.nameEs,
+                      nameHe: assoc.ingredient.nameHe
+                    })
+                  }
+                }
+              }
+            }
+
+            // Helper to get singular/plural variants of Italian words
+            const getVariants = (word: string): string[] => {
+              const variants = [word]
+              // Italian plural rules: -o → -i, -a → -e, -e → -i
+              if (word.endsWith('o')) {
+                variants.push(word.slice(0, -1) + 'i') // pomodoro → pomodori
+              } else if (word.endsWith('i')) {
+                variants.push(word.slice(0, -1) + 'o') // pomodori → pomodoro
+              } else if (word.endsWith('a')) {
+                variants.push(word.slice(0, -1) + 'e') // mozzarella → mozzarelle
+              } else if (word.endsWith('e')) {
+                variants.push(word.slice(0, -1) + 'a') // mozzarelle → mozzarella
+                variants.push(word.slice(0, -1) + 'i') // melanzane → melanzani (less common but covered)
+              }
+              return variants
+            }
+
+            // Then, check description matching (for items without explicit associations)
             for (const ing of outOfStockIngredients) {
-              const descLower = (item.description || '').toLowerCase()
-              const ingNameLower = ing.name.toLowerCase()
+              if (addedIds.has(ing.id)) continue // Already added
 
-              // Check if ingredient name appears in description
-              if (descLower.includes(ingNameLower)) {
+              // Check all description fields
+              const descriptions = [
+                item.description || '',
+                item.descriptionEn || '',
+                item.descriptionFr || '',
+                item.descriptionEs || '',
+                item.descriptionHe || ''
+              ].join(' ').toLowerCase()
+
+              const ingNameLower = ing.name.toLowerCase()
+              const variants = getVariants(ingNameLower)
+
+              // Check if any variant of ingredient name appears in any description
+              const found = variants.some(variant => descriptions.includes(variant))
+              if (found) {
+                addedIds.add(ing.id)
                 unavailableIngredients.push({
                   id: ing.id,
                   name: ing.name,

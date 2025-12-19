@@ -29,6 +29,23 @@ function getUnavailableIngredientName(ing: UnavailableIngredient, locale: string
   }
 }
 
+// Helper to get singular/plural variants of Italian words
+function getVariants(word: string): string[] {
+  const variants = [word]
+  // Italian plural rules: -o → -i, -a → -e, -e → -i
+  if (word.endsWith('o')) {
+    variants.push(word.slice(0, -1) + 'i') // pomodoro → pomodori
+  } else if (word.endsWith('i')) {
+    variants.push(word.slice(0, -1) + 'o') // pomodori → pomodoro
+  } else if (word.endsWith('a')) {
+    variants.push(word.slice(0, -1) + 'e') // mozzarella → mozzarelle
+  } else if (word.endsWith('e')) {
+    variants.push(word.slice(0, -1) + 'a') // mozzarelle → mozzarella
+    variants.push(word.slice(0, -1) + 'i') // melanzane → melanzani
+  }
+  return variants
+}
+
 // Funzione per rimuovere gli ingredienti non disponibili dalla descrizione
 function removeUnavailableIngredients(
   description: string,
@@ -42,15 +59,17 @@ function removeUnavailableIngredients(
   // Splitta la descrizione per virgole
   const parts = description.split(',').map(p => p.trim())
 
-  // Ottieni i nomi degli ingredienti non disponibili (in minuscolo per confronto)
-  const unavailableNames = unavailableIngredients.map(ing =>
-    getUnavailableIngredientName(ing, locale).toLowerCase()
-  )
+  // Ottieni i nomi degli ingredienti non disponibili con varianti singolare/plurale
+  const unavailableVariants: string[] = []
+  for (const ing of unavailableIngredients) {
+    const name = getUnavailableIngredientName(ing, locale).toLowerCase()
+    unavailableVariants.push(...getVariants(name))
+  }
 
   // Filtra le parti che non contengono ingredienti non disponibili
   const filteredParts = parts.filter(part => {
     const partLower = part.toLowerCase()
-    return !unavailableNames.some(name => partLower.includes(name))
+    return !unavailableVariants.some(variant => partLower.includes(variant))
   })
 
   return filteredParts.join(', ')
