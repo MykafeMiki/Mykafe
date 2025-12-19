@@ -106,6 +106,16 @@ export const menuSections: MenuSection[] = [
     nameHe: 'קפה',
     image: '/sections/caffetteria.jpg',
     categoryIds: [] // Caffetteria
+  },
+  {
+    id: 'sushi',
+    name: 'Sushi',
+    nameEn: 'Sushi',
+    nameFr: 'Sushi',
+    nameEs: 'Sushi',
+    nameHe: 'סושי',
+    image: '/sections/sushi.jpg',
+    categoryIds: [] // Sushi
   }
 ]
 
@@ -135,7 +145,9 @@ export const categoryToSectionMap: Record<string, string> = {
   'Bibite': 'bibite',
   'Bevande': 'bibite',
   // Caffetteria
-  'Caffetteria': 'caffetteria'
+  'Caffetteria': 'caffetteria',
+  // Sushi
+  'Sushi': 'sushi'
 }
 
 export function getSectionName(section: MenuSection, locale: string): string {
