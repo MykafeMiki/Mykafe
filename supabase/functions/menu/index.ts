@@ -271,9 +271,19 @@ Deno.serve(async (req) => {
       const body = await req.json()
       const { name, description, sortOrder } = body
 
+      // Generate a cuid-like ID
+      const id = 'c' + crypto.randomUUID().replace(/-/g, '').slice(0, 24)
+      const now = new Date().toISOString()
+
       const { data: category, error } = await supabase
         .from('Category')
-        .insert({ name, description, sortOrder: sortOrder || 0 })
+        .insert({
+          id,
+          name,
+          description,
+          sortOrder: sortOrder || 0,
+          updatedAt: now
+        })
         .select()
         .single()
 
@@ -618,7 +628,26 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    // Return detailed error for debugging
+    let errorMessage: string
+    let errorDetails: unknown
+
+    if (error instanceof Error) {
+      errorMessage = error.message
+      errorDetails = error.stack
+    } else if (typeof error === 'object' && error !== null) {
+      // Supabase errors are objects with message, code, details, hint
+      errorMessage = JSON.stringify(error)
+      errorDetails = error
+    } else {
+      errorMessage = String(error)
+    }
+
+    return new Response(JSON.stringify({
+      error: 'Internal server error',
+      message: errorMessage,
+      details: errorDetails
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
