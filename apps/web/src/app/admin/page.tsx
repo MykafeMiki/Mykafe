@@ -44,6 +44,8 @@ import {
 import type { Category, MenuItem, Table, Ingredient } from '@shared/types'
 import { menuSections, type MenuSection } from '@/components/menu/MenuSections'
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co'
+
 type Tab = 'menu' | 'ingredients' | 'tables' | 'qr' | 'reports' | 'prices'
 
 export default function AdminPage() {
@@ -433,7 +435,7 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
           {menuSections.map((section) => {
             const version = sectionImageVersions[section.id]
             const imageUrl = version
-              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/menu-images/sections/${section.id}.jpg?v=${version}`
+              ? `${SUPABASE_URL}/storage/v1/object/public/menu-images/sections/${section.id}.jpg?v=${version}`
               : section.image
 
             return (

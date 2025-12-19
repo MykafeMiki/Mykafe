@@ -23,7 +23,16 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url)
     const pathParts = url.pathname.split('/').filter(Boolean)
-    const subPath = pathParts.slice(2) // Remove 'functions' and 'upload'
+
+    // Find 'upload' in path and get everything after it
+    // Works for both /upload/items and /functions/v1/upload/items
+    let subPath: string[]
+    const uploadIndex = pathParts.indexOf('upload')
+    if (uploadIndex !== -1) {
+      subPath = pathParts.slice(uploadIndex + 1)
+    } else {
+      subPath = pathParts
+    }
 
     // POST /upload/items - Upload image for menu items
     // POST /upload/categories - Upload image for categories
