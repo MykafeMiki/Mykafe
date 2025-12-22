@@ -221,13 +221,23 @@ export default function MenuPage() {
       await addCustomerToTable(tableDbId, customerName.trim())
       // Save name to cart store so it's included in orders
       setCustomerNameInCart(customerName.trim())
-      // After entering name, ask about table sharing
-      setStep('choice')
+      // Check if this table is part of an active session (merged tables)
+      // If so, ask if they're with the group
+      if (tableSession) {
+        setStep('join-group')
+      } else {
+        // After entering name, ask about table sharing
+        setStep('choice')
+      }
     } catch (err) {
       console.error('Failed to register customer:', err)
       // Still proceed even if backend fails - name is saved locally
       setCustomerNameInCart(customerName.trim())
-      setStep('choice')
+      if (tableSession) {
+        setStep('join-group')
+      } else {
+        setStep('choice')
+      }
     } finally {
       setLoadingCustomers(false)
     }
@@ -238,8 +248,13 @@ export default function MenuPage() {
     setCustomerName(customer.name)
     setCustomerNameInCart(customer.name)
     setIsSelectingExisting(false)
-    // Skip to choice directly since customer is already registered
-    setStep('choice')
+    // Check if this table is part of an active session (merged tables)
+    if (tableSession) {
+      setStep('join-group')
+    } else {
+      // Skip to choice directly since customer is already registered
+      setStep('choice')
+    }
   }
 
   const handleSingleTable = () => {
