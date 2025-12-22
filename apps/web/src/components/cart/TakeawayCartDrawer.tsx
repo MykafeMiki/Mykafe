@@ -39,6 +39,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
   const [error, setError] = useState<string | null>(null)
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [phoneConfirm, setPhoneConfirm] = useState('')
 
   const isCard = paymentMethod === PaymentMethod.CARD
 
@@ -59,6 +60,20 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
 
     if (!customerPhone.trim()) {
       setError(t('enterPhone'))
+      return
+    }
+
+    // Verifica che il prefisso inserito corrisponda all'inizio del numero
+    const cleanPhone = customerPhone.replace(/\s+/g, '')
+    const cleanConfirm = phoneConfirm.replace(/\s+/g, '')
+
+    if (!cleanConfirm || cleanConfirm.length < 3) {
+      setError(t('enterPhoneConfirm'))
+      return
+    }
+
+    if (!cleanPhone.startsWith(cleanConfirm)) {
+      setError(t('phoneNoMatch'))
       return
     }
 
@@ -84,6 +99,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
       clearCart()
       setCustomerName('')
       setCustomerPhone('')
+      setPhoneConfirm('')
       onOrderSuccess()
       onClose()
     } catch (err) {
@@ -209,6 +225,19 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                       />
                     </div>
                     <p className="text-xs text-gray-500 mt-1 ml-1">{t('phoneHelper')}</p>
+                  </div>
+                  <div>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={phoneConfirm}
+                        onChange={(e) => setPhoneConfirm(e.target.value)}
+                        placeholder={t('phoneConfirmPlaceholder')}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 ml-1">{t('phoneConfirmHelper')}</p>
                   </div>
                 </div>
               </div>
