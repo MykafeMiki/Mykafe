@@ -300,16 +300,22 @@ Deno.serve(async (req) => {
       const body = await req.json()
       const { name, description, price, categoryId, imageUrl, sortOrder, modifierGroups, ingredientIds } = body
 
+      // Generate ID and timestamp
+      const id = 'c' + crypto.randomUUID().replace(/-/g, '').slice(0, 24)
+      const now = new Date().toISOString()
+
       // Crea il menu item
       const { data: item, error } = await supabase
         .from('MenuItem')
         .insert({
+          id,
           name,
           description,
           price: Math.round(price * 100), // Store in cents
           categoryId,
           imageUrl,
-          sortOrder: sortOrder || 0
+          sortOrder: sortOrder || 0,
+          updatedAt: now
         })
         .select()
         .single()
