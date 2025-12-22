@@ -213,6 +213,7 @@ export interface TableSession {
   isActive: boolean
   createdAt: string
   closedAt?: string
+  hostCustomerName?: string | null
 }
 
 export const createTableSession = (data: { hostTableId: string; linkedTableNumbers: number[] }) =>

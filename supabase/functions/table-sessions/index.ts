@@ -125,7 +125,19 @@ Deno.serve(async (req) => {
           .single()
 
         if (hostSession) {
-          return new Response(JSON.stringify(hostSession), {
+          // Get the host customer name from the host table
+          const { data: hostCustomer } = await supabase
+            .from('TableCustomer')
+            .select('name')
+            .eq('tableId', hostSession.hostTableId)
+            .eq('isHost', true)
+            .eq('isActive', true)
+            .single()
+
+          return new Response(JSON.stringify({
+            ...hostSession,
+            hostCustomerName: hostCustomer?.name || null
+          }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         }
@@ -139,7 +151,21 @@ Deno.serve(async (req) => {
         .contains('linkedTables', [tableNumber])
 
       if (sessions && sessions.length > 0) {
-        return new Response(JSON.stringify(sessions[0]), {
+        const session = sessions[0]
+
+        // Get the host customer name from the host table
+        const { data: hostCustomer } = await supabase
+          .from('TableCustomer')
+          .select('name')
+          .eq('tableId', session.hostTableId)
+          .eq('isHost', true)
+          .eq('isActive', true)
+          .single()
+
+        return new Response(JSON.stringify({
+          ...session,
+          hostCustomerName: hostCustomer?.name || null
+        }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }

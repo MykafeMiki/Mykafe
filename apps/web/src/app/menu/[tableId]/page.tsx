@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
-import { CheckCircle, Users, User, Link2, UserCircle, ArrowLeft } from 'lucide-react'
+import { CheckCircle, Users, User, Link2, UserCircle, ArrowLeft, X } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -18,7 +18,7 @@ import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
-type PageStep = 'enter-name' | 'choice' | 'merge-input' | 'join-group' | 'sections' | 'menu'
+type PageStep = 'enter-name' | 'choice' | 'merge-input' | 'join-group' | 'blocked' | 'sections' | 'menu'
 
 export default function MenuPage() {
   const t = useTranslations('tableMenu')
@@ -311,11 +311,8 @@ export default function MenuPage() {
   }
 
   const handleNotInGroup = () => {
-    // User is not part of the group - clear session and go to menu without it
-    setTableSession(null)
-    setTableSessionInCart(null)
-    setSelectedSection(null)
-    setStep('menu')
+    // User is not part of the group - block ordering and ask to scan another table
+    setStep('blocked')
   }
 
   // Handle section selection
@@ -611,7 +608,9 @@ export default function MenuPage() {
                 <Users className="w-8 h-8 text-orange-600" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {t('groupExists')}
+                {tableSession.hostCustomerName
+                  ? t('areYouWith', { name: tableSession.hostCustomerName })
+                  : t('groupExists')}
               </h2>
               <p className="text-gray-600 mt-2">
                 {t('groupExistsDesc', { tables: tableSession.linkedTables.join(', ') })}
@@ -657,12 +656,50 @@ export default function MenuPage() {
     )
   }
 
+  // Step 4: Blocked - User is not part of the group
+  if (step === 'blocked') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="bg-red-500 text-white p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold">MyKafe</h1>
+              {tableNumber && (
+                <p className="text-red-100">{t('table')} {tableNumber}</p>
+              )}
+            </div>
+            <LanguageSelectorCompact />
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-md text-center">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <X className="w-10 h-10 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              {t('cannotOrder')}
+            </h2>
+            <p className="text-gray-600 mb-8">
+              {t('scanAnotherTable')}
+            </p>
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+              <p className="text-yellow-800 font-medium">
+                {t('scanAnotherTableHint')}
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   // Handle back to choice
   const handleBackToChoice = () => {
     setStep('choice')
   }
 
-  // Step 4: Sections view
+  // Step 5: Sections view
   if (step === 'sections') {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
