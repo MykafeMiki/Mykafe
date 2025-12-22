@@ -463,6 +463,19 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                     src={imageUrl}
                     alt={section.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to default section image if Supabase image fails
+                      const target = e.target as HTMLImageElement
+                      if (target.src !== section.image) {
+                        target.src = section.image
+                        // Clear the invalid version from state
+                        setSectionImageVersions(prev => {
+                          const newVersions = { ...prev }
+                          delete newVersions[section.id]
+                          return newVersions
+                        })
+                      }
+                    }}
                   />
 
                   {/* Overlay */}

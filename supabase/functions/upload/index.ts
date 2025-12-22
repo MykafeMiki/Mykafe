@@ -145,8 +145,23 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Error:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    console.error('Upload Error:', error)
+
+    // Return detailed error for debugging
+    let errorMessage = 'Internal server error'
+    let errorDetails = null
+
+    if (error instanceof Error) {
+      errorMessage = error.message
+    } else if (typeof error === 'object' && error !== null) {
+      errorMessage = JSON.stringify(error)
+      errorDetails = error
+    }
+
+    return new Response(JSON.stringify({
+      error: errorMessage,
+      details: errorDetails
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

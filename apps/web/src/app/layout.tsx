@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: 'MyKafe - Ordina dal tuo tavolo',
   description: 'Sistema di ordinazione digitale per ristoranti',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icon-192.svg',
+    apple: '/icon-192.svg',
+  },
 }
 
 export const viewport: Viewport = {
