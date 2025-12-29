@@ -60,6 +60,29 @@ router.post('/categories', upload.single('image'), async (req, res) => {
   }
 })
 
+// Upload image for sections (menu sections like piadine, toast, etc.)
+router.post('/sections/:sectionId', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' })
+    }
+
+    const { sectionId } = req.params
+
+    // Use fixed filename for sections: sections/{sectionId}.jpg
+    const result = await uploadImage(
+      req.file.buffer,
+      `${sectionId}.jpg`,
+      'sections'
+    )
+
+    res.json(result)
+  } catch (error) {
+    console.error('Error uploading section image:', error)
+    res.status(500).json({ error: 'Failed to upload image' })
+  }
+})
+
 // Delete image
 router.delete('/', async (req, res) => {
   try {
