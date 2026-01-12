@@ -12,7 +12,7 @@ import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
-import { getMenu, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
+import { getMenuCached, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
 import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
@@ -116,53 +116,52 @@ export default function MenuPage() {
       if (!tableId) return
 
       try {
-        // Load table info
+        // STEP 1: Load table info first (required for other calls)
         const table = await getTableByQr(tableId)
         setTableNumber(table.number)
         setTableDbId(table.id)
         setTableIdInCart(table.id)
         setIsCounterTable(table.isCounter || false)
 
-        // Fetch existing customers at this table
-        try {
-          const customers = await getTableCustomers(table.id)
-          setExistingCustomers(customers || [])
-        } catch {
-          // No customers found, that's ok
-          setExistingCustomers([])
-        }
-
-        // Determine initial step based on table state
-        if (table.isCounter) {
-          // Counter tables go directly to menu (skip sections)
-          setSelectedSection(null)
-          setStep('menu')
-        } else {
-          // Regular tables - ask for name first
-          setStep('enter-name')
-        }
-
-        // Check if there's an active table session (merged tables)
-        try {
-          const existingSession = await getTableSessionByTable(table.number)
-          if (existingSession) {
-            setTableSession(existingSession)
-          }
-        } catch {
-          // No session found, that's ok
-        }
-
-        // Determine context based on table type
+        // STEP 2: PARALLEL - Load menu, customers, and session simultaneously
         const context: MenuContext = table.isCounter ? 'bar' : 'table'
 
-        // Load menu
-        const menuData = await getMenu()
+        const [menuData, customers, existingSession] = await Promise.all([
+          // Menu - use cached version for speed
+          getMenuCached(),
+
+          // Customers - wrapped to not fail if empty
+          getTableCustomers(table.id).catch(() => [] as TableCustomer[]),
+
+          // Session - only for non-counter tables
+          table.isCounter
+            ? Promise.resolve(null)
+            : getTableSessionByTable(table.number).catch(() => null)
+        ])
+
+        // Set customers
+        setExistingCustomers(customers || [])
+
+        // Set session
+        if (existingSession) {
+          setTableSession(existingSession)
+        }
+
+        // Set menu
         setCategories(menuData)
         if (menuData.length > 0) {
           const filtered = filterCategoriesByTime(menuData, context)
           if (filtered.length > 0) {
             setActiveCategory(filtered[0].id)
           }
+        }
+
+        // Determine initial step based on table state
+        if (table.isCounter) {
+          setSelectedSection(null)
+          setStep('menu')
+        } else {
+          setStep('enter-name')
         }
       } catch (err) {
         setError(tc('error'))

@@ -7,6 +7,31 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
 }
 
+// In-memory cache for out-of-stock ingredients
+interface CacheEntry<T> {
+  data: T
+  timestamp: number
+}
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+let outOfStockCache: CacheEntry<Set<string>> | null = null
+let lastMenuUpdate = Date.now()
+
+// Helper: Get out-of-stock ingredient IDs with caching
+async function getOutOfStockIds(supabase: ReturnType<typeof createClient>): Promise<Set<string>> {
+  if (outOfStockCache && (Date.now() - outOfStockCache.timestamp) < CACHE_TTL) {
+    return outOfStockCache.data
+  }
+
+  const { data: ingredients } = await supabase
+    .from('Ingredient')
+    .select('id')
+    .eq('inStock', false)
+
+  const ids = new Set<string>(ingredients?.map(i => i.id) || [])
+  outOfStockCache = { data: ids, timestamp: Date.now() }
+  return ids
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -26,175 +51,10 @@ Deno.serve(async (req) => {
     const menuIndex = pathParts.indexOf('menu')
     const subPath = menuIndex >= 0 ? pathParts.slice(menuIndex + 1) : []
 
-    // GET /menu - Get full menu with categories and items
+    // GET /menu - OPTIMIZED: Get full menu with categories and items
     if (req.method === 'GET' && subPath.length === 0) {
-      // Fetch all out-of-stock ingredients for description matching
-      const { data: allIngredients } = await supabase
-        .from('Ingredient')
-        .select('id, name, nameEn, nameFr, nameEs, nameHe, inStock')
-
-      const outOfStockIngredients = allIngredients?.filter(ing => !ing.inStock) || []
-
-      const { data: categories, error } = await supabase
-        .from('Category')
-        .select(`
-          *,
-          items:MenuItem(
-            *,
-            modifierGroups:ModifierGroup(
-              *,
-              modifiers:Modifier(
-                *,
-                ingredient:Ingredient(inStock)
-              )
-            ),
-            ingredients:MenuItemIngredient(
-              isPrimary,
-              ingredient:Ingredient(id, name, nameEn, nameFr, nameEs, nameHe, inStock)
-            )
-          )
-        `)
-        .eq('active', true)
-        .order('sortOrder', { ascending: true })
-
-      if (error) throw error
-
-      // Filter items based on ingredient availability
-      const filteredCategories = categories?.map(cat => ({
-        ...cat,
-        items: cat.items
-          ?.filter((item: {
-            available: boolean,
-            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string, name: string } }[]
-          }) => {
-            // Check if item is marked as available
-            if (!item.available) return false
-
-            // Check if any PRIMARY ingredient is out of stock
-            const primaryOutOfStock = item.ingredients?.some(
-              ing => ing.isPrimary && !ing.ingredient?.inStock
-            )
-
-            return !primaryOutOfStock
-          })
-          ?.sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
-          ?.map((item: {
-            description?: string,
-            descriptionEn?: string,
-            descriptionFr?: string,
-            descriptionEs?: string,
-            descriptionHe?: string,
-            modifierGroups: { modifiers: { available: boolean, ingredient?: { inStock: boolean } }[] }[],
-            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[]
-          }) => {
-            // Find unavailable ingredients from:
-            // 1. Associated secondary ingredients that are out of stock
-            // 2. Description text matching (fallback)
-            const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[] = []
-            const addedIds = new Set<string>()
-
-            // First, add secondary ingredients that are out of stock
-            if (item.ingredients) {
-              for (const assoc of item.ingredients) {
-                if (!assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock) {
-                  if (!addedIds.has(assoc.ingredient.id)) {
-                    addedIds.add(assoc.ingredient.id)
-                    unavailableIngredients.push({
-                      id: assoc.ingredient.id,
-                      name: assoc.ingredient.name,
-                      nameEn: assoc.ingredient.nameEn,
-                      nameFr: assoc.ingredient.nameFr,
-                      nameEs: assoc.ingredient.nameEs,
-                      nameHe: assoc.ingredient.nameHe
-                    })
-                  }
-                }
-              }
-            }
-
-            // Helper to get singular/plural variants of Italian words
-            const getVariants = (word: string): string[] => {
-              const variants = [word]
-              // Italian plural rules: -o → -i, -a → -e, -e → -i
-              if (word.endsWith('o')) {
-                variants.push(word.slice(0, -1) + 'i') // pomodoro → pomodori
-              } else if (word.endsWith('i')) {
-                variants.push(word.slice(0, -1) + 'o') // pomodori → pomodoro
-              } else if (word.endsWith('a')) {
-                variants.push(word.slice(0, -1) + 'e') // mozzarella → mozzarelle
-              } else if (word.endsWith('e')) {
-                variants.push(word.slice(0, -1) + 'a') // mozzarelle → mozzarella
-                variants.push(word.slice(0, -1) + 'i') // melanzane → melanzani (less common but covered)
-              }
-              return variants
-            }
-
-            // Then, check description matching (for items without explicit associations)
-            for (const ing of outOfStockIngredients) {
-              if (addedIds.has(ing.id)) continue // Already added
-
-              // Check all description fields
-              const descriptions = [
-                item.description || '',
-                item.descriptionEn || '',
-                item.descriptionFr || '',
-                item.descriptionEs || '',
-                item.descriptionHe || ''
-              ].join(' ').toLowerCase()
-
-              const ingNameLower = ing.name.toLowerCase()
-              const variants = getVariants(ingNameLower)
-
-              // Check if any variant of ingredient name appears in any description
-              const found = variants.some(variant => descriptions.includes(variant))
-              if (found) {
-                addedIds.add(ing.id)
-                unavailableIngredients.push({
-                  id: ing.id,
-                  name: ing.name,
-                  nameEn: ing.nameEn,
-                  nameFr: ing.nameFr,
-                  nameEs: ing.nameEs,
-                  nameHe: ing.nameHe
-                })
-              }
-            }
-
-            return {
-              ...item,
-              // Include unavailable ingredients found in description
-              unavailableIngredients,
-              // Remove raw ingredients from response
-              ingredients: undefined,
-              modifierGroups: item.modifierGroups?.map(group => ({
-                ...group,
-                modifiers: group.modifiers?.filter((mod: {
-                  available: boolean,
-                  ingredient?: { inStock: boolean }
-                }) => {
-                  // Filter out unavailable modifiers or those with out-of-stock ingredients
-                  if (!mod.available) return false
-                  if (mod.ingredient && !mod.ingredient.inStock) return false
-                  return true
-                }).map((mod: { ingredient?: unknown }) => {
-                  // Remove ingredient details from response
-                  const { ingredient, ...rest } = mod
-                  return rest
-                })
-              }))
-            }
-          })
-      }))
-
-      // Generate ETag from content for cache validation
-      const responseBody = JSON.stringify(filteredCategories)
-      const encoder = new TextEncoder()
-      const data = encoder.encode(responseBody)
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-      const hashArray = Array.from(new Uint8Array(hashBuffer))
-      const etag = `"${hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('')}"`
-
-      // Check If-None-Match header for conditional request
+      // Quick ETag check first (before any DB queries)
+      const etag = `"menu-${lastMenuUpdate}"`
       const ifNoneMatch = req.headers.get('If-None-Match')
       if (ifNoneMatch === etag) {
         return new Response(null, {
@@ -203,12 +63,99 @@ Deno.serve(async (req) => {
         })
       }
 
+      // OPTIMIZATION: Parallel queries instead of deeply nested joins
+      const [categoriesResult, outOfStockIds] = await Promise.all([
+        // Main menu query - simplified
+        supabase
+          .from('Category')
+          .select(`
+            *,
+            items:MenuItem(
+              *,
+              modifierGroups:ModifierGroup(
+                *,
+                modifiers:Modifier(id, name, nameEn, nameFr, nameEs, nameHe, price, available, modifierGroupId, ingredientId)
+              ),
+              ingredients:MenuItemIngredient(
+                isPrimary,
+                ingredient:Ingredient(id, name, nameEn, nameFr, nameEs, nameHe, inStock)
+              )
+            )
+          `)
+          .eq('active', true)
+          .order('sortOrder', { ascending: true }),
+
+        // Out-of-stock ingredients (cached)
+        getOutOfStockIds(supabase)
+      ])
+
+      if (categoriesResult.error) throw categoriesResult.error
+
+      const categories = categoriesResult.data || []
+
+      // OPTIMIZATION: Single pass filtering (no description matching - uses only explicit associations)
+      const filteredCategories = categories.map(cat => ({
+        ...cat,
+        items: (cat.items || [])
+          .filter((item: {
+            available: boolean,
+            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean } }[]
+          }) => {
+            if (!item.available) return false
+            // Check if any PRIMARY ingredient is out of stock
+            const primaryOutOfStock = item.ingredients?.some(
+              ing => ing.isPrimary && !ing.ingredient?.inStock
+            )
+            return !primaryOutOfStock
+          })
+          .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
+          .map((item: {
+            modifierGroups?: {
+              modifiers?: {
+                available: boolean
+                ingredientId?: string
+              }[]
+            }[]
+            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[]
+          }) => {
+            // Get unavailable secondary ingredients (explicit associations only)
+            const unavailableIngredients = (item.ingredients || [])
+              .filter(assoc => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
+              .map(assoc => ({
+                id: assoc.ingredient.id,
+                name: assoc.ingredient.name,
+                nameEn: assoc.ingredient.nameEn,
+                nameFr: assoc.ingredient.nameFr,
+                nameEs: assoc.ingredient.nameEs,
+                nameHe: assoc.ingredient.nameHe
+              }))
+
+            return {
+              ...item,
+              unavailableIngredients,
+              ingredients: undefined, // Remove raw ingredients from response
+              modifierGroups: item.modifierGroups?.map(group => ({
+                ...group,
+                modifiers: group.modifiers?.filter(mod => {
+                  if (!mod.available) return false
+                  if (mod.ingredientId && outOfStockIds.has(mod.ingredientId)) return false
+                  return true
+                })
+              }))
+            }
+          })
+      }))
+
+      const responseBody = JSON.stringify(filteredCategories)
+
       return new Response(responseBody, {
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
-          'ETag': etag
+          // OPTIMIZATION: Aggressive caching - 5 min + stale-while-revalidate 30 min
+          'Cache-Control': 'public, max-age=300, stale-while-revalidate=1800',
+          'ETag': etag,
+          'Vary': 'Accept-Encoding'
         }
       })
     }
