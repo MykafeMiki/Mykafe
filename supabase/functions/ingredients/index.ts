@@ -7,6 +7,121 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
 }
 
+// ============================================================
+// Helper functions per description matching pre-calcolato
+// ============================================================
+
+/**
+ * Genera varianti italiano singolare/plurale
+ */
+function getItalianVariants(word: string): string[] {
+  const variants = [word]
+
+  // -o → -i (pomodoro → pomodori)
+  if (word.endsWith('o')) {
+    variants.push(word.slice(0, -1) + 'i')
+  }
+  // -i → -o (pomodori → pomodoro)
+  else if (word.endsWith('i')) {
+    variants.push(word.slice(0, -1) + 'o')
+  }
+  // -a → -e (mozzarella → mozzarelle)
+  else if (word.endsWith('a')) {
+    variants.push(word.slice(0, -1) + 'e')
+  }
+  // -e → -a/-i (melanzane → melanzana)
+  else if (word.endsWith('e')) {
+    variants.push(word.slice(0, -1) + 'a')
+    variants.push(word.slice(0, -1) + 'i')
+  }
+
+  return variants
+}
+
+function generateCuid(): string {
+  const timestamp = Date.now().toString(36)
+  const randomPart = Math.random().toString(36).substring(2, 9)
+  return `c${timestamp}${randomPart}`
+}
+
+/**
+ * Calcola quali piatti contengono un ingrediente (tramite description matching)
+ * e salva i risultati nella tabella MenuItemUnavailableIngredient
+ */
+async function calculateIngredientMatches(
+  supabase: ReturnType<typeof createClient>,
+  ingredientId: string,
+  ingredientName: string
+): Promise<number> {
+
+  // Genera varianti singolare/plurale italiano
+  const variants = getItalianVariants(ingredientName.toLowerCase())
+
+  // Prendi tutti i menu items con le loro descrizioni
+  const { data: menuItems } = await supabase
+    .from('MenuItem')
+    .select('id, description, descriptionEn, descriptionFr, descriptionEs, descriptionHe')
+
+  if (!menuItems) return 0
+
+  const matches: { menuItemId: string; matchedText: string }[] = []
+
+  for (const item of menuItems) {
+    // Concatena tutte le descrizioni
+    const allDescriptions = [
+      item.description || '',
+      item.descriptionEn || '',
+      item.descriptionFr || '',
+      item.descriptionEs || '',
+      item.descriptionHe || ''
+    ].join(' ').toLowerCase()
+
+    // Cerca ogni variante
+    for (const variant of variants) {
+      if (allDescriptions.includes(variant)) {
+        matches.push({
+          menuItemId: item.id,
+          matchedText: variant
+        })
+        break // Una volta trovato, passa al prossimo item
+      }
+    }
+  }
+
+  // Inserisci i match (upsert per evitare duplicati)
+  if (matches.length > 0) {
+    const records = matches.map(m => ({
+      id: generateCuid(),
+      menuItemId: m.menuItemId,
+      ingredientId: ingredientId,
+      matchedText: m.matchedText
+    }))
+
+    // Batch insert con ON CONFLICT DO NOTHING
+    await supabase
+      .from('MenuItemUnavailableIngredient')
+      .upsert(records, {
+        onConflict: 'menuItemId,ingredientId',
+        ignoreDuplicates: true
+      })
+  }
+
+  return matches.length
+}
+
+/**
+ * Rimuove i match quando l'ingrediente torna disponibile
+ */
+async function clearIngredientMatches(
+  supabase: ReturnType<typeof createClient>,
+  ingredientId: string
+): Promise<void> {
+  await supabase
+    .from('MenuItemUnavailableIngredient')
+    .delete()
+    .eq('ingredientId', ingredientId)
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -87,6 +202,20 @@ Deno.serve(async (req) => {
       const body = await req.json()
       const { name, nameEn, nameFr, nameEs, nameHe, inStock, menuType } = body
 
+      // Prima recupera l'ingrediente attuale per avere il nome e lo stato precedente
+      const { data: currentIngredient } = await supabase
+        .from('Ingredient')
+        .select('name, inStock')
+        .eq('id', ingredientId)
+        .single()
+
+      if (!currentIngredient) {
+        return new Response(JSON.stringify({ error: 'Ingredient not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
       const updateData: Record<string, unknown> = {}
       if (name !== undefined) updateData.name = name
       if (nameEn !== undefined) updateData.nameEn = nameEn
@@ -105,6 +234,21 @@ Deno.serve(async (req) => {
         .single()
 
       if (error) throw error
+
+      // ===== Gestione description matching pre-calcolato =====
+      // Se lo stock è cambiato, aggiorna i match nella tabella pre-calcolata
+      if (inStock !== undefined && inStock !== currentIngredient.inStock) {
+        if (inStock === false) {
+          // Ingrediente esaurito: calcola i match nelle descrizioni
+          const ingredientName = name || currentIngredient.name
+          const matchCount = await calculateIngredientMatches(supabase, ingredientId, ingredientName)
+          console.log(`Ingredient ${ingredientName} out of stock: found ${matchCount} menu items via description`)
+        } else {
+          // Ingrediente tornato disponibile: rimuovi i match
+          await clearIngredientMatches(supabase, ingredientId)
+          console.log(`Ingredient ${ingredient.name} back in stock: cleared description matches`)
+        }
+      }
 
       // Se l'ingrediente è stato marcato come esaurito, aggiorna menu items e modifiers
       if (inStock === false) {

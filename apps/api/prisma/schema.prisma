@@ -9,18 +9,19 @@ datasource db {
 
 // Ingredienti (per gestione disponibilità)
 model Ingredient {
-  id            String                @id @default(cuid())
-  name          String                @unique
-  nameEn        String?               // English translation
-  nameFr        String?               // French translation
-  nameEs        String?               // Spanish translation
-  nameHe        String?               // Hebrew translation
-  inStock       Boolean               @default(true)
-  menuType      String                @default("CLASSIC") // CLASSIC, SUSHI - per separare gli stock
-  menuItems     MenuItemIngredient[]  // Ingrediente principale dei piatti
-  modifiers     Modifier[]            // Usato come modificatore
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+  id                   String                          @id @default(cuid())
+  name                 String                          @unique
+  nameEn               String?                         // English translation
+  nameFr               String?                         // French translation
+  nameEs               String?                         // Spanish translation
+  nameHe               String?                         // Hebrew translation
+  inStock              Boolean                         @default(true)
+  menuType             String                          @default("CLASSIC") // CLASSIC, SUSHI - per separare gli stock
+  menuItems            MenuItemIngredient[]            // Ingrediente principale dei piatti
+  modifiers            Modifier[]                      // Usato come modificatore
+  unavailableInMenuItems MenuItemUnavailableIngredient[] @relation("UnavailableInMenuItems") // Match pre-calcolati nelle descrizioni
+  createdAt            DateTime                        @default(now())
+  updatedAt            DateTime                        @updatedAt
 }
 
 // Relazione MenuItem <-> Ingrediente principale
@@ -33,6 +34,22 @@ model MenuItemIngredient {
   isPrimary    Boolean    @default(false) // Se true, piatto non disponibile quando ingrediente finisce
 
   @@unique([menuItemId, ingredientId])
+}
+
+// Associazioni ingrediente-piatto da description matching (pre-calcolate)
+// Quando un ingrediente va out-of-stock, calcoliamo quali piatti lo menzionano nella descrizione
+model MenuItemUnavailableIngredient {
+  id           String     @id @default(cuid())
+  menuItemId   String
+  menuItem     MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  ingredientId String
+  ingredient   Ingredient @relation("UnavailableInMenuItems", fields: [ingredientId], references: [id], onDelete: Cascade)
+  matchedText  String?    // Testo che ha matchato (per debug)
+  createdAt    DateTime   @default(now())
+
+  @@unique([menuItemId, ingredientId])
+  @@index([ingredientId])
+  @@index([menuItemId])
 }
 
 // Sessione Tavoli Uniti (conto condiviso per più tavoli)
@@ -108,30 +125,31 @@ model Category {
 
 // Piatti del menu
 model MenuItem {
-  id                   String               @id @default(cuid())
-  name                 String
-  nameEn               String?              // English translation
-  nameFr               String?              // French translation
-  nameEs               String?              // Spanish translation
-  nameHe               String?              // Hebrew translation
-  description          String?
-  descriptionEn        String?              // English translation
-  descriptionFr        String?              // French translation
-  descriptionEs        String?              // Spanish translation
-  descriptionHe        String?              // Hebrew translation
-  price                Int                  // Prezzo consumazione al tavolo (centesimi)
-  priceTakeaway        Int?                 // Prezzo takeaway in loco/banco (centesimi) - se null usa price
-  priceTakeawayRemote  Int?                 // Prezzo takeaway da remoto /ordina (centesimi) - se null usa priceTakeaway o price
-  imageUrl             String?
-  available            Boolean              @default(true)
-  sortOrder            Int                  @default(0)
-  categoryId           String
-  category             Category             @relation(fields: [categoryId], references: [id])
-  modifierGroups       ModifierGroup[]
-  orderItems           OrderItem[]
-  ingredients          MenuItemIngredient[] // Ingredienti del piatto
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
+  id                      String                          @id @default(cuid())
+  name                    String
+  nameEn                  String?                         // English translation
+  nameFr                  String?                         // French translation
+  nameEs                  String?                         // Spanish translation
+  nameHe                  String?                         // Hebrew translation
+  description             String?
+  descriptionEn           String?                         // English translation
+  descriptionFr           String?                         // French translation
+  descriptionEs           String?                         // Spanish translation
+  descriptionHe           String?                         // Hebrew translation
+  price                   Int                             // Prezzo consumazione al tavolo (centesimi)
+  priceTakeaway           Int?                            // Prezzo takeaway in loco/banco (centesimi) - se null usa price
+  priceTakeawayRemote     Int?                            // Prezzo takeaway da remoto /ordina (centesimi) - se null usa priceTakeaway o price
+  imageUrl                String?
+  available               Boolean                         @default(true)
+  sortOrder               Int                             @default(0)
+  categoryId              String
+  category                Category                        @relation(fields: [categoryId], references: [id])
+  modifierGroups          ModifierGroup[]
+  orderItems              OrderItem[]
+  ingredients             MenuItemIngredient[]            // Ingredienti del piatto
+  unavailableIngredients  MenuItemUnavailableIngredient[] // Match ingredienti non disponibili (pre-calcolati)
+  createdAt               DateTime                        @default(now())
+  updatedAt               DateTime                        @updatedAt
 }
 
 // Gruppi di modificatori (es. "Extra ingredienti")

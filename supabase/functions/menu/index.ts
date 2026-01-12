@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       }
 
       // OPTIMIZATION: Parallel queries instead of deeply nested joins
-      const [categoriesResult, outOfStockIds] = await Promise.all([
+      const [categoriesResult, outOfStockResult, outOfStockIds] = await Promise.all([
         // Main menu query - simplified
         supabase
           .from('Category')
@@ -85,7 +85,16 @@ Deno.serve(async (req) => {
           .eq('active', true)
           .order('sortOrder', { ascending: true }),
 
-        // Out-of-stock ingredients (cached)
+        // Out-of-stock ingredients WITH pre-calculated description matches
+        supabase
+          .from('Ingredient')
+          .select(`
+            id, name, nameEn, nameFr, nameEs, nameHe,
+            menuItemMatches:MenuItemUnavailableIngredient(menuItemId)
+          `)
+          .eq('inStock', false),
+
+        // Out-of-stock ingredient IDs only (cached)
         getOutOfStockIds(supabase)
       ])
 
@@ -93,7 +102,26 @@ Deno.serve(async (req) => {
 
       const categories = categoriesResult.data || []
 
-      // OPTIMIZATION: Single pass filtering (no description matching - uses only explicit associations)
+      // Build map: menuItemId -> unavailable ingredients (from pre-calculated description matching)
+      const itemUnavailableMap = new Map<string, { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[]>()
+
+      for (const ing of outOfStockResult.data || []) {
+        for (const match of ing.menuItemMatches || []) {
+          if (!itemUnavailableMap.has(match.menuItemId)) {
+            itemUnavailableMap.set(match.menuItemId, [])
+          }
+          itemUnavailableMap.get(match.menuItemId)!.push({
+            id: ing.id,
+            name: ing.name,
+            nameEn: ing.nameEn,
+            nameFr: ing.nameFr,
+            nameEs: ing.nameEs,
+            nameHe: ing.nameHe
+          })
+        }
+      }
+
+      // OPTIMIZATION: Single pass filtering
       const filteredCategories = categories.map(cat => ({
         ...cat,
         items: (cat.items || [])
@@ -110,6 +138,7 @@ Deno.serve(async (req) => {
           })
           .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
           .map((item: {
+            id: string
             modifierGroups?: {
               modifiers?: {
                 available: boolean
@@ -118,8 +147,9 @@ Deno.serve(async (req) => {
             }[]
             ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[]
           }) => {
-            // Get unavailable secondary ingredients (explicit associations only)
-            const unavailableIngredients = (item.ingredients || [])
+            // Get unavailable ingredients from BOTH:
+            // 1. Explicit associations (MenuItemIngredient where !isPrimary and !inStock)
+            const explicitUnavailable = (item.ingredients || [])
               .filter(assoc => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
               .map(assoc => ({
                 id: assoc.ingredient.id,
@@ -129,6 +159,20 @@ Deno.serve(async (req) => {
                 nameEs: assoc.ingredient.nameEs,
                 nameHe: assoc.ingredient.nameHe
               }))
+
+            // 2. Pre-calculated description matches (MenuItemUnavailableIngredient)
+            const descriptionMatches = itemUnavailableMap.get(item.id) || []
+
+            // Merge and deduplicate by ingredient ID
+            const seenIds = new Set<string>()
+            const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[] = []
+
+            for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
+              if (!seenIds.has(ing.id)) {
+                seenIds.add(ing.id)
+                unavailableIngredients.push(ing)
+              }
+            }
 
             return {
               ...item,
