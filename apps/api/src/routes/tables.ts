@@ -101,42 +101,57 @@ router.patch('/:id/status', async (req, res) => {
 
 // ========== Table Customers Management ==========
 
-// Add customer to table (when someone scans QR and enters their name)
+// Add customer to table (with atomic isHost assignment to prevent race condition)
 router.post('/:id/customers', async (req, res) => {
   try {
-    const { name } = req.body
     const tableId = req.params.id
+    const { name } = req.body
 
     if (!name || name.trim().length === 0) {
       return res.status(400).json({ error: 'Name is required' })
     }
 
-    // Check if there are already active customers at this table
-    const existingCustomers = await prisma.tableCustomer.findMany({
-      where: { tableId, isActive: true }
+    // Use transaction with serializable isolation to prevent race condition
+    const result = await prisma.$transaction(async (tx) => {
+      // Lock: count existing active customers
+      const existingCount = await tx.tableCustomer.count({
+        where: { tableId, isActive: true }
+      })
+
+      // First customer is the host
+      const isHost = existingCount === 0
+
+      // Create the customer atomically
+      const customer = await tx.tableCustomer.create({
+        data: {
+          tableId,
+          name: name.trim(),
+          isHost
+        }
+      })
+
+      // Update table status to OCCUPIED if it was AVAILABLE
+      await tx.table.update({
+        where: { id: tableId },
+        data: { status: 'OCCUPIED' }
+      })
+
+      return customer
+    }, {
+      isolationLevel: 'Serializable' // Prevents phantom reads
     })
 
-    // First customer is the host
-    const isHost = existingCustomers.length === 0
-
-    // Create the customer
-    const customer = await prisma.tableCustomer.create({
-      data: {
-        tableId,
-        name: name.trim(),
-        isHost
-      }
-    })
-
-    // Update table status to OCCUPIED if it was AVAILABLE
-    await prisma.table.update({
-      where: { id: tableId },
-      data: { status: 'OCCUPIED' }
-    })
-
-    res.status(201).json(customer)
-  } catch (error) {
+    res.status(201).json(result)
+  } catch (error: any) {
     console.error('Error adding customer to table:', error)
+
+    // Handle serialization failure (retry logic could be added here)
+    if (error.code === '40001') {
+      return res.status(409).json({
+        error: 'Concurrent modification detected. Please try again.'
+      })
+    }
+
     res.status(500).json({ error: 'Failed to add customer' })
   }
 })
