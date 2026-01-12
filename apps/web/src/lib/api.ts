@@ -1,5 +1,11 @@
+import { createClient } from '@supabase/supabase-js'
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://biefwzrprjqusjynqwus.supabase.co/functions/v1'
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZWZ3enJwcmpxdXNqeW5xd3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMDgzMTgsImV4cCI6MjA3OTY4NDMxOH0.CfLbUJa3znC9zNYXdYa0zrFzZM4ASvgw9Ousq27ZqCw'
+
+// Client Supabase per query dirette (bypassa Edge Functions = ~100ms invece di ~400ms)
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // Token management
 let authToken: string | null = null
@@ -77,41 +83,29 @@ export const verifyToken = () =>
 export const getMenu = () => fetchApi<Category[]>('/menu')
 export const getMenuItem = (id: string) => fetchApi<MenuItem>(`/menu/items/${id}`)
 
-// ============ MENU CACHING ============
+// ============ MENU CACHING (Query Diretta Supabase) ============
 
 interface CachedMenu {
   data: Category[]
   timestamp: number
-  etag?: string
 }
 
 const MENU_CACHE_KEY = 'mykafe_menu_cache'
-const MENU_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+const MENU_CACHE_TTL = 60 * 1000 // 1 minuto (più breve perché query è veloce)
 
-// Get menu with local caching (stale-while-revalidate pattern)
+// Get menu with local caching - QUERY DIRETTA (~100ms invece di ~400ms)
 export const getMenuCached = async (): Promise<Category[]> => {
   if (typeof window !== 'undefined') {
     try {
       const cached = localStorage.getItem(MENU_CACHE_KEY)
       if (cached) {
-        const { data, timestamp, etag }: CachedMenu = JSON.parse(cached)
+        const { data, timestamp }: CachedMenu = JSON.parse(cached)
         const age = Date.now() - timestamp
 
         // If cache is fresh, return immediately and revalidate in background
         if (age < MENU_CACHE_TTL) {
-          revalidateMenu(etag).catch(console.error)
+          revalidateMenu().catch(console.error)
           return data
-        }
-
-        // Cache is stale but we have an etag - try conditional request
-        if (etag) {
-          const fresh = await fetchMenuWithEtag(etag)
-          if (fresh === null) {
-            // 304 Not Modified - update timestamp and return cached
-            updateCacheTimestamp()
-            return data
-          }
-          return fresh
         }
       }
     } catch {
@@ -119,52 +113,147 @@ export const getMenuCached = async (): Promise<Category[]> => {
     }
   }
 
-  return fetchAndCacheMenu()
+  return fetchMenuDirect()
 }
 
-async function fetchMenuWithEtag(etag: string): Promise<Category[] | null> {
-  const res = await fetch(`${API_URL}/menu`, {
-    headers: {
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'If-None-Match': etag
+// Query diretta a Supabase (bypassa Edge Function)
+async function fetchMenuDirect(): Promise<Category[]> {
+  // Query parallele per massima velocità
+  const [categoriesResult, outOfStockResult] = await Promise.all([
+    // Menu principale
+    supabase
+      .from('Category')
+      .select(`
+        id, name, nameEn, nameFr, nameEs, nameHe,
+        description, descriptionEn, descriptionFr, descriptionEs, descriptionHe,
+        imageUrl, sortOrder, active,
+        items:MenuItem(
+          id, name, nameEn, nameFr, nameEs, nameHe,
+          description, descriptionEn, descriptionFr, descriptionEs, descriptionHe,
+          price, priceTakeaway, priceTakeawayRemote,
+          imageUrl, available, sortOrder, categoryId,
+          modifierGroups:ModifierGroup(
+            id, name, nameEn, nameFr, nameEs, nameHe,
+            required, multiSelect, minSelect, maxSelect, menuItemId,
+            modifiers:Modifier(
+              id, name, nameEn, nameFr, nameEs, nameHe,
+              price, available, modifierGroupId, ingredientId
+            )
+          ),
+          ingredients:MenuItemIngredient(
+            isPrimary,
+            ingredient:Ingredient(id, name, nameEn, nameFr, nameEs, nameHe, inStock)
+          )
+        )
+      `)
+      .eq('active', true)
+      .order('sortOrder', { ascending: true }),
+
+    // Ingredienti non disponibili con match pre-calcolati
+    supabase
+      .from('Ingredient')
+      .select(`
+        id, name, nameEn, nameFr, nameEs, nameHe,
+        menuItemMatches:MenuItemUnavailableIngredient(menuItemId)
+      `)
+      .eq('inStock', false)
+  ])
+
+  if (categoriesResult.error) {
+    console.error('Menu fetch error:', categoriesResult.error)
+    throw categoriesResult.error
+  }
+
+  const categories = categoriesResult.data || []
+
+  // Mappa: menuItemId -> ingredienti non disponibili (da description matching)
+  const itemUnavailableMap = new Map<string, { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[]>()
+  const outOfStockIds = new Set<string>()
+
+  for (const ing of outOfStockResult.data || []) {
+    outOfStockIds.add(ing.id)
+    for (const match of ing.menuItemMatches || []) {
+      if (!itemUnavailableMap.has(match.menuItemId)) {
+        itemUnavailableMap.set(match.menuItemId, [])
+      }
+      itemUnavailableMap.get(match.menuItemId)!.push({
+        id: ing.id,
+        name: ing.name,
+        nameEn: ing.nameEn,
+        nameFr: ing.nameFr,
+        nameEs: ing.nameEs,
+        nameHe: ing.nameHe
+      })
     }
-  })
-
-  if (res.status === 304) {
-    return null // Not modified
   }
 
-  if (!res.ok) {
-    throw new Error(`API Error: ${res.status}`)
-  }
+  // Filtra items e modifiers
+  const filtered = categories.map(category => ({
+    ...category,
+    items: (category.items || [])
+      .filter((item: { available: boolean, ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean } }[] }) => {
+        if (!item.available) return false
+        // Check primary ingredients
+        const primaryOutOfStock = item.ingredients?.some(
+          (ing: { isPrimary: boolean, ingredient: { inStock: boolean } }) => ing.isPrimary && !ing.ingredient?.inStock
+        )
+        return !primaryOutOfStock
+      })
+      .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
+      .map((item: {
+        id: string,
+        modifierGroups?: { modifiers?: { available: boolean; ingredientId?: string }[] }[],
+        ingredients?: { isPrimary: boolean, ingredient: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, inStock: boolean } }[]
+      }) => {
+        // Ingredienti non disponibili da associazioni esplicite
+        const explicitUnavailable = (item.ingredients || [])
+          .filter(assoc => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
+          .map(assoc => ({
+            id: assoc.ingredient.id,
+            name: assoc.ingredient.name,
+            nameEn: assoc.ingredient.nameEn,
+            nameFr: assoc.ingredient.nameFr,
+            nameEs: assoc.ingredient.nameEs,
+            nameHe: assoc.ingredient.nameHe
+          }))
 
-  const data = await res.json()
-  const newEtag = res.headers.get('ETag') || undefined
-  saveMenuCache(data, newEtag)
-  return data
+        // Ingredienti non disponibili da description matching
+        const descriptionMatches = itemUnavailableMap.get(item.id) || []
+
+        // Merge e deduplica
+        const seenIds = new Set<string>()
+        const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[] = []
+        for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
+          if (!seenIds.has(ing.id)) {
+            seenIds.add(ing.id)
+            unavailableIngredients.push(ing)
+          }
+        }
+
+        return {
+          ...item,
+          unavailableIngredients,
+          ingredients: undefined, // Rimuovi raw ingredients dalla risposta
+          modifierGroups: item.modifierGroups?.map(group => ({
+            ...group,
+            modifiers: group.modifiers?.filter(mod =>
+              mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
+            )
+          }))
+        }
+      })
+  }))
+
+  // Salva in cache
+  saveMenuCache(filtered)
+
+  return filtered
 }
 
-async function fetchAndCacheMenu(): Promise<Category[]> {
-  const res = await fetch(`${API_URL}/menu`, {
-    headers: {
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-    }
-  })
-
-  if (!res.ok) {
-    throw new Error(`API Error: ${res.status}`)
-  }
-
-  const data = await res.json()
-  const etag = res.headers.get('ETag') || undefined
-  saveMenuCache(data, etag)
-  return data
-}
-
-function saveMenuCache(data: Category[], etag?: string) {
+function saveMenuCache(data: Category[]) {
   if (typeof window !== 'undefined') {
     try {
-      const cache: CachedMenu = { data, timestamp: Date.now(), etag }
+      const cache: CachedMenu = { data, timestamp: Date.now() }
       localStorage.setItem(MENU_CACHE_KEY, JSON.stringify(cache))
     } catch {
       // localStorage full or unavailable
@@ -172,28 +261,9 @@ function saveMenuCache(data: Category[], etag?: string) {
   }
 }
 
-function updateCacheTimestamp() {
-  if (typeof window !== 'undefined') {
-    try {
-      const cached = localStorage.getItem(MENU_CACHE_KEY)
-      if (cached) {
-        const cache: CachedMenu = JSON.parse(cached)
-        cache.timestamp = Date.now()
-        localStorage.setItem(MENU_CACHE_KEY, JSON.stringify(cache))
-      }
-    } catch {
-      // Ignore
-    }
-  }
-}
-
-async function revalidateMenu(etag?: string) {
+async function revalidateMenu() {
   try {
-    if (etag) {
-      await fetchMenuWithEtag(etag)
-    } else {
-      await fetchAndCacheMenu()
-    }
+    await fetchMenuDirect()
   } catch {
     // Background revalidation failed, ignore
   }
