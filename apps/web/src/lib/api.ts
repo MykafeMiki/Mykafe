@@ -270,10 +270,36 @@ async function revalidateMenu() {
 }
 
 // Clear menu cache (call when admin updates menu)
-export const clearMenuCache = () => {
+export const clearMenuCache = async () => {
+  // Clear local cache
   if (typeof window !== 'undefined') {
     localStorage.removeItem(MENU_CACHE_KEY)
   }
+
+  // Trigger ISR revalidation (non-blocking)
+  try {
+    await fetch('/api/revalidate-menu', { method: 'POST' })
+  } catch {
+    // Revalidation failed, ignore - will refresh on next ISR cycle
+  }
+}
+
+// GET MENU via Next.js ISR API Route (~20ms after first request)
+// Use this for SSR/SSG pages
+export const getMenuISR = async (): Promise<Category[]> => {
+  const baseUrl = typeof window !== 'undefined'
+    ? ''
+    : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  const res = await fetch(`${baseUrl}/api/menu`, {
+    next: { revalidate: 60 }
+  })
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch menu')
+  }
+
+  return res.json()
 }
 
 // Preload menu on app start (non-blocking)
