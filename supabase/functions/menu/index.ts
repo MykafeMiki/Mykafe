@@ -186,8 +186,30 @@ Deno.serve(async (req) => {
           })
       }))
 
-      return new Response(JSON.stringify(filteredCategories), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      // Generate ETag from content for cache validation
+      const responseBody = JSON.stringify(filteredCategories)
+      const encoder = new TextEncoder()
+      const data = encoder.encode(responseBody)
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      const etag = `"${hashArray.slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('')}"`
+
+      // Check If-None-Match header for conditional request
+      const ifNoneMatch = req.headers.get('If-None-Match')
+      if (ifNoneMatch === etag) {
+        return new Response(null, {
+          status: 304,
+          headers: { ...corsHeaders, 'ETag': etag }
+        })
+      }
+
+      return new Response(responseBody, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+          'ETag': etag
+        }
       })
     }
 

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { CreateOrderSchema, UpdateOrderStatusSchema, validateRequest } from "../_shared/validation.ts"
 
 // Generate cuid-like ID
 function generateId(): string {
@@ -153,7 +154,17 @@ Deno.serve(async (req) => {
     if (req.method === 'POST' && subPath.length === 0) {
       const body = await req.json()
       console.log('Creating order with body:', JSON.stringify(body))
-      const { tableId, items, notes, orderType, paymentMethod, customerName, customerPhone, partyCode, tableSessionId } = body
+
+      // Validate input
+      const validation = validateRequest(CreateOrderSchema, body)
+      if (!validation.success) {
+        return new Response(JSON.stringify({ error: 'Validation error', details: validation.error }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const { tableId, items, notes, orderType, paymentMethod, customerName, customerPhone, partyCode, tableSessionId } = validation.data
 
       // Verifica se il tavolo è un banco (richiede customerName)
       const { data: table } = await supabase
@@ -206,30 +217,46 @@ Deno.serve(async (req) => {
       const isCard = paymentMethod === 'CARD'
       const CARD_MULTIPLIER = 1.03
 
-      // Calculate totals
+      // Calculate totals - OPTIMIZED: Batch fetch instead of N+1 queries
       let subtotal = 0
       let totalAmount = 0
 
-      for (const item of items) {
-        const { data: menuItem } = await supabase
-          .from('MenuItem')
-          .select('price')
-          .eq('id', item.menuItemId)
-          .single()
+      // Batch fetch all menu items in ONE query
+      const menuItemIds = [...new Set(items.map((item: { menuItemId: string }) => item.menuItemId))]
+      const { data: menuItems } = await supabase
+        .from('MenuItem')
+        .select('id, price')
+        .in('id', menuItemIds)
 
+      const menuItemMap = new Map(menuItems?.map(mi => [mi.id, mi]) || [])
+
+      // Batch fetch all modifiers in ONE query (if any)
+      const allModifierIds = items.flatMap((item: { modifierIds?: string[] }) => item.modifierIds || [])
+      let modifierMap = new Map<string, { price: number }>()
+
+      if (allModifierIds.length > 0) {
+        const { data: modifiers } = await supabase
+          .from('Modifier')
+          .select('id, price')
+          .in('id', [...new Set(allModifierIds)])
+
+        modifierMap = new Map(modifiers?.map(m => [m.id, m]) || [])
+      }
+
+      // Now calculate totals using the cached data (no more queries)
+      for (const item of items) {
+        const menuItem = menuItemMap.get(item.menuItemId)
         if (!menuItem) continue
 
         let itemBasePrice = menuItem.price * item.quantity
 
-        // Add modifier prices
+        // Add modifier prices from cache
         if (item.modifierIds && item.modifierIds.length > 0) {
-          const { data: modifiers } = await supabase
-            .from('Modifier')
-            .select('price')
-            .in('id', item.modifierIds)
-
-          for (const mod of modifiers || []) {
-            itemBasePrice += mod.price * item.quantity
+          for (const modId of item.modifierIds) {
+            const modifier = modifierMap.get(modId)
+            if (modifier) {
+              itemBasePrice += modifier.price * item.quantity
+            }
           }
         }
 
@@ -388,7 +415,17 @@ Deno.serve(async (req) => {
     if (req.method === 'PATCH' && subPath[0] && subPath[1] === 'status') {
       const orderId = subPath[0]
       const body = await req.json()
-      const { status } = body
+
+      // Validate input
+      const validation = validateRequest(UpdateOrderStatusSchema, body)
+      if (!validation.success) {
+        return new Response(JSON.stringify({ error: 'Validation error', details: validation.error }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const { status } = validation.data
 
       const { error: updateError } = await supabase
         .from('Order')

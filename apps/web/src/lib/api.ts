@@ -515,6 +515,19 @@ export const clearTableCustomers = (tableId: string) =>
     method: 'DELETE',
   })
 
+// Update table status
+export const updateTableStatus = (tableId: string, status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED') =>
+  fetchApi<Table>(`/tables/${tableId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
+
+// Reset table (clear customers and set to AVAILABLE)
+export const resetTable = async (tableId: string): Promise<void> => {
+  await clearTableCustomers(tableId)
+  await updateTableStatus(tableId, 'AVAILABLE')
+}
+
 // Types
 import type { Category, MenuItem, Table, Order, Ingredient, PartySession, PartyBillResponse, ModifierGroup, Modifier } from '@shared/types'
 import type { CreateOrderRequest } from '@shared/types'

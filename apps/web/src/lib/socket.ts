@@ -19,6 +19,9 @@ function getSupabaseClient(): SupabaseClient {
 }
 
 let ordersChannel: RealtimeChannel | null = null
+let reconnectAttempts = 0
+const MAX_RECONNECT_ATTEMPTS = 5
+const RECONNECT_DELAY = 2000
 
 export interface OrderEvent {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE'
@@ -26,40 +29,96 @@ export interface OrderEvent {
   old: Record<string, unknown>
 }
 
-export function subscribeToOrders(onNewOrder: (order: unknown) => void, onOrderUpdate: (order: unknown) => void) {
+// Store callbacks for reconnection
+let storedOnNewOrder: ((order: unknown) => void) | null = null
+let storedOnOrderUpdate: ((order: unknown) => void) | null = null
+let storedOnConnectionChange: ((connected: boolean) => void) | null = null
+
+export function subscribeToOrders(
+  onNewOrder: (order: unknown) => void,
+  onOrderUpdate: (order: unknown) => void,
+  onConnectionChange?: (connected: boolean) => void
+) {
+  // Store callbacks for reconnection
+  storedOnNewOrder = onNewOrder
+  storedOnOrderUpdate = onOrderUpdate
+  storedOnConnectionChange = onConnectionChange || null
+
   if (ordersChannel) {
     ordersChannel.unsubscribe()
   }
 
-  const client = getSupabaseClient()
-  ordersChannel = client
-    .channel('orders-channel')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'Order'
-      },
-      (payload) => {
-        console.log('New order:', payload.new)
-        onNewOrder(payload.new)
-      }
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'Order'
-      },
-      (payload) => {
-        console.log('Order updated:', payload.new)
-        onOrderUpdate(payload.new)
-      }
-    )
-    .subscribe()
+  const subscribe = () => {
+    const client = getSupabaseClient()
 
+    ordersChannel = client
+      .channel('orders-channel')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'Order' },
+        (payload) => {
+          console.log('New order:', payload.new)
+          onNewOrder(payload.new)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'Order' },
+        (payload) => {
+          console.log('Order updated:', payload.new)
+          onOrderUpdate(payload.new)
+        }
+      )
+      .subscribe((status) => {
+        console.log('Realtime status:', status)
+
+        switch (status) {
+          case 'SUBSCRIBED':
+            console.log('✅ Connected to realtime orders')
+            reconnectAttempts = 0
+            onConnectionChange?.(true)
+            break
+
+          case 'CHANNEL_ERROR':
+            console.error('❌ Realtime channel error')
+            onConnectionChange?.(false)
+            attemptReconnect()
+            break
+
+          case 'TIMED_OUT':
+            console.warn('⚠️ Realtime connection timed out')
+            onConnectionChange?.(false)
+            attemptReconnect()
+            break
+
+          case 'CLOSED':
+            console.warn('⚠️ Realtime channel closed')
+            onConnectionChange?.(false)
+            break
+        }
+      })
+  }
+
+  const attemptReconnect = () => {
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      console.error('Max reconnect attempts reached. Please refresh the page.')
+      return
+    }
+
+    reconnectAttempts++
+    const delay = RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1) // Exponential backoff
+
+    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`)
+
+    setTimeout(() => {
+      if (ordersChannel) {
+        ordersChannel.unsubscribe()
+      }
+      subscribe()
+    }, delay)
+  }
+
+  subscribe()
   return ordersChannel
 }
 
@@ -68,6 +127,10 @@ export function unsubscribeFromOrders() {
     ordersChannel.unsubscribe()
     ordersChannel = null
   }
+  storedOnNewOrder = null
+  storedOnOrderUpdate = null
+  storedOnConnectionChange = null
+  reconnectAttempts = 0
 }
 
 // Legacy compatibility functions (no-op for now)

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { PaymentSchema, validateRequest } from "../_shared/validation.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -149,7 +150,17 @@ Deno.serve(async (req) => {
     if (req.method === 'PATCH' && subPath[0] === 'pay' && subPath[1]) {
       const orderId = subPath[1]
       const body = await req.json()
-      const { paymentMethod } = body // CASH or CARD
+
+      // Validate input
+      const validation = validateRequest(PaymentSchema, body)
+      if (!validation.success) {
+        return new Response(JSON.stringify({ error: 'Validation error', details: validation.error }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const { paymentMethod } = validation.data
 
       const { data: order, error: updateError } = await supabase
         .from('Order')
@@ -173,7 +184,17 @@ Deno.serve(async (req) => {
     if (req.method === 'POST' && subPath[0] === 'pay-table' && subPath[1]) {
       const tableId = subPath[1]
       const body = await req.json()
-      const { paymentMethod } = body
+
+      // Validate input
+      const validation = validateRequest(PaymentSchema, body)
+      if (!validation.success) {
+        return new Response(JSON.stringify({ error: 'Validation error', details: validation.error }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const { paymentMethod } = validation.data
 
       // Update all unpaid orders for this table
       const { data: orders, error: updateError } = await supabase
@@ -190,10 +211,10 @@ Deno.serve(async (req) => {
 
       if (updateError) throw updateError
 
-      // Free up the table
+      // Free up the table (use AVAILABLE, not FREE)
       await supabase
         .from('Table')
-        .update({ status: 'FREE' })
+        .update({ status: 'AVAILABLE' })
         .eq('id', tableId)
 
       // Close any active table sessions
