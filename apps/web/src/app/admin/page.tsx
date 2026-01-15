@@ -965,59 +965,139 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
             )}
           </div>
 
-          {/* Takeaway Pickup Hours Configuration */}
+          {/* Takeaway Service Configuration */}
           <div className="space-y-4 border-t pt-6">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🛒</span>
-              <h3 className="font-semibold text-gray-900">Orari Ritiro Takeaway</h3>
+              <h3 className="font-semibold text-gray-900">Servizio Takeaway</h3>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-              <p className="text-sm text-gray-600">
-                Configura gli orari disponibili per il ritiro degli ordini takeaway online (/ordina).
-              </p>
-
-              <div className="grid grid-cols-2 gap-4">
+              {/* Master Toggle */}
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Orario apertura
-                  </label>
-                  <select
-                    value={localConfig.takeaway.openingHour}
-                    onChange={(e) => setLocalConfig({
-                      ...localConfig,
-                      takeaway: { ...localConfig.takeaway, openingHour: parseInt(e.target.value) }
-                    })}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
-                    ))}
-                  </select>
+                  <p className="font-medium text-gray-900">Takeaway Online (/ordina)</p>
+                  <p className="text-sm text-gray-500">
+                    {localConfig.takeaway.enabled
+                      ? 'I clienti possono ordinare online per il ritiro'
+                      : 'Servizio temporaneamente sospeso'}
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Orario chiusura
-                  </label>
-                  <select
-                    value={localConfig.takeaway.closingHour}
-                    onChange={(e) => setLocalConfig({
-                      ...localConfig,
-                      takeaway: { ...localConfig.takeaway, closingHour: parseInt(e.target.value) }
-                    })}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
-                    ))}
-                  </select>
-                </div>
+                <button
+                  onClick={() => setLocalConfig({
+                    ...localConfig,
+                    takeaway: { ...localConfig.takeaway, enabled: !localConfig.takeaway.enabled }
+                  })}
+                  className={`relative w-14 h-8 rounded-full transition-colors ${
+                    localConfig.takeaway.enabled ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+                    localConfig.takeaway.enabled ? 'left-7' : 'left-1'
+                  }`} />
+                </button>
               </div>
 
-              <p className="text-xs text-gray-500">
-                I clienti potranno selezionare orari di ritiro compresi tra le {localConfig.takeaway.openingHour.toString().padStart(2, '0')}:00 e le {localConfig.takeaway.closingHour.toString().padStart(2, '0')}:00.
-              </p>
+              {localConfig.takeaway.enabled && (
+                <>
+                  {/* Closed Days Selection */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Giorni di chiusura
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Seleziona i giorni in cui il ristorante è chiuso. Il takeaway non sarà disponibile in questi giorni.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {DAYS_OF_WEEK.map((day) => {
+                        const isSelected = localConfig.takeaway.closedDays?.includes(day.value)
+                        return (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => {
+                              const currentDays = localConfig.takeaway.closedDays || []
+                              const newDays = isSelected
+                                ? currentDays.filter(d => d !== day.value)
+                                : [...currentDays, day.value]
+                              setLocalConfig({
+                                ...localConfig,
+                                takeaway: { ...localConfig.takeaway, closedDays: newDays }
+                              })
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                              isSelected
+                                ? 'bg-red-100 text-red-700 border-2 border-red-300'
+                                : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            {isSelected ? '✕ ' : ''}{day.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {localConfig.takeaway.closedDays && localConfig.takeaway.closedDays.length > 0 && (
+                      <p className="text-sm text-amber-600 mt-2">
+                        Chiuso: {localConfig.takeaway.closedDays
+                          .sort((a, b) => a - b)
+                          .map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label)
+                          .join(', ')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Operating Hours */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Orario apertura
+                      </label>
+                      <select
+                        value={localConfig.takeaway.openingHour}
+                        onChange={(e) => setLocalConfig({
+                          ...localConfig,
+                          takeaway: { ...localConfig.takeaway, openingHour: parseInt(e.target.value) }
+                        })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      >
+                        {Array.from({ length: 24 }, (_, i) => (
+                          <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Orario chiusura
+                      </label>
+                      <select
+                        value={localConfig.takeaway.closingHour}
+                        onChange={(e) => setLocalConfig({
+                          ...localConfig,
+                          takeaway: { ...localConfig.takeaway, closingHour: parseInt(e.target.value) }
+                        })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      >
+                        {Array.from({ length: 24 }, (_, i) => (
+                          <option key={i} value={i}>{i.toString().padStart(2, '0')}:00</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    I clienti potranno selezionare orari di ritiro compresi tra le {localConfig.takeaway.openingHour.toString().padStart(2, '0')}:00 e le {localConfig.takeaway.closingHour.toString().padStart(2, '0')}:00.
+                  </p>
+                </>
+              )}
+
+              {!localConfig.takeaway.enabled && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-800">
+                    <strong>Takeaway disabilitato:</strong> I clienti che visitano /ordina vedranno un messaggio che indica che il servizio è temporaneamente sospeso.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

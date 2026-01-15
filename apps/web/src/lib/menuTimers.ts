@@ -38,8 +38,10 @@ export interface TimerConfig {
     startHour: number // Hour from which panini are visible (default 11)
   }
   takeaway: {
+    enabled: boolean // Toggle to enable/disable takeaway completely
     openingHour: number // Earliest pickup hour (default 11)
     closingHour: number // Latest pickup hour (default 20)
+    closedDays: number[] // Array of day numbers (0-6) when restaurant is closed
   }
 }
 
@@ -57,8 +59,10 @@ const DEFAULT_CONFIG: TimerConfig = {
     startHour: 11, // 11:00
   },
   takeaway: {
+    enabled: true, // Takeaway enabled by default
     openingHour: 11, // Pickup from 11:00
     closingHour: 20, // Until 20:00
+    closedDays: [], // No closed days by default
   },
 }
 
@@ -80,7 +84,14 @@ export function getTimerConfig(): TimerConfig {
       return {
         sushi: { ...DEFAULT_CONFIG.sushi, ...parsed.sushi },
         panini: { ...DEFAULT_CONFIG.panini, ...parsed.panini },
-        takeaway: { ...DEFAULT_CONFIG.takeaway, ...parsed.takeaway },
+        takeaway: {
+          ...DEFAULT_CONFIG.takeaway,
+          ...parsed.takeaway,
+          // Ensure closedDays is always an array
+          closedDays: Array.isArray(parsed.takeaway?.closedDays)
+            ? parsed.takeaway.closedDays
+            : DEFAULT_CONFIG.takeaway.closedDays
+        },
       }
     }
   } catch (e) {
@@ -286,4 +297,142 @@ export function getPaniniStatus(): {
 export function getTakeawayConfig(): TimerConfig['takeaway'] {
   const config = getTimerConfig()
   return config.takeaway
+}
+
+/**
+ * Check if takeaway service is currently available
+ */
+export function isTakeawayAvailable(): boolean {
+  const config = getTimerConfig()
+
+  if (!config.takeaway.enabled) {
+    return false
+  }
+
+  const now = new Date()
+  const currentDay = now.getDay()
+  const currentHour = now.getHours()
+
+  if (config.takeaway.closedDays.includes(currentDay)) {
+    return false
+  }
+
+  if (currentHour < config.takeaway.openingHour || currentHour >= config.takeaway.closingHour) {
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Get takeaway availability status with detailed message
+ */
+export function getTakeawayStatus(): {
+  isAvailable: boolean
+  reason: 'disabled' | 'closed_day' | 'outside_hours' | 'available'
+  message: string
+} {
+  const config = getTimerConfig()
+  const now = new Date()
+  const currentDay = now.getDay()
+  const currentHour = now.getHours()
+
+  if (!config.takeaway.enabled) {
+    return {
+      isAvailable: false,
+      reason: 'disabled',
+      message: 'Il servizio takeaway è temporaneamente sospeso.'
+    }
+  }
+
+  if (config.takeaway.closedDays.includes(currentDay)) {
+    const dayName = DAYS_OF_WEEK.find(d => d.value === currentDay)?.label || ''
+    return {
+      isAvailable: false,
+      reason: 'closed_day',
+      message: `Oggi (${dayName}) siamo chiusi. Riprova un altro giorno.`
+    }
+  }
+
+  if (currentHour < config.takeaway.openingHour) {
+    return {
+      isAvailable: false,
+      reason: 'outside_hours',
+      message: `Gli ordini takeaway aprono alle ${config.takeaway.openingHour.toString().padStart(2, '0')}:00.`
+    }
+  }
+
+  if (currentHour >= config.takeaway.closingHour) {
+    return {
+      isAvailable: false,
+      reason: 'outside_hours',
+      message: `Gli ordini takeaway chiudono alle ${config.takeaway.closingHour.toString().padStart(2, '0')}:00. Riprova domani!`
+    }
+  }
+
+  return {
+    isAvailable: true,
+    reason: 'available',
+    message: ''
+  }
+}
+
+/**
+ * Get available dates for takeaway pickup (excludes closed days)
+ */
+export function getAvailableDates(daysAhead: number = 7): Date[] {
+  const config = getTimerConfig()
+  const dates: Date[] = []
+  const today = new Date()
+
+  for (let i = 0; i < daysAhead; i++) {
+    const date = new Date(today)
+    date.setDate(today.getDate() + i)
+
+    if (!config.takeaway.closedDays.includes(date.getDay())) {
+      dates.push(date)
+    }
+  }
+
+  return dates
+}
+
+/**
+ * Get available time slots for a specific date
+ */
+export function getAvailableTimeSlots(
+  date: Date,
+  openingHour: number,
+  closingHour: number
+): string[] {
+  const slots: string[] = []
+  const now = new Date()
+  const isToday = date.toDateString() === now.toDateString()
+
+  let startHour = openingHour
+  if (isToday) {
+    startHour = Math.max(openingHour, now.getHours() + 1)
+  }
+
+  for (let hour = startHour; hour < closingHour; hour++) {
+    slots.push(`${hour.toString().padStart(2, '0')}:00`)
+    slots.push(`${hour.toString().padStart(2, '0')}:30`)
+  }
+
+  return slots
+}
+
+/**
+ * Check if pickup time is within 30 minutes
+ */
+export function isPickupWithin30Minutes(date: Date, time: string): boolean {
+  const [hours, minutes] = time.split(':').map(Number)
+  const pickupTime = new Date(date)
+  pickupTime.setHours(hours, minutes, 0, 0)
+
+  const now = new Date()
+  const diffMs = pickupTime.getTime() - now.getTime()
+  const diffMinutes = diffMs / (1000 * 60)
+
+  return diffMinutes <= 30 && diffMinutes > 0
 }

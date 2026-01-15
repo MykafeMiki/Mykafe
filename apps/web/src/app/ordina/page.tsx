@@ -11,7 +11,8 @@ import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
-import { filterCategoriesByTime, getTakeawayConfig } from '@/lib/menuTimers'
+import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus } from '@/lib/menuTimers'
+import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
@@ -71,6 +72,7 @@ export default function OrdinaPage() {
   const tc = useTranslations('common')
   const locale = useLocale()
 
+  const [takeawayStatus, setTakeawayStatus] = useState<ReturnType<typeof getTakeawayStatus> | null>(null)
   const [step, setStep] = useState<OrderStep>('payment')
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTime, setSelectedTime] = useState<string>('')
@@ -114,6 +116,12 @@ export default function OrdinaPage() {
       return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })
     }
   }
+
+  // Check takeaway availability on mount
+  useEffect(() => {
+    const status = getTakeawayStatus()
+    setTakeawayStatus(status)
+  }, [])
 
   useEffect(() => {
     async function loadData() {
@@ -205,6 +213,11 @@ export default function OrdinaPage() {
         <div className="animate-pulse text-gray-500">{tc('loading')}</div>
       </div>
     )
+  }
+
+  // Show unavailable message if takeaway is not available
+  if (takeawayStatus && !takeawayStatus.isAvailable) {
+    return <TakeawayUnavailableMessage status={takeawayStatus} />
   }
 
   if (error) {
