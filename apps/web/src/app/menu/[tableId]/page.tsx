@@ -81,7 +81,7 @@ export default function MenuPage() {
     })
 
     // Special handling for "toast" section: merge all items and sort by number
-    if (selectedSection === 'toast' && sectionCats.length > 1) {
+    if (selectedSection === 'toast' && sectionCats.length >= 1) {
       // Collect all items from all toast categories
       const allToastItems = sectionCats.flatMap(cat => cat.items || [])
 

@@ -90,7 +90,7 @@ interface CachedMenu {
   timestamp: number
 }
 
-const MENU_CACHE_KEY = 'mykafe_menu_cache'
+const MENU_CACHE_KEY = 'mykafe_menu_cache_v2' // v2: invalidate old corrupt caches
 const MENU_CACHE_TTL = 60 * 1000 // 1 minuto (più breve perché query è veloce)
 
 // Validate cache data - ensure categories have items
