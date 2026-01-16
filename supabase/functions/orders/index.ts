@@ -519,12 +519,38 @@ Deno.serve(async (req) => {
 
       const { status } = validation.data
 
+      // Get current order to know the tableId
+      const { data: currentOrder } = await supabase
+        .from('Order')
+        .select('tableId, orderType')
+        .eq('id', orderId)
+        .single()
+
       const { error: updateError } = await supabase
         .from('Order')
         .update({ status })
         .eq('id', orderId)
 
       if (updateError) throw updateError
+
+      // If order is completed/paid, check if table should be freed
+      if (currentOrder?.tableId && ['COMPLETED', 'PAID', 'CANCELLED'].includes(status)) {
+        // Count remaining active orders for this table
+        const { count: activeOrdersCount } = await supabase
+          .from('Order')
+          .select('*', { count: 'exact', head: true })
+          .eq('tableId', currentOrder.tableId)
+          .in('status', ['PENDING', 'PREPARING', 'READY'])
+
+        // If no more active orders, free the table
+        if ((activeOrdersCount || 0) === 0) {
+          await supabase
+            .from('Table')
+            .update({ status: 'AVAILABLE' })
+            .eq('id', currentOrder.tableId)
+          console.log(`Table ${currentOrder.tableId} freed - no more active orders`)
+        }
+      }
 
       // Fetch updated order
       const { data: order, error: fetchError } = await supabase

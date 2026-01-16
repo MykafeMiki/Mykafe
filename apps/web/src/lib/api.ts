@@ -93,6 +93,14 @@ interface CachedMenu {
 const MENU_CACHE_KEY = 'mykafe_menu_cache'
 const MENU_CACHE_TTL = 60 * 1000 // 1 minuto (più breve perché query è veloce)
 
+// Validate cache data - ensure categories have items
+function isValidMenuCache(data: Category[]): boolean {
+  if (!data || data.length < 5) return false // Should have at least 5 categories
+  // Check that at least some categories have items
+  const categoriesWithItems = data.filter(c => c.items && c.items.length > 0)
+  return categoriesWithItems.length >= 3
+}
+
 // Get menu with local caching - QUERY DIRETTA (~100ms invece di ~400ms)
 export const getMenuCached = async (): Promise<Category[]> => {
   if (typeof window !== 'undefined') {
@@ -102,6 +110,13 @@ export const getMenuCached = async (): Promise<Category[]> => {
         const { data, timestamp }: CachedMenu = JSON.parse(cached)
         const age = Date.now() - timestamp
 
+        // Validate cache data - if invalid, fetch fresh
+        if (!isValidMenuCache(data)) {
+          console.log('Menu cache invalid, fetching fresh data')
+          localStorage.removeItem(MENU_CACHE_KEY)
+          return fetchMenuDirect()
+        }
+
         // If cache is fresh, return immediately and revalidate in background
         if (age < MENU_CACHE_TTL) {
           revalidateMenu().catch(console.error)
@@ -109,7 +124,8 @@ export const getMenuCached = async (): Promise<Category[]> => {
         }
       }
     } catch {
-      // Cache read failed, fetch fresh
+      // Cache read failed, clear and fetch fresh
+      localStorage.removeItem(MENU_CACHE_KEY)
     }
   }
 
