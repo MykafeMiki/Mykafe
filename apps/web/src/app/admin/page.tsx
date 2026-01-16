@@ -8,6 +8,7 @@ import { formatPrice } from '@/lib/utils'
 import {
   getSushiStatus,
   getPaniniStatus,
+  getTakeawayStatus,
   isSushiTimeActive,
   getTimerConfig,
   saveTimerConfig,
@@ -304,6 +305,7 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
   // Get timer status
   const sushiStatus = getSushiStatus()
   const paniniStatus = getPaniniStatus()
+  const takeawayStatus = getTakeawayStatus()
   const isInSushiWindow = isSushiTimeActive()
 
   // Get day names for display
@@ -328,7 +330,7 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Sushi Timer */}
           <div className="bg-white/70 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">
@@ -367,6 +369,31 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
               {timerConfig.panini.enabled
                 ? `Visibili dalle ${timerConfig.panini.startHour}:00 (solo menu bar/banco)`
                 : 'Timer disabilitato - sempre visibili'
+              }
+            </p>
+          </div>
+
+          {/* Takeaway Service */}
+          <div className="bg-white/70 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">🛒</span>
+              <span className="font-medium text-gray-800">Takeaway</span>
+              <span className={`ml-auto px-2 py-0.5 rounded-full text-xs ${
+                !timerConfig.takeaway.enabled
+                  ? 'bg-red-100 text-red-700'
+                  : takeawayStatus.isAvailable
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-yellow-100 text-yellow-700'
+              }`}>
+                {!timerConfig.takeaway.enabled ? 'DISATTIVO' : (takeawayStatus.isAvailable ? 'APERTO' : 'CHIUSO')}
+              </span>
+            </div>
+            <p className="text-xs text-gray-600">
+              {!timerConfig.takeaway.enabled
+                ? 'Servizio temporaneamente sospeso'
+                : timerConfig.takeaway.closedDays?.length > 0
+                  ? `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00 | Chiuso: ${timerConfig.takeaway.closedDays.map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label?.slice(0,3)).join(', ')}`
+                  : `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00`
               }
             </p>
           </div>
@@ -1950,6 +1977,10 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newIngredientName, setNewIngredientName] = useState('')
+  const [newIngredientNameEn, setNewIngredientNameEn] = useState('')
+  const [creating, setCreating] = useState(false)
 
   // Load ingredients on mount
   useEffect(() => {
@@ -1964,6 +1995,27 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
       console.error('Failed to load ingredients:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCreateIngredient = async () => {
+    if (!newIngredientName.trim()) return
+    setCreating(true)
+    try {
+      const newIng = await createIngredient({
+        name: newIngredientName.trim(),
+        nameEn: newIngredientNameEn.trim() || newIngredientName.trim(),
+        inStock: true
+      })
+      setIngredients(prev => [...prev, newIng])
+      setNewIngredientName('')
+      setNewIngredientNameEn('')
+      setShowAddForm(false)
+    } catch (err) {
+      console.error('Failed to create ingredient:', err)
+      alert('Errore nella creazione dell\'ingrediente')
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -2007,7 +2059,67 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">{t('ingredientsManagement')}</h2>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+        >
+          <Plus className="w-4 h-4" />
+          Aggiungi Ingrediente
+        </button>
       </div>
+
+      {/* Add Ingredient Form */}
+      {showAddForm && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+          <h3 className="font-semibold text-green-800 mb-3">Nuovo Ingrediente</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nome (IT) *
+              </label>
+              <input
+                type="text"
+                value={newIngredientName}
+                onChange={(e) => setNewIngredientName(e.target.value)}
+                placeholder="es. Pomodoro"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nome (EN)
+              </label>
+              <input
+                type="text"
+                value={newIngredientNameEn}
+                onChange={(e) => setNewIngredientNameEn(e.target.value)}
+                placeholder="es. Tomato"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleCreateIngredient}
+              disabled={!newIngredientName.trim() || creating}
+              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              Crea Ingrediente
+            </button>
+            <button
+              onClick={() => {
+                setShowAddForm(false)
+                setNewIngredientName('')
+                setNewIngredientNameEn('')
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+            >
+              Annulla
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
