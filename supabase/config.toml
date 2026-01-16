@@ -410,3 +410,17 @@ entrypoint = "./functions/upload/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/upload/*.html" ]
+
+[functions.table-sessions]
+enabled = true
+verify_jwt = false
+import_map = "./functions/table-sessions/deno.json"
+entrypoint = "./functions/table-sessions/index.ts"
+
+[functions.cleanup-stale]
+enabled = true
+verify_jwt = false
+import_map = "./functions/cleanup-stale/deno.json"
+entrypoint = "./functions/cleanup-stale/index.ts"
+# Esegue ogni ora al minuto 0
+schedule = "0 * * * *"
