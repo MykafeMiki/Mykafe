@@ -137,61 +137,55 @@ export default function AdminPage() {
         <div className="flex">
           <button
             onClick={() => setActiveTab('menu')}
-            className={`flex-1 py-4 px-6 font-medium transition ${
-              activeTab === 'menu'
+            className={`flex-1 py-4 px-6 font-medium transition ${activeTab === 'menu'
                 ? 'text-primary-600 border-b-2 border-primary-500'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
           >
             {t('menuTab')}
           </button>
           <button
             onClick={() => setActiveTab('ingredients')}
-            className={`flex-1 py-4 px-6 font-medium transition ${
-              activeTab === 'ingredients'
+            className={`flex-1 py-4 px-6 font-medium transition ${activeTab === 'ingredients'
                 ? 'text-primary-600 border-b-2 border-primary-500'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
           >
             {t('ingredientsTab')}
           </button>
           <button
             onClick={() => setActiveTab('tables')}
-            className={`flex-1 py-4 px-6 font-medium transition ${
-              activeTab === 'tables'
+            className={`flex-1 py-4 px-6 font-medium transition ${activeTab === 'tables'
                 ? 'text-primary-600 border-b-2 border-primary-500'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
           >
             {t('tablesTab')}
           </button>
           <button
             onClick={() => setActiveTab('qr')}
-            className={`flex-1 py-4 px-6 font-medium transition ${
-              activeTab === 'qr'
+            className={`flex-1 py-4 px-6 font-medium transition ${activeTab === 'qr'
                 ? 'text-primary-600 border-b-2 border-primary-500'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
           >
             {t('qrTab')}
           </button>
           <button
             onClick={() => setActiveTab('reports')}
-            className={`flex-1 py-4 px-6 font-medium transition ${
-              activeTab === 'reports'
+            className={`flex-1 py-4 px-6 font-medium transition ${activeTab === 'reports'
                 ? 'text-primary-600 border-b-2 border-primary-500'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
           >
             {t('reportsTab')}
           </button>
           <button
             onClick={() => setActiveTab('prices')}
-            className={`flex-1 py-4 px-6 font-medium transition ${
-              activeTab === 'prices'
+            className={`flex-1 py-4 px-6 font-medium transition ${activeTab === 'prices'
                 ? 'text-primary-600 border-b-2 border-primary-500'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+              }`}
           >
             {t('pricesTab')}
           </button>
@@ -336,11 +330,10 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xl">🍣</span>
               <span className="font-medium text-gray-800">Sushi</span>
-              <span className={`ml-auto px-2 py-0.5 rounded-full text-xs ${
-                timerConfig.sushi.enabled
+              <span className={`ml-auto px-2 py-0.5 rounded-full text-xs ${timerConfig.sushi.enabled
                   ? (isInSushiWindow ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')
                   : 'bg-gray-100 text-gray-500'
-              }`}>
+                }`}>
                 {timerConfig.sushi.enabled ? (isInSushiWindow ? 'ATTIVO' : 'IN ATTESA') : 'SEMPRE'}
               </span>
             </div>
@@ -357,11 +350,10 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xl">🥪</span>
               <span className="font-medium text-gray-800">Panini (Bar)</span>
-              <span className={`ml-auto px-2 py-0.5 rounded-full text-xs ${
-                timerConfig.panini.enabled
+              <span className={`ml-auto px-2 py-0.5 rounded-full text-xs ${timerConfig.panini.enabled
                   ? (paniniStatus.isAvailable ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')
                   : 'bg-gray-100 text-gray-500'
-              }`}>
+                }`}>
                 {timerConfig.panini.enabled ? (paniniStatus.isAvailable ? 'VISIBILI' : 'NASCOSTI') : 'SEMPRE'}
               </span>
             </div>
@@ -375,24 +367,45 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
 
           {/* Takeaway Service */}
           <div className="bg-white/70 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">🛒</span>
-              <span className="font-medium text-gray-800">Takeaway</span>
-              <span className={`ml-auto px-2 py-0.5 rounded-full text-xs ${
-                !timerConfig.takeaway.enabled
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🛒</span>
+                <span className="font-medium text-gray-800">Takeaway</span>
+              </div>
+              <button
+                onClick={() => {
+                  const newConfig = {
+                    ...timerConfig,
+                    takeaway: { ...timerConfig.takeaway, enabled: !timerConfig.takeaway.enabled }
+                  }
+                  saveTimerConfig(newConfig)
+                  setTimerConfig(newConfig)
+                }}
+                className={`relative w-12 h-6 rounded-full transition-colors ${timerConfig.takeaway.enabled ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
+                title={timerConfig.takeaway.enabled ? 'Disabilita Takeaway' : 'Abilita Takeaway'}
+              >
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${timerConfig.takeaway.enabled ? 'left-7' : 'left-1'
+                  }`} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${!timerConfig.takeaway.enabled
                   ? 'bg-red-100 text-red-700'
                   : takeawayStatus.isAvailable
                     ? 'bg-green-100 text-green-700'
                     : 'bg-yellow-100 text-yellow-700'
-              }`}>
+                }`}>
                 {!timerConfig.takeaway.enabled ? 'DISATTIVO' : (takeawayStatus.isAvailable ? 'APERTO' : 'CHIUSO')}
               </span>
             </div>
+
             <p className="text-xs text-gray-600">
               {!timerConfig.takeaway.enabled
                 ? 'Servizio temporaneamente sospeso'
                 : timerConfig.takeaway.closedDays?.length > 0
-                  ? `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00 | Chiuso: ${timerConfig.takeaway.closedDays.map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label?.slice(0,3)).join(', ')}`
+                  ? `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00 | Chiuso: ${timerConfig.takeaway.closedDays.map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label?.slice(0, 3)).join(', ')}`
                   : `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00`
               }
             </p>
@@ -406,11 +419,10 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-orange-800">{t('specialMenus')}</h3>
             {/* Timer Status Badge */}
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
-              isInSushiWindow
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${isInSushiWindow
                 ? 'bg-green-100 text-green-700'
                 : 'bg-gray-100 text-gray-600'
-            }`}>
+              }`}>
               <Timer className="w-3 h-3" />
               <span>{sushiStatus.statusText}</span>
             </div>
@@ -423,11 +435,10 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                   key={cat.id}
                   onClick={() => handleToggleCategory(cat)}
                   disabled={togglingCategory === cat.id}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    cat.active
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${cat.active
                       ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
                       : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
-                  } ${togglingCategory === cat.id ? 'opacity-50' : ''}`}
+                    } ${togglingCategory === cat.id ? 'opacity-50' : ''}`}
                 >
                   <span className="text-2xl">🍣</span>
                   <div className="text-left">
@@ -584,11 +595,10 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
               <button
                 onClick={() => handleToggleCategory(category)}
                 disabled={togglingCategory === category.id}
-                className={`p-1 rounded transition ${
-                  category.active
+                className={`p-1 rounded transition ${category.active
                     ? 'text-green-500 hover:bg-green-50'
                     : 'text-gray-400 hover:bg-gray-100'
-                }`}
+                  }`}
                 title={category.active ? 'Categoria visibile' : 'Categoria nascosta'}
               >
                 {category.active ? (
@@ -697,11 +707,10 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                   </button>
                   <button
                     onClick={() => handleToggleAvailability(item)}
-                    className={`p-1 rounded transition ${
-                      item.available
+                    className={`p-1 rounded transition ${item.available
                         ? 'text-green-500 hover:bg-green-50'
                         : 'text-gray-400 hover:bg-gray-100'
-                    }`}
+                      }`}
                     title={item.available ? tc('available') : tc('unavailable')}
                   >
                     {item.available ? (
@@ -815,11 +824,10 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                   ...localConfig,
                   sushi: { ...localConfig.sushi, enabled: !localConfig.sushi.enabled }
                 })}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
-                  localConfig.sushi.enabled
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${localConfig.sushi.enabled
                     ? 'bg-green-100 text-green-700'
                     : 'bg-gray-100 text-gray-500'
-                }`}
+                  }`}
               >
                 {localConfig.sushi.enabled ? (
                   <>
@@ -938,11 +946,10 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                   ...localConfig,
                   panini: { ...localConfig.panini, enabled: !localConfig.panini.enabled }
                 })}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
-                  localConfig.panini.enabled
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${localConfig.panini.enabled
                     ? 'bg-green-100 text-green-700'
                     : 'bg-gray-100 text-gray-500'
-                }`}
+                  }`}
               >
                 {localConfig.panini.enabled ? (
                   <>
@@ -1015,13 +1022,11 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                     ...localConfig,
                     takeaway: { ...localConfig.takeaway, enabled: !localConfig.takeaway.enabled }
                   })}
-                  className={`relative w-14 h-8 rounded-full transition-colors ${
-                    localConfig.takeaway.enabled ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
+                  className={`relative w-14 h-8 rounded-full transition-colors ${localConfig.takeaway.enabled ? 'bg-green-500' : 'bg-gray-300'
+                    }`}
                 >
-                  <span className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                    localConfig.takeaway.enabled ? 'left-7' : 'left-1'
-                  }`} />
+                  <span className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${localConfig.takeaway.enabled ? 'left-7' : 'left-1'
+                    }`} />
                 </button>
               </div>
 
@@ -1052,11 +1057,10 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                                 takeaway: { ...localConfig.takeaway, closedDays: newDays }
                               })
                             }}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                              isSelected
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${isSelected
                                 ? 'bg-red-100 text-red-700 border-2 border-red-300'
                                 : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
-                            }`}
+                              }`}
                           >
                             {isSelected ? '✕ ' : ''}{day.label}
                           </button>
@@ -1606,9 +1610,8 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
                         return (
                           <div
                             key={ing.id}
-                            className={`flex items-center gap-2 p-2 rounded transition ${
-                              selected ? 'bg-primary-50 border border-primary-200' : 'hover:bg-gray-50'
-                            }`}
+                            className={`flex items-center gap-2 p-2 rounded transition ${selected ? 'bg-primary-50 border border-primary-200' : 'hover:bg-gray-50'
+                              }`}
                           >
                             <input
                               type="checkbox"
@@ -1621,11 +1624,10 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
                               <button
                                 type="button"
                                 onClick={() => handleTogglePrimary(ing.id)}
-                                className={`text-xs px-2 py-0.5 rounded-full transition ${
-                                  selected.isPrimary
+                                className={`text-xs px-2 py-0.5 rounded-full transition ${selected.isPrimary
                                     ? 'bg-red-100 text-red-700 font-medium'
                                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                }`}
+                                  }`}
                               >
                                 {selected.isPrimary ? 'Primario' : 'Secondario'}
                               </button>
@@ -1855,9 +1857,8 @@ function TablesTab({ tables, t, onUpdate }: TablesTabProps & { onUpdate: () => v
               {table.seats} {t('seats')}
             </div>
             <span
-              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                statusColors[table.status]
-              }`}
+              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusColors[table.status]
+                }`}
             >
               {statusLabels[table.status]}
             </span>
@@ -2153,11 +2154,10 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
                 <button
                   onClick={() => handleToggleStock(ingredient)}
                   disabled={toggling === ingredient.id}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
-                    toggling === ingredient.id
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${toggling === ingredient.id
                       ? 'opacity-50'
                       : 'bg-green-500 text-white hover:bg-green-600'
-                  }`}
+                    }`}
                 >
                   {toggling === ingredient.id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -2191,11 +2191,10 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
               <button
                 onClick={() => handleToggleStock(ingredient)}
                 disabled={toggling === ingredient.id}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
-                  toggling === ingredient.id
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${toggling === ingredient.id
                     ? 'opacity-50'
                     : 'bg-red-100 text-red-700 hover:bg-red-200'
-                }`}
+                  }`}
               >
                 {toggling === ingredient.id ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -2588,21 +2587,19 @@ function ReportsTab({ t, tc }: ReportsTabProps) {
         <div className="flex gap-2">
           <button
             onClick={() => setPeriod('week')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              period === 'week'
+            className={`px-4 py-2 rounded-lg font-medium transition ${period === 'week'
                 ? 'bg-primary-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+              }`}
           >
             {t('periodWeek')}
           </button>
           <button
             onClick={() => setPeriod('month')}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              period === 'month'
+            className={`px-4 py-2 rounded-lg font-medium transition ${period === 'month'
                 ? 'bg-primary-600 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+              }`}
           >
             {t('periodMonth')}
           </button>
@@ -2702,9 +2699,8 @@ function ReportsTab({ t, tc }: ReportsTabProps) {
                       return (
                         <div key={hourData.hour} className="flex-1 flex flex-col items-center">
                           <div
-                            className={`w-full rounded-t transition-all duration-500 ${
-                              isPeak ? 'bg-primary-500' : 'bg-gray-300'
-                            }`}
+                            className={`w-full rounded-t transition-all duration-500 ${isPeak ? 'bg-primary-500' : 'bg-gray-300'
+                              }`}
                             style={{ height: `${Math.max(height, 4)}%` }}
                             title={`${hourData.orderCount} ${t('orders').toLowerCase()}`}
                           />
@@ -2845,8 +2841,8 @@ function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
     const originalRemote = item.priceTakeawayRemote ? (item.priceTakeawayRemote / 100).toFixed(2) : ''
 
     return currentPrices.price !== originalPrice ||
-           currentPrices.priceTakeaway !== originalTakeaway ||
-           currentPrices.priceTakeawayRemote !== originalRemote
+      currentPrices.priceTakeaway !== originalTakeaway ||
+      currentPrices.priceTakeawayRemote !== originalRemote
   }
 
   const toggleCategory = (categoryId: string) => {
