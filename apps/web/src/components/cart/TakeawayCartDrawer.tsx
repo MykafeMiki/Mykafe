@@ -8,6 +8,11 @@ import { formatPrice, getItemPrice as getContextPrice } from '@/lib/utils'
 import { createOrder } from '@/lib/api'
 import { PaymentMethod, OrderType, ConsumeMode } from '@shared/types'
 import type { MenuItem } from '@shared/types'
+import {
+  getTimerConfig,
+  getAvailableDates as getDates,
+  getAvailableTimeSlots
+} from '@/lib/menuTimers'
 
 interface TakeawayCartDrawerProps {
   isOpen: boolean
@@ -50,6 +55,43 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
     return sum + calculateItemPrice(basePrice, modifiersPrice, item.quantity, isCard)
   }, 0)
 
+
+
+  // Date and Time state
+  const [scheduledDate, setScheduledDate] = useState('')
+  const [scheduledTime, setScheduledTime] = useState('')
+
+  // Calcola le date disponibili (oggi e domani) usando la config
+  const getAvailableDates = () => {
+    const dates = getDates(2) // Get next 2 available days
+    return dates.map(date => {
+      const today = new Date()
+      const isToday = date.toDateString() === today.toDateString()
+      const tomorrow = new Date(today)
+      tomorrow.setDate(today.getDate() + 1)
+      const isTomorrow = date.toDateString() === tomorrow.toDateString()
+
+      let label = date.toLocaleDateString('it-IT')
+      if (isToday) label = t('today')
+      if (isTomorrow) label = t('tomorrow')
+
+      return {
+        value: date.toISOString().split('T')[0],
+        label: label
+      }
+    })
+  }
+
+  // Generate time slots based on config
+  const getTimeSlots = () => {
+    if (!scheduledDate) return []
+
+    const config = getTimerConfig().takeaway
+    const date = new Date(scheduledDate)
+
+    return getAvailableTimeSlots(date, config.openingHour, config.closingHour)
+  }
+
   const handleSubmitOrder = async () => {
     if (!tableId || items.length === 0) return
 
@@ -77,6 +119,11 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
       return
     }
 
+    if (!scheduledDate || !scheduledTime) {
+      setError(t('enterDateTime'))
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
 
@@ -94,12 +141,15 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
         paymentMethod,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
+        notes: `Ritiro: ${scheduledDate} alle ${scheduledTime}`, // Store in notes for now if backend doesn't support it directly
       })
 
       clearCart()
       setCustomerName('')
       setCustomerPhone('')
       setPhoneConfirm('')
+      setScheduledDate('')
+      setScheduledTime('')
       onOrderSuccess()
       onClose()
     } catch (err) {
@@ -203,77 +253,108 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
               <div className="space-y-3">
                 <h3 className="font-semibold text-gray-900">{t('yourData')}</h3>
                 <div className="space-y-2">
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder={t('namePlaceholder')}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
+                  <div className="space-y-2">
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
-                        type="tel"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder={t('phonePlaceholder')}
+                        type="text"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        placeholder={t('namePlaceholder')}
                         className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1 ml-1">{t('phoneHelper')}</p>
-                  </div>
-                  <div>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="tel"
-                        value={phoneConfirm}
-                        onChange={(e) => setPhoneConfirm(e.target.value)}
-                        placeholder={t('phoneConfirmPlaceholder')}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      />
+                    <div>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="tel"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          placeholder={t('phonePlaceholder')}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 ml-1">{t('phoneHelper')}</p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1 ml-1">{t('phoneConfirmHelper')}</p>
+                    <div>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="tel"
+                          value={phoneConfirm}
+                          onChange={(e) => setPhoneConfirm(e.target.value)}
+                          placeholder={t('phoneConfirmPlaceholder')}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 ml-1">{t('phoneConfirmHelper')}</p>
+                    </div>
+
+                    {/* Date and Time Picker */}
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">{t('date')}</label>
+                        <select
+                          value={scheduledDate}
+                          onChange={(e) => setScheduledDate(e.target.value)}
+                          className="w-full px-3 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">{t('selectDate')}</option>
+                          {getAvailableDates().map(date => (
+                            <option key={date.value} value={date.value}>{date.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">{t('time')}</label>
+                        <select
+                          value={scheduledTime}
+                          onChange={(e) => setScheduledTime(e.target.value)}
+                          className="w-full px-3 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">{t('selectTime')}</option>
+                          {getTimeSlots().map(time => (
+                            <option key={time} value={time}>{time}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+          )}
+            </div>
+
+        {/* Footer */}
+          {items.length > 0 && (
+            <div className="p-4 border-t bg-gray-50">
+              {error && (
+                <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
+              )}
+
+              <div className="flex items-center justify-between text-lg font-bold mb-4">
+                <span>{t('total')}</span>
+                <span>{formatPrice(total)}</span>
+              </div>
+
+              <button
+                onClick={handleSubmitOrder}
+                disabled={isSubmitting}
+                className="w-full py-4 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {t('sending')}
+                  </>
+                ) : (
+                  `${t('orderButton')} - ${formatPrice(total)}`
+                )}
+              </button>
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        {items.length > 0 && (
-          <div className="p-4 border-t bg-gray-50">
-            {error && (
-              <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
-            )}
-
-            <div className="flex items-center justify-between text-lg font-bold mb-4">
-              <span>{t('total')}</span>
-              <span>{formatPrice(total)}</span>
-            </div>
-
-            <button
-              onClick={handleSubmitOrder}
-              disabled={isSubmitting}
-              className="w-full py-4 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  {t('sending')}
-                </>
-              ) : (
-                `${t('orderButton')} - ${formatPrice(total)}`
-              )}
-            </button>
-          </div>
-        )}
       </div>
-    </div>
-  )
+      )
 }

@@ -155,7 +155,14 @@
     "total": "Totale",
     "confirmOrder": "Conferma ordine",
     "viewCart": "Vedi carrello",
-    "orderButton": "Ordina"
+    "orderButton": "Ordina",
+    "date": "Giorno",
+    "time": "Ora",
+    "selectDate": "Seleziona giorno",
+    "selectTime": "Seleziona orario",
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "enterDateTime": "Seleziona giorno e orario"
   },
   "menuItem": {
     "addToCart": "Aggiungi",

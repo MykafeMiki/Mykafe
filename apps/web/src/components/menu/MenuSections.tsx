@@ -122,11 +122,17 @@ export const menuSections: MenuSection[] = [
 // Mappa per associare le categorie alle sezioni basandosi sul nome della categoria
 export const categoryToSectionMap: Record<string, string> = {
   // Sezione Toast (panini, bagel, focacce farcite)
+  'Toast': 'toast',
   'Panini': 'toast',
+  'Panino': 'toast',
   'Bagel': 'toast',
   'Focaccia Farcita': 'toast',
+  'Ciabatte': 'toast',
+  'Ciabatta': 'toast',
+  'Club Sandwich': 'toast',
   // Sezione Piadine
   'Piadina': 'piadine',
+  'Piadine': 'piadine',
   // Sezione Pizze e Focacce
   'Focaccia e Pizza': 'pizze-focacce',
   'Pizza': 'pizze-focacce',
@@ -168,7 +174,7 @@ export function MenuSections({ onSelectSection }: MenuSectionsProps) {
   const locale = useLocale()
 
   return (
-    <div className="p-4 grid grid-cols-2 gap-4">
+    <div className="p-4 grid grid-cols-1 gap-4">
       {menuSections.map((section) => (
         <button
           key={section.id}
