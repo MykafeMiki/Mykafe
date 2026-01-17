@@ -98,6 +98,16 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {item.imageUrl && (
+            <div className="w-full aspect-video rounded-xl overflow-hidden mb-4">
+              <img
+                src={item.imageUrl}
+                alt={translatedName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+
           {translatedDescription && (
             <p className="text-gray-600">{translatedDescription}</p>
           )}
