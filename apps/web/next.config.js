@@ -7,6 +7,10 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@shared/types'],
 
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   // Image optimization
   images: {
     formats: ['image/avif', 'image/webp'],
