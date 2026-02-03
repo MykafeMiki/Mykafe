@@ -2273,7 +2273,6 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
       const newIng = await createIngredient({
         name: newIngredientName.trim(),
         nameEn: newIngredientNameEn.trim() || newIngredientName.trim(),
-        inStock: true
       })
       setIngredients(prev => [...prev, newIng])
       setNewIngredientName('')
