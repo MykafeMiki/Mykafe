@@ -11,7 +11,7 @@ import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
-import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus } from '@/lib/menuTimers'
+import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, isOnlineOrderingOpen } from '@/lib/menuTimers'
 import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
@@ -207,10 +207,51 @@ export default function OrdinaPage() {
     setIsCartOpen(true)
   }
 
+  const orderingStatus = isOnlineOrderingOpen()
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-gray-500">{tc('loading')}</div>
+      </div>
+    )
+  }
+
+  // Show closure message if online ordering is closed
+  if (!orderingStatus.isOpen) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="bg-orange-500 text-white p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-6 h-6" />
+              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+            </div>
+            <LanguageSelectorCompact />
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center max-w-sm">
+            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Clock className="w-10 h-10 text-orange-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Ordini Online Chiusi
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {orderingStatus.reason || 'Il servizio di ordini online non è attualmente disponibile.'}
+            </p>
+            {orderingStatus.nextOpenTime && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                <p className="text-sm text-orange-800">
+                  <span className="font-semibold">Prossima apertura:</span>{' '}
+                  {orderingStatus.nextOpenTime}
+                </p>
+              </div>
+            )}
+          </div>
+        </main>
       </div>
     )
   }
