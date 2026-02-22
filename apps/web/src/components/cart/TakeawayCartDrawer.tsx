@@ -323,38 +323,39 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                   </div>
                 </div>
               </div>
-          )}
-            </div>
-
-        {/* Footer */}
-          {items.length > 0 && (
-            <div className="p-4 border-t bg-gray-50">
-              {error && (
-                <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
-              )}
-
-              <div className="flex items-center justify-between text-lg font-bold mb-4">
-                <span>{t('total')}</span>
-                <span>{formatPrice(total)}</span>
-              </div>
-
-              <button
-                onClick={handleSubmitOrder}
-                disabled={isSubmitting}
-                className="w-full py-4 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    {t('sending')}
-                  </>
-                ) : (
-                  `${t('orderButton')} - ${formatPrice(total)}`
-                )}
-              </button>
             </div>
           )}
         </div>
+
+        {/* Footer */}
+        {items.length > 0 && (
+          <div className="p-4 border-t bg-gray-50">
+            {error && (
+              <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
+            )}
+
+            <div className="flex items-center justify-between text-lg font-bold mb-4">
+              <span>{t('total')}</span>
+              <span>{formatPrice(total)}</span>
+            </div>
+
+            <button
+              onClick={handleSubmitOrder}
+              disabled={isSubmitting}
+              className="w-full py-4 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  {t('sending')}
+                </>
+              ) : (
+                `${t('orderButton')} - ${formatPrice(total)}`
+              )}
+            </button>
+          </div>
+        )}
       </div>
-      )
+    </div>
+  )
 }
