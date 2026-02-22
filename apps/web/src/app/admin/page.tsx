@@ -5,6 +5,7 @@ import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image a
 import { QRCodeSVG } from 'qrcode.react'
 import { useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
+import { getIngredientSubstitutes, setIngredientSubstitute } from '@/lib/ingredientSubstitutes'
 import {
   getSushiStatus,
   getPaniniStatus,
@@ -438,6 +439,54 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
               </div>
             </div>
             <Edit className="w-4 h-4 text-gray-400" />
+          </button>
+        </div>
+      </div>
+
+      {/* Emergency Quick Close */}
+      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+              <span className="text-xl">🔒</span>
+            </div>
+            <div>
+              <h3 className="font-semibold text-red-800">Chiusura Locale</h3>
+              <p className="text-xs text-red-600">
+                {closureConfig.temporaryClosure.active
+                  ? `⚠️ CHIUSO — ${closureConfig.temporaryClosure.message || 'Chiusura in corso'}`
+                  : 'Locale aperto — premi per chiudere immediatamente'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              const newConfig: ClosureConfig = {
+                ...closureConfig,
+                temporaryClosure: {
+                  active: !closureConfig.temporaryClosure.active,
+                  message: closureConfig.temporaryClosure.active ? undefined : 'Locale temporaneamente chiuso',
+                  until: undefined,
+                }
+              }
+              saveClosureConfig(newConfig)
+              setClosureConfig(newConfig)
+            }}
+            className={`px-4 py-2 rounded-lg font-semibold transition ${
+              closureConfig.temporaryClosure.active
+                ? 'bg-green-500 text-white hover:bg-green-600'
+                : 'bg-red-500 text-white hover:bg-red-600'
+            }`}
+          >
+            {closureConfig.temporaryClosure.active ? '✅ Riapri' : '🔒 Chiudi Ora'}
+          </button>
+        </div>
+        <div className="mt-2 text-right">
+          <button
+            onClick={() => setShowClosureModal(true)}
+            className="text-xs text-red-500 underline hover:text-red-700"
+          >
+            Configura orari e chiusure programmate →
           </button>
         </div>
       </div>
@@ -1599,7 +1648,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
 
   // Ingredients state
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([])
-  const [selectedIngredients, setSelectedIngredients] = useState<{ id: string; isPrimary: boolean }[]>([])
+  const [selectedIngredients, setSelectedIngredients] = useState<{ id: string; isPrimary: boolean; substituteId?: string }[]>([])
   const [loadingIngredients, setLoadingIngredients] = useState(false)
   const [showNewIngredient, setShowNewIngredient] = useState(false)
   const [newIngName, setNewIngName] = useState('')
@@ -1621,9 +1670,11 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
         if (item) {
           try {
             const itemIngredients = await getMenuItemIngredients(item.id)
+            const subsMap = getIngredientSubstitutes()
             setSelectedIngredients(itemIngredients.map(i => ({
               id: i.ingredientId,
-              isPrimary: i.isPrimary || false
+              isPrimary: false,
+              substituteId: subsMap[i.ingredientId]?.id
             })))
           } catch (err) {
             console.error('Failed to load item ingredients:', err)
@@ -1664,15 +1715,6 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
     })
   }
 
-  const handleTogglePrimary = (ingredientId: string) => {
-    setSelectedIngredients(prev =>
-      prev.map(i =>
-        i.id === ingredientId
-          ? { ...i, isPrimary: !i.isPrimary }
-          : i
-      )
-    )
-  }
 
   const handleCreateIngredient = async () => {
     if (!newIngName.trim()) return
@@ -1726,7 +1768,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
       // Save ingredients if we have a valid item ID
       if (savedItemId) {
         try {
-          await setMenuItemIngredients(savedItemId, selectedIngredients)
+          await setMenuItemIngredients(savedItemId, selectedIngredients.map(i => ({ id: i.id, isPrimary: false })))
         } catch (err) {
           console.error('Failed to save ingredients:', err)
         }
@@ -1888,17 +1930,29 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
                             />
                             <span className="text-sm flex-1">{ing.name}</span>
                             {selected && (
-                              <button
-                                type="button"
-                                onClick={() => handleTogglePrimary(ing.id)}
-                                className={`text-xs px-2 py-0.5 rounded-full transition ${selected.isPrimary
-                                    ? 'bg-red-100 text-red-700 font-medium'
-                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                  }`}
+                              <select
+                                value={selected.substituteId || ''}
+                                onChange={(e) => {
+                                  const subId = e.target.value
+                                  const subIng = allIngredients.find(i => i.id === subId)
+                                  setSelectedIngredients(prev => prev.map(i =>
+                                    i.id === ing.id ? { ...i, substituteId: subId || undefined } : i
+                                  ))
+                                  if (subIng) {
+                                    setIngredientSubstitute(ing.id, { id: subIng.id, name: subIng.name, nameEn: subIng.nameEn, nameFr: subIng.nameFr, nameEs: subIng.nameEs, nameHe: subIng.nameHe })
+                                  } else {
+                                    setIngredientSubstitute(ing.id, null)
+                                  }
+                                }}
+                                className="text-xs border rounded px-1 py-0.5 bg-white text-gray-600 max-w-[110px]"
                               >
-                                {selected.isPrimary ? 'Primario' : 'Secondario'}
-                              </button>
+                                <option value="">Nessun sub.</option>
+                                {allIngredients.filter(i => i.id !== ing.id).map(i => (
+                                  <option key={i.id} value={i.id}>{i.name}</option>
+                                ))}
+                              </select>
                             )}
+
                             {!ing.inStock && (
                               <span className="text-xs text-red-500">({tc('unavailable')})</span>
                             )}
@@ -1906,9 +1960,7 @@ function ItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: Ite
                         )
                       })}
                     </div>
-                    <p className="text-xs text-gray-500 mb-2">
-                      <strong>Primario:</strong> se esaurito, nasconde il piatto. <strong>Secondario:</strong> se esaurito, mostra barrato.
-                    </p>
+
                   </>
                 )}
 
@@ -2248,6 +2300,9 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [newIngredientName, setNewIngredientName] = useState('')
   const [newIngredientNameEn, setNewIngredientNameEn] = useState('')
+  const [newIngredientNameFr, setNewIngredientNameFr] = useState('')
+  const [newIngredientNameEs, setNewIngredientNameEs] = useState('')
+  const [newIngredientNameHe, setNewIngredientNameHe] = useState('')
   const [creating, setCreating] = useState(false)
 
   // Load ingredients on mount
@@ -2273,10 +2328,16 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
       const newIng = await createIngredient({
         name: newIngredientName.trim(),
         nameEn: newIngredientNameEn.trim() || newIngredientName.trim(),
+        nameFr: newIngredientNameFr.trim() || newIngredientName.trim(),
+        nameEs: newIngredientNameEs.trim() || newIngredientName.trim(),
+        nameHe: newIngredientNameHe.trim() || newIngredientName.trim(),
       })
       setIngredients(prev => [...prev, newIng])
       setNewIngredientName('')
       setNewIngredientNameEn('')
+      setNewIngredientNameFr('')
+      setNewIngredientNameEs('')
+      setNewIngredientNameHe('')
       setShowAddForm(false)
     } catch (err) {
       console.error('Failed to create ingredient:', err)
@@ -2364,6 +2425,42 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nome (FR)
+              </label>
+              <input
+                type="text"
+                value={newIngredientNameFr}
+                onChange={(e) => setNewIngredientNameFr(e.target.value)}
+                placeholder="es. Tomate"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nome (ES)
+              </label>
+              <input
+                type="text"
+                value={newIngredientNameEs}
+                onChange={(e) => setNewIngredientNameEs(e.target.value)}
+                placeholder="es. Tomate"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nome (HE)
+              </label>
+              <input
+                type="text"
+                value={newIngredientNameHe}
+                onChange={(e) => setNewIngredientNameHe(e.target.value)}
+                placeholder="es. עגבניה"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -2379,6 +2476,9 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
                 setShowAddForm(false)
                 setNewIngredientName('')
                 setNewIngredientNameEn('')
+                setNewIngredientNameFr('')
+                setNewIngredientNameEs('')
+                setNewIngredientNameHe('')
               }}
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
             >

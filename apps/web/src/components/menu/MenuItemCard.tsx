@@ -5,6 +5,7 @@ import { useLocale } from 'next-intl'
 import { formatPrice, getItemPrice, type PriceContext } from '@/lib/utils'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { MenuItem, UnavailableIngredient } from '@shared/types'
+import { getIngredientSubstitutes } from '@/lib/ingredientSubstitutes'
 
 interface MenuItemCardProps {
   item: MenuItem
@@ -56,23 +57,37 @@ function removeUnavailableIngredients(
     return description
   }
 
+  const substitutes = getIngredientSubstitutes()
+
   // Splitta la descrizione per virgole
   const parts = description.split(',').map(p => p.trim())
 
-  // Ottieni i nomi degli ingredienti non disponibili con varianti singolare/plurale
-  const unavailableVariants: string[] = []
-  for (const ing of unavailableIngredients) {
-    const name = getUnavailableIngredientName(ing, locale).toLowerCase()
-    unavailableVariants.push(...getVariants(name))
+  const resultParts: string[] = []
+  for (const part of parts) {
+    const partLower = part.toLowerCase()
+    let replaced = false
+
+    for (const ing of unavailableIngredients) {
+      const name = getUnavailableIngredientName(ing, locale).toLowerCase()
+      const variants = getVariants(name)
+      if (variants.some(variant => partLower.includes(variant))) {
+        // Check if there's a substitute for this ingredient
+        const sub = substitutes[ing.id]
+        if (sub) {
+          const subName = (locale === 'en' ? sub.nameEn : locale === 'fr' ? sub.nameFr : locale === 'es' ? sub.nameEs : locale === 'he' ? sub.nameHe : null) || sub.name
+          resultParts.push(subName)
+        }
+        replaced = true
+        break
+      }
+    }
+
+    if (!replaced) {
+      resultParts.push(part)
+    }
   }
 
-  // Filtra le parti che non contengono ingredienti non disponibili
-  const filteredParts = parts.filter(part => {
-    const partLower = part.toLowerCase()
-    return !unavailableVariants.some(variant => partLower.includes(variant))
-  })
-
-  return filteredParts.join(', ')
+  return resultParts.join(', ')
 }
 
 export function MenuItemCard({ item, onAdd, priceMultiplier = 1, priceContext = 'dine-in' }: MenuItemCardProps) {

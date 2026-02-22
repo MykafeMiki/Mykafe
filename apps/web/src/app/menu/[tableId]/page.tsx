@@ -27,7 +27,11 @@ export default function MenuPage() {
   const params = useParams()
   const tableId = params.tableId as string
 
-  const [step, setStep] = useState<PageStep>('enter-name')
+  const [step, setStepRaw] = useState<PageStep>('enter-name')
+
+  const setStep = (newStep: PageStep) => {
+    setStepRaw(newStep)
+  }
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('')
@@ -173,6 +177,32 @@ export default function MenuPage() {
 
     loadData()
   }, [tableId, setTableIdInCart, setTableSessionInCart, checkAndClearStale, tc])
+
+  // Intercetta il tasto indietro del telefono (Android)
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault()
+      // Navigate backwards through steps
+      setStepRaw(prev => {
+        if (prev === 'menu') return 'sections'
+        if (prev === 'sections') return 'choice'
+        if (prev === 'choice') return 'enter-name'
+        if (prev === 'merge-input') return 'choice'
+        if (prev === 'join-group') return 'enter-name'
+        return prev
+      })
+      // Push a new state so we can catch the next back press
+      window.history.pushState({ step: 'intercept' }, '')
+    }
+
+    // Push initial state to enable back interception
+    window.history.pushState({ step: 'intercept' }, '')
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
 
   const scrollToCategory = (categoryId: string) => {
     setActiveCategory(categoryId)
@@ -708,9 +738,10 @@ export default function MenuPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleBackToChoice}
-                className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
+                className="flex items-center gap-1 px-3 py-2 -ml-2 rounded-xl bg-primary-600 hover:bg-primary-700 transition font-medium text-sm"
               >
                 <ArrowLeft className="w-5 h-5" />
+                <span>Indietro</span>
               </button>
               <div>
                 <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
@@ -762,10 +793,11 @@ export default function MenuPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={handleBackToSections}
-              className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
+                onClick={handleBackToSections}
+                className="flex items-center gap-1 px-3 py-2 -ml-2 rounded-xl bg-primary-600 hover:bg-primary-700 transition font-medium text-sm"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Indietro</span>
             </button>
             <div>
               <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>

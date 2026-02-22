@@ -14,6 +14,11 @@ interface MenuSectionDef {
 
 const menuSectionDefs: MenuSectionDef[] = [
   {
+    id: 'sushi',
+    label: { it: 'Sushi', en: 'Sushi', fr: 'Sushi', es: 'Sushi', he: 'סושי' },
+    categories: ['Sushi']
+  },
+  {
     id: 'toast',
     label: { it: 'Toast', en: 'Toast', fr: 'Toast', es: 'Tostadas', he: 'טוסט' },
     categories: ['Panini', 'Bagel', 'Focaccia Farcita', 'Focaccia e Pizza']
