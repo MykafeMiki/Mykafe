@@ -789,7 +789,7 @@ export default function MenuPage() {
         </header>
 
         {/* Sections Grid */}
-        <MenuSections onSelectSection={handleSelectSection} />
+        <MenuSections onSelectSection={handleSelectSection} activeCategories={filteredCategories} />
 
         {/* Cart Button */}
         <CartButton onClick={() => setIsCartOpen(true)} />

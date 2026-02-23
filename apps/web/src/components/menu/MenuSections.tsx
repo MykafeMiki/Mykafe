@@ -2,8 +2,6 @@
 
 import { useLocale } from 'next-intl'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
-import { isSushiTimeActive } from '@/lib/menuTimers'
 
 export interface MenuSection {
   id: string
@@ -170,19 +168,25 @@ export function getSectionName(section: MenuSection, locale: string): string {
 
 interface MenuSectionsProps {
   onSelectSection: (sectionId: string) => void
+  // Categorie già filtrate (attive + nel range orario): usate per capire quali sezioni mostrare
+  activeCategories?: { name: string }[]
 }
 
-export function MenuSections({ onSelectSection }: MenuSectionsProps) {
+export function MenuSections({ onSelectSection, activeCategories }: MenuSectionsProps) {
   const locale = useLocale()
-  const [sushiActive, setSushiActive] = useState(false)
-
-  useEffect(() => {
-    setSushiActive(isSushiTimeActive())
-  }, [])
 
   const visibleSections = menuSections.filter(section => {
-    if (section.id === 'sushi') return sushiActive
-    return true
+    // Se non abbiamo le categorie, mostriamo tutto tranne sushi (comportamento sicuro)
+    if (!activeCategories) return section.id !== 'sushi'
+
+    // Una sezione è visibile se esiste almeno una categoria attiva che vi appartiene
+    const sectionCategoryNames = Object.entries(categoryToSectionMap)
+      .filter(([, sectionId]) => sectionId === section.id)
+      .map(([catName]) => catName.toLowerCase())
+
+    return activeCategories.some(cat =>
+      sectionCategoryNames.includes(cat.name.toLowerCase())
+    )
   })
 
   return (
