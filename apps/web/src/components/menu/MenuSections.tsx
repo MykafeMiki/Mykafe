@@ -2,6 +2,8 @@
 
 import { useLocale } from 'next-intl'
 import Image from 'next/image'
+import { useState, useEffect } from 'react'
+import { isSushiTimeActive } from '@/lib/menuTimers'
 
 export interface MenuSection {
   id: string
@@ -172,10 +174,20 @@ interface MenuSectionsProps {
 
 export function MenuSections({ onSelectSection }: MenuSectionsProps) {
   const locale = useLocale()
+  const [sushiActive, setSushiActive] = useState(false)
+
+  useEffect(() => {
+    setSushiActive(isSushiTimeActive())
+  }, [])
+
+  const visibleSections = menuSections.filter(section => {
+    if (section.id === 'sushi') return sushiActive
+    return true
+  })
 
   return (
     <div className="p-4 grid grid-cols-1 gap-4">
-      {menuSections.map((section) => (
+      {visibleSections.map((section) => (
         <button
           key={section.id}
           onClick={() => onSelectSection(section.id)}

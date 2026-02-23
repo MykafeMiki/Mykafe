@@ -67,6 +67,9 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [tables, setTables] = useState<Table[]>([])
   const [loading, setLoading] = useState(true)
+  // Chiusura locale - stato globale (sempre visibile in header)
+  const [closureBannerConfig, setClosureBannerConfig] = useState<ClosureConfig>(getClosureConfig())
+  const [showClosureBannerModal, setShowClosureBannerModal] = useState(false)
 
   // Check auth on mount - TEMPORARILY BYPASSED
   useEffect(() => {
@@ -119,6 +122,21 @@ export default function AdminPage() {
     )
   }
 
+  const handleBannerToggle = () => {
+    const newConfig: ClosureConfig = {
+      ...closureBannerConfig,
+      temporaryClosure: {
+        active: !closureBannerConfig.temporaryClosure.active,
+        message: closureBannerConfig.temporaryClosure.active ? undefined : 'Locale temporaneamente chiuso',
+        until: undefined,
+      }
+    }
+    saveClosureConfig(newConfig)
+    setClosureBannerConfig(newConfig)
+  }
+
+  const isClosed = closureBannerConfig.temporaryClosure.active
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -137,6 +155,50 @@ export default function AdminPage() {
           </button>
         </div>
       </header>
+
+      {/* Barra Chiusura Locale — sempre visibile */}
+      <div className={`flex items-center justify-between px-4 py-3 ${isClosed ? 'bg-red-600' : 'bg-green-600'} text-white`}>
+        <div className="flex items-center gap-3">
+          <span className="text-xl">{isClosed ? '🔒' : '✅'}</span>
+          <div>
+            <p className="font-bold text-sm leading-tight">
+              {isClosed ? 'LOCALE CHIUSO' : 'Locale Aperto'}
+            </p>
+            <p className="text-xs opacity-80">
+              {isClosed
+                ? (closureBannerConfig.temporaryClosure.message || 'Chiusura in corso')
+                : 'I clienti possono ordinare'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowClosureBannerModal(true)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/20 hover:bg-white/30 transition"
+          >
+            Programma
+          </button>
+          <button
+            onClick={handleBannerToggle}
+            className={`px-4 py-2 rounded-lg font-bold text-sm transition shadow ${isClosed ? 'bg-white text-green-700 hover:bg-green-50' : 'bg-white text-red-700 hover:bg-red-50'}`}
+          >
+            {isClosed ? '✅ Riapri' : '🔒 Chiudi Ora'}
+          </button>
+        </div>
+      </div>
+
+      {/* Modale chiusure programmate (globale) */}
+      {showClosureBannerModal && (
+        <ClosureConfigModal
+          config={closureBannerConfig}
+          onClose={() => setShowClosureBannerModal(false)}
+          onSave={(newConfig) => {
+            saveClosureConfig(newConfig)
+            setClosureBannerConfig(newConfig)
+            setShowClosureBannerModal(false)
+          }}
+        />
+      )}
 
       {/* Tabs */}
       <nav className="bg-white border-b">
