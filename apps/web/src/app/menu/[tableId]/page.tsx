@@ -161,21 +161,6 @@ export default function MenuPage() {
           }
         }
 
-        // Controlla se il locale è chiuso (in try separato: non blocca il menu se fallisce)
-        try {
-          const closureConfig = await fetchClosureConfig()
-          const orderingStatus = isOnlineOrderingOpen(closureConfig)
-          setClosureStatus(orderingStatus)
-          if (!orderingStatus.isOpen) {
-            setStep('closed')
-            setLoading(false)
-            return
-          }
-        } catch (closureErr) {
-          console.error('Error checking closure status, treating as open:', closureErr)
-          // Fallback: tratta come aperto
-        }
-
         // Determine initial step based on table state
         if (table.isCounter) {
           setSelectedSection(null)
@@ -193,6 +178,24 @@ export default function MenuPage() {
 
     loadData()
   }, [tableId, setTableIdInCart, setTableSessionInCart, checkAndClearStale, tc])
+
+  // Check chiusura in useEffect separato: non blocca il caricamento del menu
+  useEffect(() => {
+    if (loading) return
+    fetchClosureConfig()
+      .then(config => {
+        try {
+          const orderingStatus = isOnlineOrderingOpen(config)
+          setClosureStatus(orderingStatus)
+          if (!orderingStatus.isOpen) {
+            setStep('closed')
+          }
+        } catch (e) {
+          console.error('isOnlineOrderingOpen error:', e)
+        }
+      })
+      .catch(e => console.error('fetchClosureConfig error:', e))
+  }, [loading])
 
   // Intercetta il tasto indietro del telefono (Android + iOS PWA)
   // Tecnica: teniamo sempre almeno uno stato "fantasma" davanti all'URL corrente.

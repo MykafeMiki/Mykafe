@@ -131,10 +131,7 @@ export default function OrdinaPage() {
         setTableIdInCart(table.id)
         setPriceContext('takeaway-remote')
 
-        const [menuData, closureConfig] = await Promise.all([
-          getMenu(),
-          fetchClosureConfig()
-        ])
+        const menuData = await getMenu()
         setCategories(menuData)
         if (menuData.length > 0) {
           // Set active category to first filtered category
@@ -142,11 +139,6 @@ export default function OrdinaPage() {
           if (filtered.length > 0) {
             setActiveCategory(filtered[0].id)
           }
-        }
-        try {
-          setOrderingStatus(isOnlineOrderingOpen(closureConfig))
-        } catch (closureErr) {
-          console.error('Error checking closure status, treating as open:', closureErr)
         }
       } catch (err) {
         setError(tc('error'))
@@ -158,6 +150,20 @@ export default function OrdinaPage() {
 
     loadData()
   }, [setTableIdInCart, setPriceContext, tc])
+
+  // Check chiusura separato: non blocca il caricamento del menu
+  useEffect(() => {
+    if (loading) return
+    fetchClosureConfig()
+      .then(config => {
+        try {
+          setOrderingStatus(isOnlineOrderingOpen(config))
+        } catch (e) {
+          console.error('isOnlineOrderingOpen error:', e)
+        }
+      })
+      .catch(e => console.error('fetchClosureConfig error:', e))
+  }, [loading])
 
   useEffect(() => {
     if (selectedDate && selectedTime) {
