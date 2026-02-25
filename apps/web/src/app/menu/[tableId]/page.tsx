@@ -202,7 +202,7 @@ export default function MenuPage() {
   // Così il tasto hardware non può mai uscire dall'app — naviga invece tra i passi interni.
   useEffect(() => {
     const pushGuardState = () => {
-      window.history.pushState({ mykafe: 'guard' }, '')
+      window.history.pushState({ mykafe: 'guard' }, '', location.href)
     }
 
     const handlePopState = (_e: PopStateEvent) => {
@@ -530,11 +530,20 @@ export default function MenuPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-primary-500 text-white p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">MyKafe</h1>
-              {tableNumber && (
-                <p className="text-primary-100">{t('table')} {tableNumber}</p>
-              )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setStep('enter-name')}
+                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Indietro</span>
+              </button>
+              <div>
+                <h1 className="text-xl font-bold">MyKafe</h1>
+                {tableNumber && (
+                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
+                )}
+              </div>
             </div>
             <LanguageSelectorCompact />
           </div>
@@ -591,24 +600,26 @@ export default function MenuPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-primary-500 text-white p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">MyKafe</h1>
-              {tableNumber && (
-                <p className="text-primary-100">{t('table')} {tableNumber}</p>
-              )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setStep('choice')}
+                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Indietro</span>
+              </button>
+              <div>
+                <h1 className="text-xl font-bold">MyKafe</h1>
+                {tableNumber && (
+                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
+                )}
+              </div>
             </div>
             <LanguageSelectorCompact />
           </div>
         </header>
 
         <main className="flex-1 p-6 max-w-md mx-auto w-full">
-          <button
-            onClick={() => setStep('choice')}
-            className="text-primary-500 mb-4 text-sm font-medium"
-          >
-            &larr; {tc('back')}
-          </button>
-
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
               <Link2 className="w-6 h-6 text-orange-600" />
@@ -665,11 +676,20 @@ export default function MenuPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-primary-500 text-white p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">MyKafe</h1>
-              {tableNumber && (
-                <p className="text-primary-100">{t('table')} {tableNumber}</p>
-              )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setStep('enter-name')}
+                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Indietro</span>
+              </button>
+              <div>
+                <h1 className="text-xl font-bold">MyKafe</h1>
+                {tableNumber && (
+                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
+                )}
+              </div>
             </div>
             <LanguageSelectorCompact />
           </div>
