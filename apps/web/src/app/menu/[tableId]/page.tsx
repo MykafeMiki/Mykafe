@@ -12,7 +12,7 @@ import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
-import { getMenuCached, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
+import { getMenu, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
 import { filterCategoriesByTime, fetchClosureConfig, isOnlineOrderingOpen, type MenuContext } from '@/lib/menuTimers'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
@@ -133,7 +133,7 @@ export default function MenuPage() {
 
         const [menuData, customers, existingSession] = await Promise.all([
           // Menu - use cached version for speed
-          getMenuCached(),
+          getMenu(),
 
           // Customers - wrapped to not fail if empty
           getTableCustomers(table.id).catch(() => [] as TableCustomer[]),
