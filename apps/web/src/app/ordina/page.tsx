@@ -143,7 +143,11 @@ export default function OrdinaPage() {
             setActiveCategory(filtered[0].id)
           }
         }
-        setOrderingStatus(isOnlineOrderingOpen(closureConfig))
+        try {
+          setOrderingStatus(isOnlineOrderingOpen(closureConfig))
+        } catch (closureErr) {
+          console.error('Error checking closure status, treating as open:', closureErr)
+        }
       } catch (err) {
         setError(tc('error'))
         console.error(err)

@@ -563,15 +563,15 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
   const currentMinute = now.getMinutes()
   const currentTime = currentHour * 60 + currentMinute
 
-  const todaySchedule = config.schedule[dayOfWeek]
+  const todaySchedule = config.schedule[dayOfWeek] ?? DEFAULT_CLOSURE_CONFIG.schedule[dayOfWeek]
 
   // Day not enabled (closed)
-  if (!todaySchedule.enabled) {
+  if (!todaySchedule?.enabled) {
     // Find next open day
     for (let i = 1; i <= 7; i++) {
       const nextDay = (dayOfWeek + i) % 7
       const nextSchedule = config.schedule[nextDay]
-      if (nextSchedule.enabled) {
+      if (nextSchedule?.enabled) {
         const dayName = DAYS_OF_WEEK.find(d => d.value === nextDay)?.label || ''
         return {
           isOpen: false,
@@ -601,7 +601,7 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
     for (let i = 1; i <= 7; i++) {
       const nextDay = (dayOfWeek + i) % 7
       const nextSchedule = config.schedule[nextDay]
-      if (nextSchedule.enabled) {
+      if (nextSchedule?.enabled) {
         const dayName = DAYS_OF_WEEK.find(d => d.value === nextDay)?.label || ''
         return {
           isOpen: false,

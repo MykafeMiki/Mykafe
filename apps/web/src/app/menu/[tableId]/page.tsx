@@ -161,13 +161,19 @@ export default function MenuPage() {
           }
         }
 
-        // Controlla se il locale è chiuso
-        const closureConfig = await fetchClosureConfig()
-        const orderingStatus = isOnlineOrderingOpen(closureConfig)
-        setClosureStatus(orderingStatus)
-        if (!orderingStatus.isOpen) {
-          setStep('closed')
-          return
+        // Controlla se il locale è chiuso (in try separato: non blocca il menu se fallisce)
+        try {
+          const closureConfig = await fetchClosureConfig()
+          const orderingStatus = isOnlineOrderingOpen(closureConfig)
+          setClosureStatus(orderingStatus)
+          if (!orderingStatus.isOpen) {
+            setStep('closed')
+            setLoading(false)
+            return
+          }
+        } catch (closureErr) {
+          console.error('Error checking closure status, treating as open:', closureErr)
+          // Fallback: tratta come aperto
         }
 
         // Determine initial step based on table state
