@@ -2368,6 +2368,11 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  // Sostituti
+  const [substitutes, setSubstitutes] = useState<Record<string, { id: string; name: string; nameEn?: string; nameFr?: string; nameEs?: string; nameHe?: string }>>({})
+  const [substitutePickerFor, setSubstitutePickerFor] = useState<Ingredient | null>(null)
+  const [selectedSubstituteId, setSelectedSubstituteId] = useState<string>('')
+  const [savingSubstitute, setSavingSubstitute] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newIngredientName, setNewIngredientName] = useState('')
   const [newIngredientNameEn, setNewIngredientNameEn] = useState('')
@@ -2383,8 +2388,12 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
 
   const loadIngredients = async () => {
     try {
-      const data = await getIngredients()
+      const [data, subsRes] = await Promise.all([
+        getIngredients(),
+        fetch('/api/settings/substitutes').then(r => r.json()).catch(() => ({}))
+      ])
       setIngredients(data)
+      setSubstitutes(subsRes || {})
     } catch (err) {
       console.error('Failed to load ingredients:', err)
     } finally {
@@ -2429,11 +2438,51 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
             : ing
         )
       )
+      // Se appena segnato come esaurito → apri selettore sostituto
+      if (ingredient.inStock) {
+        setSelectedSubstituteId(substitutes[ingredient.id]?.id || '')
+        setSubstitutePickerFor(ingredient)
+      }
     } catch (err) {
       console.error('Failed to toggle ingredient stock:', err)
       alert(t('saveError'))
     } finally {
       setToggling(null)
+    }
+  }
+
+  const handleSaveSubstitute = async () => {
+    if (!substitutePickerFor) return
+    setSavingSubstitute(true)
+    try {
+      const updated = { ...substitutes }
+      if (selectedSubstituteId) {
+        const subIng = ingredients.find(i => i.id === selectedSubstituteId)
+        if (subIng) {
+          updated[substitutePickerFor.id] = {
+            id: subIng.id,
+            name: subIng.name,
+            nameEn: subIng.nameEn,
+            nameFr: subIng.nameFr,
+            nameEs: subIng.nameEs,
+            nameHe: subIng.nameHe
+          }
+        }
+      } else {
+        delete updated[substitutePickerFor.id]
+      }
+      await fetch('/api/settings/substitutes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      })
+      setSubstitutes(updated)
+      setSubstitutePickerFor(null)
+    } catch (err) {
+      console.error('Failed to save substitute:', err)
+      alert('Errore nel salvataggio del sostituto')
+    } finally {
+      setSavingSubstitute(false)
     }
   }
 
@@ -2585,13 +2634,38 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
                 key={ingredient.id}
                 className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-200"
               >
-                <div>
+                <div className="flex-1 min-w-0">
                   <span className="font-medium text-gray-900">{ingredient.name}</span>
+                  {substitutes[ingredient.id] && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      → {substitutes[ingredient.id].name}
+                      <button
+                        onClick={() => {
+                          setSelectedSubstituteId(substitutes[ingredient.id]?.id || '')
+                          setSubstitutePickerFor(ingredient)
+                        }}
+                        className="ml-1 text-primary-500 hover:underline"
+                      >
+                        modifica
+                      </button>
+                    </p>
+                  )}
+                  {!substitutes[ingredient.id] && (
+                    <button
+                      onClick={() => {
+                        setSelectedSubstituteId('')
+                        setSubstitutePickerFor(ingredient)
+                      }}
+                      className="text-xs text-primary-500 hover:underline mt-0.5 block"
+                    >
+                      + aggiungi sostituto
+                    </button>
+                  )}
                 </div>
                 <button
                   onClick={() => handleToggleStock(ingredient)}
                   disabled={toggling === ingredient.id}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${toggling === ingredient.id
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition flex-shrink-0 ${toggling === ingredient.id
                       ? 'opacity-50'
                       : 'bg-green-500 text-white hover:bg-green-600'
                     }`}
@@ -2657,6 +2731,49 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
           {t('ingredientsInfo')}
         </p>
       </div>
+
+      {/* Modal selettore sostituto */}
+      {substitutePickerFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Ingrediente esaurito</h3>
+            <p className="text-gray-600 text-sm mb-4">
+              <strong>{substitutePickerFor.name}</strong> è stato segnato come esaurito.
+              Vuoi mostrare un ingrediente sostituto nella descrizione dei piatti?
+            </p>
+            <select
+              value={selectedSubstituteId}
+              onChange={(e) => setSelectedSubstituteId(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Nessun sostituto</option>
+              {ingredients
+                .filter(i => i.id !== substitutePickerFor.id)
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(i => (
+                  <option key={i.id} value={i.id}>
+                    {i.name}{!i.inStock ? ' (esaurito)' : ''}
+                  </option>
+                ))}
+            </select>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setSubstitutePickerFor(null)}
+                className="flex-1 px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition"
+              >
+                Salta
+              </button>
+              <button
+                onClick={handleSaveSubstitute}
+                disabled={savingSubstitute}
+                className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600 disabled:opacity-50 transition"
+              >
+                {savingSubstitute ? 'Salvataggio...' : 'Salva sostituto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

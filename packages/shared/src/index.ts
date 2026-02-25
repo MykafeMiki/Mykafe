@@ -101,6 +101,14 @@ export interface UnavailableIngredient {
   nameFr?: string
   nameEs?: string
   nameHe?: string
+  substitute?: {
+    id: string
+    name: string
+    nameEn?: string
+    nameFr?: string
+    nameEs?: string
+    nameHe?: string
+  }
 }
 
 export interface MenuItem {

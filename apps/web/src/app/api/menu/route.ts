@@ -56,6 +56,16 @@ export async function GET() {
 
     const categories = categoriesResult.data || []
 
+    // Mappa sostituti: ingredientId -> { id, name, ... } — query separata per non rompere i tipi
+    const substitutesRes = await supabase
+      .from('AppSettings')
+      .select('value')
+      .eq('key', 'ingredient_substitutes')
+      .single()
+
+    const substituteMap: Record<string, { id: string; name: string; nameEn?: string; nameFr?: string; nameEs?: string; nameHe?: string }> =
+      (substitutesRes.data as { value?: Record<string, unknown> } | null)?.value as Record<string, { id: string; name: string }> || {}
+
     // Mappa: menuItemId -> ingredienti non disponibili (da description matching pre-calcolato)
     const itemUnavailableMap = new Map<string, { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[]>()
     const outOfStockIds = new Set<string>()
@@ -110,13 +120,16 @@ export async function GET() {
           // Ingredienti non disponibili da description matching pre-calcolato
           const descriptionMatches = itemUnavailableMap.get(item.id) || []
 
-          // Merge e deduplica
+          // Merge e deduplica, aggiunge sostituto se disponibile
           const seenIds = new Set<string>()
-          const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[] = []
+          const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, substitute?: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[] = []
           for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
             if (!seenIds.has(ing.id)) {
               seenIds.add(ing.id)
-              unavailableIngredients.push(ing)
+              unavailableIngredients.push({
+                ...ing,
+                substitute: substituteMap[ing.id] ?? undefined
+              })
             }
           }
 

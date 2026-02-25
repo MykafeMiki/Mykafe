@@ -5,7 +5,6 @@ import { useLocale } from 'next-intl'
 import { formatPrice, getItemPrice, type PriceContext } from '@/lib/utils'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { MenuItem, UnavailableIngredient } from '@shared/types'
-import { getIngredientSubstitutes } from '@/lib/ingredientSubstitutes'
 
 interface MenuItemCardProps {
   item: MenuItem
@@ -57,8 +56,6 @@ function removeUnavailableIngredients(
     return description
   }
 
-  const substitutes = getIngredientSubstitutes()
-
   // Splitta la descrizione per virgole
   const parts = description.split(',').map(p => p.trim())
 
@@ -71,8 +68,8 @@ function removeUnavailableIngredients(
       const name = getUnavailableIngredientName(ing, locale).toLowerCase()
       const variants = getVariants(name)
       if (variants.some(variant => partLower.includes(variant))) {
-        // Check if there's a substitute for this ingredient
-        const sub = substitutes[ing.id]
+        // Use substitute from item data (server-side)
+        const sub = ing.substitute
         if (sub) {
           const subName = (locale === 'en' ? sub.nameEn : locale === 'fr' ? sub.nameFr : locale === 'es' ? sub.nameEs : locale === 'he' ? sub.nameHe : null) || sub.name
           resultParts.push(subName)
