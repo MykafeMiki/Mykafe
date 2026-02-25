@@ -13,9 +13,10 @@ import {
   isSushiTimeActive,
   getTimerConfig,
   saveTimerConfig,
-  getClosureConfig,
-  saveClosureConfig,
+  fetchClosureConfig,
+  saveClosureConfigToServer,
   isOnlineOrderingOpen,
+  DEFAULT_CLOSURE_CONFIG,
   DAYS_OF_WEEK,
   type TimerConfig,
   type ClosureConfig,
@@ -68,7 +69,7 @@ export default function AdminPage() {
   const [tables, setTables] = useState<Table[]>([])
   const [loading, setLoading] = useState(true)
   // Chiusura locale - stato globale (sempre visibile in header)
-  const [closureBannerConfig, setClosureBannerConfig] = useState<ClosureConfig>(getClosureConfig())
+  const [closureBannerConfig, setClosureBannerConfig] = useState<ClosureConfig>(DEFAULT_CLOSURE_CONFIG)
   const [showClosureBannerModal, setShowClosureBannerModal] = useState(false)
 
   // Check auth on mount - TEMPORARILY BYPASSED
@@ -76,6 +77,10 @@ export default function AdminPage() {
     // TODO: Re-enable auth once Supabase Edge Functions password is configured
     setIsAuthenticated(true)
     setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    fetchClosureConfig().then(setClosureBannerConfig)
   }, [])
 
   const loadData = async () => {
@@ -131,8 +136,8 @@ export default function AdminPage() {
         until: undefined,
       }
     }
-    saveClosureConfig(newConfig)
     setClosureBannerConfig(newConfig)
+    saveClosureConfigToServer(newConfig).catch(e => console.error('Failed to save closure config:', e))
   }
 
   const isClosed = closureBannerConfig.temporaryClosure.active
@@ -193,8 +198,8 @@ export default function AdminPage() {
           config={closureBannerConfig}
           onClose={() => setShowClosureBannerModal(false)}
           onSave={(newConfig) => {
-            saveClosureConfig(newConfig)
             setClosureBannerConfig(newConfig)
+            saveClosureConfigToServer(newConfig).catch(e => console.error('Failed to save closure config:', e))
             setShowClosureBannerModal(false)
           }}
         />
@@ -304,12 +309,16 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [togglingCategory, setTogglingCategory] = useState<string | null>(null)
   const [timerConfig, setTimerConfig] = useState<TimerConfig>(getTimerConfig())
-  const [closureConfig, setClosureConfig] = useState<ClosureConfig>(getClosureConfig())
+  const [closureConfig, setClosureConfig] = useState<ClosureConfig>(DEFAULT_CLOSURE_CONFIG)
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
   const [uploadingSectionId, setUploadingSectionId] = useState<string | null>(null)
   const [sectionImageVersions, setSectionImageVersions] = useState<Record<string, number>>({})
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const sectionFileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  useEffect(() => {
+    fetchClosureConfig().then(setClosureConfig)
+  }, [])
 
   const handleInlineImageUpload = async (itemId: string, file: File) => {
     setUploadingItemId(itemId)
@@ -494,7 +503,7 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                 <span className="font-medium text-gray-800">Calendario Ordini Online</span>
                 <p className="text-xs text-gray-500">
                   {closureConfig.enabled
-                    ? (isOnlineOrderingOpen().isOpen ? 'Aperto ora' : `Chiuso — ${isOnlineOrderingOpen().reason || ''}`)
+                    ? (isOnlineOrderingOpen(closureConfig).isOpen ? 'Aperto ora' : `Chiuso — ${isOnlineOrderingOpen(closureConfig).reason || ''}`)
                     : 'Controllo calendario disabilitato'
                   }
                 </p>
@@ -531,8 +540,8 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                   until: undefined,
                 }
               }
-              saveClosureConfig(newConfig)
               setClosureConfig(newConfig)
+              saveClosureConfigToServer(newConfig).catch(e => console.error('Failed to save closure config:', e))
             }}
             className={`px-4 py-2 rounded-lg font-semibold transition ${
               closureConfig.temporaryClosure.active
@@ -928,8 +937,8 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
           config={closureConfig}
           onClose={() => setShowClosureModal(false)}
           onSave={(newConfig) => {
-            saveClosureConfig(newConfig)
             setClosureConfig(newConfig)
+            saveClosureConfigToServer(newConfig).catch(e => console.error('Failed to save closure config:', e))
             setShowClosureModal(false)
           }}
         />
@@ -963,7 +972,7 @@ function ClosureConfigModal({ config, onClose, onSave }: ClosureConfigModalProps
     })
   }
 
-  const orderingStatus = isOnlineOrderingOpen()
+  const orderingStatus = isOnlineOrderingOpen(localConfig)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

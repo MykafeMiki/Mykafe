@@ -467,7 +467,7 @@ const DEFAULT_DAY_SCHEDULE: DaySchedule = {
   closeMinute: 0
 }
 
-const DEFAULT_CLOSURE_CONFIG: ClosureConfig = {
+export const DEFAULT_CLOSURE_CONFIG: ClosureConfig = {
   enabled: true,
   schedule: {
     0: { ...DEFAULT_DAY_SCHEDULE, enabled: false }, // Domenica chiuso
@@ -483,56 +483,48 @@ const DEFAULT_CLOSURE_CONFIG: ClosureConfig = {
   }
 }
 
-const CLOSURE_CONFIG_KEY = 'mykafe-closure-config'
-
 /**
- * Get closure configuration from localStorage
+ * Fetch closure configuration from server
  */
-export function getClosureConfig(): ClosureConfig {
-  if (typeof window === 'undefined') {
-    return DEFAULT_CLOSURE_CONFIG
-  }
-
+export async function fetchClosureConfig(): Promise<ClosureConfig> {
   try {
-    const stored = localStorage.getItem(CLOSURE_CONFIG_KEY)
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      return {
-        enabled: parsed.enabled ?? true,
-        schedule: { ...DEFAULT_CLOSURE_CONFIG.schedule, ...parsed.schedule },
-        temporaryClosure: { ...DEFAULT_CLOSURE_CONFIG.temporaryClosure, ...parsed.temporaryClosure }
-      }
+    const res = await fetch('/api/settings/closure', { cache: 'no-store' })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    return {
+      enabled: data.enabled ?? true,
+      schedule: { ...DEFAULT_CLOSURE_CONFIG.schedule, ...data.schedule },
+      temporaryClosure: { ...DEFAULT_CLOSURE_CONFIG.temporaryClosure, ...data.temporaryClosure }
     }
   } catch (e) {
-    console.error('Error reading closure config:', e)
+    console.error('Error fetching closure config:', e)
+    return DEFAULT_CLOSURE_CONFIG
   }
-
-  return DEFAULT_CLOSURE_CONFIG
 }
 
 /**
- * Save closure configuration to localStorage
+ * Save closure configuration to server
  */
-export function saveClosureConfig(config: ClosureConfig): void {
-  if (typeof window === 'undefined') return
-
-  try {
-    localStorage.setItem(CLOSURE_CONFIG_KEY, JSON.stringify(config))
-  } catch (e) {
-    console.error('Error saving closure config:', e)
+export async function saveClosureConfigToServer(config: ClosureConfig): Promise<void> {
+  const res = await fetch('/api/settings/closure', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error || `HTTP ${res.status}`)
   }
 }
 
 /**
  * Check if online ordering is currently available
  */
-export function isOnlineOrderingOpen(): {
+export function isOnlineOrderingOpen(config: ClosureConfig): {
   isOpen: boolean
   reason?: string
   nextOpenTime?: string
 } {
-  const config = getClosureConfig()
-
   // Master switch off
   if (!config.enabled) {
     return { isOpen: false, reason: 'Menu online disabilitato' }
@@ -555,9 +547,8 @@ export function isOnlineOrderingOpen(): {
           })
         }
       }
-      // Chiusura scaduta, disattivala automaticamente
+      // Chiusura scaduta, ignora
       config.temporaryClosure.active = false
-      saveClosureConfig(config)
     } else {
       return {
         isOpen: false,
@@ -629,9 +620,7 @@ export function isOnlineOrderingOpen(): {
 /**
  * Get formatted schedule for display
  */
-export function getFormattedSchedule(): { day: string, schedule: string }[] {
-  const config = getClosureConfig()
-
+export function getFormattedSchedule(config: ClosureConfig): { day: string, schedule: string }[] {
   return DAYS_OF_WEEK.map(day => {
     const daySchedule = config.schedule[day.value]
 

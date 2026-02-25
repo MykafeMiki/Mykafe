@@ -11,7 +11,7 @@ import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
-import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, isOnlineOrderingOpen } from '@/lib/menuTimers'
+import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen } from '@/lib/menuTimers'
 import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
@@ -73,6 +73,7 @@ export default function OrdinaPage() {
   const locale = useLocale()
 
   const [takeawayStatus, setTakeawayStatus] = useState<ReturnType<typeof getTakeawayStatus> | null>(null)
+  const [orderingStatus, setOrderingStatus] = useState<{ isOpen: boolean; reason?: string; nextOpenTime?: string }>({ isOpen: true })
   const [step, setStep] = useState<OrderStep>('payment')
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTime, setSelectedTime] = useState<string>('')
@@ -130,7 +131,10 @@ export default function OrdinaPage() {
         setTableIdInCart(table.id)
         setPriceContext('takeaway-remote')
 
-        const menuData = await getMenu()
+        const [menuData, closureConfig] = await Promise.all([
+          getMenu(),
+          fetchClosureConfig()
+        ])
         setCategories(menuData)
         if (menuData.length > 0) {
           // Set active category to first filtered category
@@ -139,6 +143,7 @@ export default function OrdinaPage() {
             setActiveCategory(filtered[0].id)
           }
         }
+        setOrderingStatus(isOnlineOrderingOpen(closureConfig))
       } catch (err) {
         setError(tc('error'))
         console.error(err)
@@ -206,8 +211,6 @@ export default function OrdinaPage() {
     // Open cart drawer directly since payment and time are already selected
     setIsCartOpen(true)
   }
-
-  const orderingStatus = isOnlineOrderingOpen()
 
   if (loading) {
     return (

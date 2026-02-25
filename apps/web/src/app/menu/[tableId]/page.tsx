@@ -13,7 +13,7 @@ import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenuCached, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
-import { filterCategoriesByTime, isOnlineOrderingOpen, type MenuContext } from '@/lib/menuTimers'
+import { filterCategoriesByTime, fetchClosureConfig, isOnlineOrderingOpen, type MenuContext } from '@/lib/menuTimers'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
@@ -44,6 +44,7 @@ export default function MenuPage() {
   const [estimatedWait, setEstimatedWait] = useState<number | undefined>()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [closureStatus, setClosureStatus] = useState<{ isOpen: boolean; reason?: string; nextOpenTime?: string }>({ isOpen: true })
 
   // Customer name state
   const [customerName, setCustomerName] = useState('')
@@ -161,7 +162,9 @@ export default function MenuPage() {
         }
 
         // Controlla se il locale è chiuso
-        const orderingStatus = isOnlineOrderingOpen()
+        const closureConfig = await fetchClosureConfig()
+        const orderingStatus = isOnlineOrderingOpen(closureConfig)
+        setClosureStatus(orderingStatus)
         if (!orderingStatus.isOpen) {
           setStep('closed')
           return
@@ -386,17 +389,16 @@ export default function MenuPage() {
 
   // Schermata "Siamo chiusi"
   if (step === 'closed') {
-    const orderingStatus = isOnlineOrderingOpen()
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-6 text-center">
         <div className="text-7xl mb-6">🔒</div>
         <h1 className="text-3xl font-bold text-white mb-3">Siamo Chiusi</h1>
         <p className="text-gray-300 text-lg mb-2">
-          {orderingStatus.reason || 'Il locale è temporaneamente chiuso'}
+          {closureStatus.reason || 'Il locale è temporaneamente chiuso'}
         </p>
-        {orderingStatus.nextOpenTime && (
+        {closureStatus.nextOpenTime && (
           <p className="text-primary-300 mt-2 text-sm">
-            Prossima apertura: <span className="font-semibold">{orderingStatus.nextOpenTime}</span>
+            Prossima apertura: <span className="font-semibold">{closureStatus.nextOpenTime}</span>
           </p>
         )}
         <div className="mt-10 w-16 h-1 bg-primary-500 rounded-full mx-auto" />
