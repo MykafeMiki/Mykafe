@@ -11,7 +11,7 @@ import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
-import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen } from '@/lib/menuTimers'
+import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig } from '@/lib/menuTimers'
 import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
@@ -20,18 +20,6 @@ import { cn } from '@/lib/utils'
 
 type OrderStep = 'payment' | 'datetime' | 'menu'
 
-function getAvailableDates(): Date[] {
-  const dates: Date[] = []
-  const today = new Date()
-
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(today)
-    date.setDate(today.getDate() + i)
-    dates.push(date)
-  }
-
-  return dates
-}
 
 function getAvailableTimeSlots(selectedDate: Date, openingHour: number, closingHour: number): string[] {
   const slots: string[] = []
@@ -100,7 +88,7 @@ export default function OrdinaPage() {
   // Get takeaway pickup hours config
   const takeawayConfig = getTakeawayConfig()
 
-  const availableDates = getAvailableDates()
+  const availableDates = getAvailableDatesFromConfig(7)
   const availableTimeSlots = getAvailableTimeSlots(selectedDate, takeawayConfig.openingHour, takeawayConfig.closingHour)
   const showWarning = selectedTime && isWithin30Minutes(selectedDate, selectedTime)
 

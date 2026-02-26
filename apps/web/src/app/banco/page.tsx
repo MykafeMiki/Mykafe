@@ -60,7 +60,7 @@ export default function BancoPage() {
     })
 
     // Special handling for "toast" section: merge all items and sort by number
-    if (selectedSection === 'toast' && sectionCats.length > 1) {
+    if (selectedSection === 'toast' && sectionCats.length >= 1) {
       const allToastItems = sectionCats.flatMap(cat => cat.items || [])
       allToastItems.sort((a, b) => {
         const numA = parseInt(a.name.match(/\d+/)?.[0] || '0')

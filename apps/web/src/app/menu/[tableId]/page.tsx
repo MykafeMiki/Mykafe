@@ -13,12 +13,12 @@ import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
-import { filterCategoriesByTime, fetchClosureConfig, isOnlineOrderingOpen, type MenuContext } from '@/lib/menuTimers'
+import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier, Table } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
-type PageStep = 'enter-name' | 'choice' | 'merge-input' | 'join-group' | 'blocked' | 'sections' | 'menu' | 'closed'
+type PageStep = 'enter-name' | 'choice' | 'merge-input' | 'join-group' | 'blocked' | 'sections' | 'menu'
 
 export default function MenuPage() {
   const t = useTranslations('tableMenu')
@@ -44,7 +44,6 @@ export default function MenuPage() {
   const [estimatedWait, setEstimatedWait] = useState<number | undefined>()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [closureStatus, setClosureStatus] = useState<{ isOpen: boolean; reason?: string; nextOpenTime?: string }>({ isOpen: true })
 
   // Customer name state
   const [customerName, setCustomerName] = useState('')
@@ -179,23 +178,9 @@ export default function MenuPage() {
     loadData()
   }, [tableId, setTableIdInCart, setTableSessionInCart, checkAndClearStale, tc])
 
-  // Check chiusura in useEffect separato: non blocca il caricamento del menu
-  useEffect(() => {
-    if (loading) return
-    fetchClosureConfig()
-      .then(config => {
-        try {
-          const orderingStatus = isOnlineOrderingOpen(config)
-          setClosureStatus(orderingStatus)
-          if (!orderingStatus.isOpen) {
-            setStep('closed')
-          }
-        } catch (e) {
-          console.error('isOnlineOrderingOpen error:', e)
-        }
-      })
-      .catch(e => console.error('fetchClosureConfig error:', e))
-  }, [loading])
+  // Nota: il menu al tavolo NON usa isOnlineOrderingOpen.
+  // La ClosureConfig riguarda solo gli ordini online (/ordina).
+  // I tavoli fisici sono sempre accessibili indipendentemente dall'orario online.
 
   // Intercetta il tasto indietro del telefono (Android + iOS PWA)
   // Tecnica: teniamo sempre almeno uno stato "fantasma" davanti all'URL corrente.
@@ -392,26 +377,6 @@ export default function MenuPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-gray-500">{t('loadingMenu')}</div>
-      </div>
-    )
-  }
-
-  // Schermata "Siamo chiusi"
-  if (step === 'closed') {
-    return (
-      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-6 text-center">
-        <div className="text-7xl mb-6">🔒</div>
-        <h1 className="text-3xl font-bold text-white mb-3">Siamo Chiusi</h1>
-        <p className="text-gray-300 text-lg mb-2">
-          {closureStatus.reason || 'Il locale è temporaneamente chiuso'}
-        </p>
-        {closureStatus.nextOpenTime && (
-          <p className="text-primary-300 mt-2 text-sm">
-            Prossima apertura: <span className="font-semibold">{closureStatus.nextOpenTime}</span>
-          </p>
-        )}
-        <div className="mt-10 w-16 h-1 bg-primary-500 rounded-full mx-auto" />
-        <p className="text-gray-500 mt-6 text-sm">MyKafé</p>
       </div>
     )
   }
@@ -668,9 +633,8 @@ export default function MenuPage() {
 
   // Step 3: Join existing group - ask if they're part of the group
   if (step === 'join-group' && tableSession) {
-    // Get all table numbers in the group
-    const allGroupTables = [tableSession.linkedTables[0], ...tableSession.linkedTables.slice(1)]
-      .filter(n => n !== tableNumber) // Exclude current table from display
+    // Tavoli del gruppo da mostrare: tutti i linked, escluso il tavolo corrente
+    const otherGroupTables = tableSession.linkedTables.filter(n => n !== tableNumber)
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -707,7 +671,7 @@ export default function MenuPage() {
                   : t('groupExists')}
               </h2>
               <p className="text-gray-600 mt-2">
-                {t('groupExistsDesc', { tables: tableSession.linkedTables.join(', ') })}
+                {t('groupExistsDesc', { tables: otherGroupTables.join(', ') })}
               </p>
             </div>
 
