@@ -53,7 +53,7 @@ import {
   type TableCustomer,
 } from '@/lib/api'
 import type { Category, MenuItem, Table, Ingredient } from '@shared/types'
-import { menuSections, type MenuSection } from '@/components/menu/MenuSections'
+import { menuSections, categoryToSectionMap, type MenuSection } from '@/components/menu/MenuSections'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co'
 
@@ -715,7 +715,43 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
         </div>
       </div>
 
-      {categories.map((category) => (
+      {(() => {
+        // Raggruppa le categorie per sezione del menu
+        type SectionGroup = { section: MenuSection | null; sectionLabel: string; cats: typeof categories }
+        const sectionOrder = menuSections.map(s => s.id)
+        const grouped: Record<string, SectionGroup> = {}
+
+        categories.forEach(cat => {
+          const sectionId = categoryToSectionMap[cat.name] ?? '__other__'
+          if (!grouped[sectionId]) {
+            const section = menuSections.find(s => s.id === sectionId) ?? null
+            grouped[sectionId] = {
+              section,
+              sectionLabel: section ? section.name : 'Altro',
+              cats: []
+            }
+          }
+          grouped[sectionId].cats.push(cat)
+        })
+
+        const orderedKeys = [
+          ...sectionOrder.filter(id => grouped[id]),
+          ...(grouped['__other__'] ? ['__other__'] : [])
+        ]
+
+        return orderedKeys.map(sectionId => {
+          const group = grouped[sectionId]
+          return (
+            <div key={sectionId} className="space-y-3">
+              {/* Section header */}
+              <div className="flex items-center gap-2 pt-2">
+                <span className="text-xs font-bold uppercase tracking-widest text-primary-600 bg-primary-50 px-3 py-1 rounded-full border border-primary-100">
+                  {group.sectionLabel}
+                </span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+
+              {group.cats.map((category) => (
         <div key={category.id} className={`bg-white rounded-xl shadow-sm overflow-hidden ${!category.active ? 'opacity-60' : ''}`}>
           <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -769,12 +805,14 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
           </div>
 
           <div className="divide-y">
-            {/* Sort items by number for toast categories */}
+            {/* Sort items by number in name (e.g., "Toast 02" → 2, "Panino 05" → 5) */}
             {[...(category.items || [])].sort((a, b) => {
-              // Extract number from name (e.g., "Toast 02" -> 2)
-              const numA = parseInt(a.name.match(/\d+/)?.[0] || '999')
-              const numB = parseInt(b.name.match(/\d+/)?.[0] || '999')
-              return numA - numB
+              const numA = parseInt(a.name.match(/\d+/)?.[0] ?? '')
+              const numB = parseInt(b.name.match(/\d+/)?.[0] ?? '')
+              if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+              if (!isNaN(numA)) return -1
+              if (!isNaN(numB)) return 1
+              return a.name.localeCompare(b.name)
             }).map((item) => (
               <div
                 key={item.id}
@@ -886,7 +924,11 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
             </button>
           </div>
         </div>
-      ))}
+              ))}
+            </div>
+          )
+        })
+      })()}
 
       {/* Category Modal */}
       {showCategoryModal && (

@@ -75,7 +75,7 @@ export default function MenuPage() {
   }, [categories, menuContext])
 
   // Filter categories for the selected section
-  // For "toast" section, merge all toast categories into one sorted list
+  // For "toast" section (Panini), merge all panini-type categories into one sorted list
   const sectionCategories = useMemo(() => {
     if (!selectedSection) return filteredCategories
 
@@ -84,28 +84,32 @@ export default function MenuPage() {
       return sectionId === selectedSection
     })
 
-    // Special handling for "toast" section: merge all items and sort by number
+    // Special handling for "toast/panini" section: merge all items and sort by number
     if (selectedSection === 'toast' && sectionCats.length >= 1) {
-      // Collect all items from all toast categories
-      const allToastItems = sectionCats.flatMap(cat => cat.items || [])
+      // Collect all items from all panini-type categories
+      const allPaniniItems = sectionCats.flatMap(cat => cat.items || [])
 
-      // Sort by extracting number from name (e.g., "Toast 02" -> 2)
-      allToastItems.sort((a, b) => {
-        const numA = parseInt(a.name.match(/\d+/)?.[0] || '0')
-        const numB = parseInt(b.name.match(/\d+/)?.[0] || '0')
-        return numA - numB
+      // Sort by number in name (e.g., "Toast 02" → 2, "Panino 05" → 5)
+      // Items without a number (e.g., "Club Sandwich") sort by name as fallback
+      allPaniniItems.sort((a, b) => {
+        const numA = parseInt(a.name.match(/\d+/)?.[0] ?? '')
+        const numB = parseInt(b.name.match(/\d+/)?.[0] ?? '')
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+        if (!isNaN(numA)) return -1
+        if (!isNaN(numB)) return 1
+        return a.name.localeCompare(b.name)
       })
 
-      // Return a single "virtual" category with all items
+      // Return a single "virtual" category with all panini items
       return [{
         ...sectionCats[0],
-        id: 'toast-merged',
+        id: 'panini-merged',
         name: 'Panini',
         nameEn: 'Sandwiches',
         nameFr: 'Sandwichs',
         nameEs: 'Sándwiches',
         nameHe: 'כריכות',
-        items: allToastItems
+        items: allPaniniItems
       }]
     }
 

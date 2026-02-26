@@ -121,9 +121,9 @@ export const menuSections: MenuSection[] = [
 
 // Mappa per associare le categorie alle sezioni basandosi sul nome della categoria
 export const categoryToSectionMap: Record<string, string> = {
-  // Sezione Toast (panini, bagel, focacce farcite)
-  'Toast': 'toast',
+  // Sezione Panini (categoria unificata nel DB si chiama "Panini"; "Toast" mantenuto per retrocompatibilità)
   'Panini': 'toast',
+  'Toast': 'toast',
   'Panino': 'toast',
   'Bagel': 'toast',
   'Focaccia Farcita': 'toast',

@@ -57,7 +57,7 @@ export function SectionGridSkeleton() {
   return (
     <div className="animate-pulse p-4">
       <div className="h-8 w-48 bg-gray-200 rounded mb-6 mx-auto" />
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}
