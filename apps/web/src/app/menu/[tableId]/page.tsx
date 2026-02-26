@@ -100,11 +100,11 @@ export default function MenuPage() {
       return [{
         ...sectionCats[0],
         id: 'toast-merged',
-        name: 'Toast',
-        nameEn: 'Toast',
-        nameFr: 'Toast',
-        nameEs: 'Tostadas',
-        nameHe: 'טוסט',
+        name: 'Panini',
+        nameEn: 'Sandwiches',
+        nameFr: 'Sandwichs',
+        nameEs: 'Sándwiches',
+        nameHe: 'כריכות',
         items: allToastItems
       }]
     }

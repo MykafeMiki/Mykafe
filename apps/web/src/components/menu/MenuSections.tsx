@@ -19,11 +19,11 @@ export interface MenuSection {
 export const menuSections: MenuSection[] = [
   {
     id: 'toast',
-    name: 'Toast',
-    nameEn: 'Toast',
-    nameFr: 'Toast',
-    nameEs: 'Tostadas',
-    nameHe: 'טוסט',
+    name: 'Panini',
+    nameEn: 'Sandwiches',
+    nameFr: 'Sandwichs',
+    nameEs: 'Sándwiches',
+    nameHe: 'כריכות',
     image: '/sections/panini.jpg',
     categoryIds: [] // Panini, Bagel, Focaccia Farcita
   },

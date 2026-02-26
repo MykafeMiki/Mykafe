@@ -205,8 +205,14 @@ export function isCategoryVisible(
     return category.active && isSushiTimeActive()
   }
 
-  // Panini categories - only apply time restriction on bar and table (QR at counter)
-  if (categoryNameLower.includes('panin')) {
+  // Toast/Panini categories (all of them share the same time restriction)
+  // Matches: Panini, Panino, Toast, Bagel, Focaccia Farcita, Ciabatte, Ciabatta, Club Sandwich, Piadina, Piadine
+  const TOAST_CATEGORIES = new Set([
+    'panini', 'panino', 'toast', 'bagel',
+    'focaccia farcita', 'ciabatte', 'ciabatta',
+    'club sandwich', 'piadina', 'piadine'
+  ])
+  if (TOAST_CATEGORIES.has(categoryNameLower)) {
     // Takeaway (ordina page) always shows panini
     if (context === 'takeaway') {
       return true
