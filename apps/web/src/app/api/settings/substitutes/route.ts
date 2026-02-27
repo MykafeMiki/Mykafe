@@ -46,28 +46,50 @@ export async function PUT(request: NextRequest) {
 
     if (error) throw error
 
+    console.log('[SUBSTITUTE] Saved substitutes, now re-enabling menu items...')
+    console.log('[SUBSTITUTE] Body:', JSON.stringify(body))
+
     // Quando salvi un sostituto, riabilita i MenuItem che erano stati disabilitati
     // Itera su ogni ingrediente che ha ora un sostituto
     for (const [ingredientId, substituteData] of Object.entries(body)) {
+      console.log(`[SUBSTITUTE] Processing ingredient ${ingredientId}, substituteData:`, substituteData)
+
       if (substituteData) {
-        // Trova tutti i MenuItem dove questo ingrediente è PRIMARY e disponibile
-        const { data: primaryItems } = await supabase
+        // Trova tutti i MenuItem dove questo ingrediente è PRIMARY
+        const { data: primaryItems, error: queryError } = await supabase
           .from('MenuItemIngredient')
           .select('menuItemId')
           .eq('ingredientId', ingredientId)
           .eq('isPrimary', true)
 
+        if (queryError) {
+          console.error(`[SUBSTITUTE] Error querying primary items for ${ingredientId}:`, queryError)
+          continue
+        }
+
+        console.log(`[SUBSTITUTE] Found ${primaryItems?.length || 0} primary menu items for ingredient ${ingredientId}`)
+
         if (primaryItems && primaryItems.length > 0) {
           const menuItemIds = primaryItems.map((item: { menuItemId: string }) => item.menuItemId)
+          console.log(`[SUBSTITUTE] Enabling menu items:`, menuItemIds)
+
           // Riabilita i MenuItem (perché adesso hanno un sostituto)
-          await supabase
+          const { error: updateError, data: updateData } = await supabase
             .from('MenuItem')
             .update({ available: true })
             .in('id', menuItemIds)
-          console.log(`Re-enabled ${menuItemIds.length} menu items for ingredient ${ingredientId} with substitute`)
+            .select()
+
+          if (updateError) {
+            console.error(`[SUBSTITUTE] Error enabling menu items:`, updateError)
+          } else {
+            console.log(`[SUBSTITUTE] Successfully re-enabled ${updateData?.length || 0} menu items for ingredient ${ingredientId}`)
+          }
         }
       }
     }
+
+    console.log('[SUBSTITUTE] Re-enable operation complete')
 
     return NextResponse.json({ success: true })
   } catch (error) {
