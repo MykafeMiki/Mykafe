@@ -187,12 +187,15 @@ Deno.serve(async (req) => {
 
             // Merge and deduplicate by ingredient ID
             const seenIds = new Set<string>()
-            const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[] = []
+            const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, substitute?: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[] = []
 
             for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
               if (!seenIds.has(ing.id)) {
                 seenIds.add(ing.id)
-                unavailableIngredients.push(ing)
+                unavailableIngredients.push({
+                  ...ing,
+                  substitute: substituteMap[ing.id] ?? undefined
+                })
               }
             }
 
