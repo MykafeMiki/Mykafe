@@ -46,6 +46,29 @@ export async function PUT(request: NextRequest) {
 
     if (error) throw error
 
+    // Quando salvi un sostituto, riabilita i MenuItem che erano stati disabilitati
+    // Itera su ogni ingrediente che ha ora un sostituto
+    for (const [ingredientId, substituteData] of Object.entries(body)) {
+      if (substituteData) {
+        // Trova tutti i MenuItem dove questo ingrediente è PRIMARY e disponibile
+        const { data: primaryItems } = await supabase
+          .from('MenuItemIngredient')
+          .select('menuItemId')
+          .eq('ingredientId', ingredientId)
+          .eq('isPrimary', true)
+
+        if (primaryItems && primaryItems.length > 0) {
+          const menuItemIds = primaryItems.map((item: { menuItemId: string }) => item.menuItemId)
+          // Riabilita i MenuItem (perché adesso hanno un sostituto)
+          await supabase
+            .from('MenuItem')
+            .update({ available: true })
+            .in('id', menuItemIds)
+          console.log(`Re-enabled ${menuItemIds.length} menu items for ingredient ${ingredientId} with substitute`)
+        }
+      }
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error saving substitutes:', error)

@@ -121,19 +121,30 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Carica mappa sostituti per controllare se ingredienti primari out-of-stock hanno un sostituto
+      const substitutesRes = await supabase
+        .from('AppSettings')
+        .select('value')
+        .eq('key', 'ingredient_substitutes')
+        .single()
+
+      const substituteMap: Record<string, unknown> = (substitutesRes.data as { value?: Record<string, unknown> } | null)?.value as Record<string, unknown> || {}
+
       // OPTIMIZATION: Single pass filtering
       const filteredCategories = categories.map(cat => ({
         ...cat,
         items: (cat.items || [])
           .filter((item: {
             available: boolean,
-            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean } }[]
+            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string } }[]
           }) => {
             if (!item.available) return false
-            // Check if any PRIMARY ingredient is out of stock
-            const primaryOutOfStock = item.ingredients?.some(
-              ing => ing.isPrimary && !ing.ingredient?.inStock
-            )
+            // Check if any PRIMARY ingredient is out of stock - BUT allow if they have a substitute
+            const primaryOutOfStock = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { inStock: boolean, id: string } }) => {
+              if (!ing.isPrimary || ing.ingredient?.inStock) return false
+              // Se l'ingrediente primario è out of stock, controlla se ha un sostituto
+              return !substituteMap[ing.ingredient.id]
+            })
             return !primaryOutOfStock
           })
           .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
