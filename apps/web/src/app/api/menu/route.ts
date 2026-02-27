@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
+// Force dynamic: evita pre-rendering a build time (env vars non disponibili)
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
-// ISR: Rigenera ogni 60 secondi
-export const revalidate = 60
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  )
+}
 
 export async function GET() {
+  const supabase = getSupabase()
+
   try {
     // Query parallele per massima velocità
     const [categoriesResult, outOfStockResult] = await Promise.all([
