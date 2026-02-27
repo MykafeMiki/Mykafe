@@ -135,7 +135,7 @@ export const getMenuCached = async (): Promise<Category[]> => {
 // Query diretta a Supabase (bypassa Edge Function)
 async function fetchMenuDirect(): Promise<Category[]> {
   // Query parallele per massima velocità
-  const [categoriesResult, outOfStockResult] = await Promise.all([
+  const [categoriesResult, outOfStockResult, substitutesResult] = await Promise.all([
     // Menu principale
     supabase
       .from('Category')
@@ -172,7 +172,14 @@ async function fetchMenuDirect(): Promise<Category[]> {
         id, name, nameEn, nameFr, nameEs, nameHe,
         menuItemMatches:MenuItemUnavailableIngredient(menuItemId)
       `)
-      .eq('inStock', false)
+      .eq('inStock', false),
+
+    // Mappa sostituti ingredienti
+    supabase
+      .from('AppSettings')
+      .select('value')
+      .eq('key', 'ingredient_substitutes')
+      .single()
   ])
 
   if (categoriesResult.error) {
@@ -181,6 +188,10 @@ async function fetchMenuDirect(): Promise<Category[]> {
   }
 
   const categories = categoriesResult.data || []
+
+  // Mappa sostituti: ingredientId -> { id, name, ... }
+  const substituteMap: Record<string, { id: string; name: string; nameEn?: string; nameFr?: string; nameEs?: string; nameHe?: string }> =
+    (substitutesResult.data as { value?: Record<string, unknown> } | null)?.value as Record<string, { id: string; name: string }> || {}
 
   // Mappa: menuItemId -> ingredienti non disponibili (da description matching)
   const itemUnavailableMap = new Map<string, { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[]>()
@@ -236,13 +247,16 @@ async function fetchMenuDirect(): Promise<Category[]> {
         // Ingredienti non disponibili da description matching
         const descriptionMatches = itemUnavailableMap.get(item.id) || []
 
-        // Merge e deduplica
+        // Merge, deduplica e attacca sostituti
         const seenIds = new Set<string>()
-        const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[] = []
+        const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, substitute?: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[] = []
         for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
           if (!seenIds.has(ing.id)) {
             seenIds.add(ing.id)
-            unavailableIngredients.push(ing)
+            unavailableIngredients.push({
+              ...ing,
+              substitute: substituteMap[ing.id] ?? undefined
+            })
           }
         }
 
