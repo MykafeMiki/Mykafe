@@ -252,19 +252,34 @@ Deno.serve(async (req) => {
 
       // Se l'ingrediente è stato marcato come esaurito, aggiorna menu items e modifiers
       if (inStock === false) {
-        // 1. Disabilita tutti i MenuItem dove questo ingrediente è PRIMARY
-        const { data: primaryItems } = await supabase
-          .from('MenuItemIngredient')
-          .select('menuItemId')
-          .eq('ingredientId', ingredientId)
-          .eq('isPrimary', true)
+        // Controlla se questo ingrediente ha un sostituto selezionato
+        const { data: settingsData } = await supabase
+          .from('AppSettings')
+          .select('value')
+          .eq('key', 'ingredient_substitutes')
+          .single()
 
-        if (primaryItems && primaryItems.length > 0) {
-          const menuItemIds = primaryItems.map(item => item.menuItemId)
-          await supabase
-            .from('MenuItem')
-            .update({ available: false })
-            .in('id', menuItemIds)
+        const substituteMap = (settingsData?.value as Record<string, unknown>) || {}
+        const hasSubstitute = Boolean(substituteMap[ingredientId])
+
+        // 1. Disabilita tutti i MenuItem dove questo ingrediente è PRIMARY
+        // SOLO SE non ha un sostituto selezionato
+        if (!hasSubstitute) {
+          const { data: primaryItems } = await supabase
+            .from('MenuItemIngredient')
+            .select('menuItemId')
+            .eq('ingredientId', ingredientId)
+            .eq('isPrimary', true)
+
+          if (primaryItems && primaryItems.length > 0) {
+            const menuItemIds = primaryItems.map(item => item.menuItemId)
+            await supabase
+              .from('MenuItem')
+              .update({ available: false })
+              .in('id', menuItemIds)
+          }
+        } else {
+          console.log(`Ingredient ${ingredientName} has a substitute, keeping primary menu items available`)
         }
 
         // 2. Disabilita tutti i Modifier collegati a questo ingrediente

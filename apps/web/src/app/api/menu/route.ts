@@ -96,12 +96,14 @@ export async function GET() {
     const menu = categories.map(category => ({
       ...category,
       items: (category.items || [])
-        .filter((item: { available: boolean, ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean } }[] }) => {
+        .filter((item: { available: boolean, ingredients?: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }[] }) => {
           if (!item.available) return false
-          // Check primary ingredients
-          const primaryOutOfStock = item.ingredients?.some(
-            (ing: { isPrimary: boolean, ingredient: { inStock: boolean } }) => ing.isPrimary && !ing.ingredient?.inStock
-          )
+          // Check primary ingredients - BUT allow if they have a substitute
+          const primaryOutOfStock = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
+            if (!ing.isPrimary || ing.ingredient?.inStock) return false
+            // Se l'ingrediente primario è out of stock, controlla se ha un sostituto
+            return !substituteMap[ing.ingredient.id]
+          })
           return !primaryOutOfStock
         })
         .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
