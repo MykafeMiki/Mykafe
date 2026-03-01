@@ -210,8 +210,8 @@ export function MenuSections({ onSelectSection, activeCategories }: MenuSections
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
           {/* Section Name */}
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h3 className="text-white text-2xl font-display font-semibold text-center drop-shadow-lg italic">
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <h3 className="text-white text-sm font-display font-semibold text-center drop-shadow-lg italic leading-tight line-clamp-2">
               {getSectionName(section, locale)}
             </h3>
           </div>
