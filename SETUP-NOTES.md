@@ -10,10 +10,12 @@ Sistema di ordinazione digitale per ristoranti con:
 ```
 MyKafe/
 ├── apps/
-│   ├── web/          # Frontend Next.js (porta 3000)
-│   └── api/          # Backend Express + Socket.io (porta 3001)
+│   └── web/          # Frontend Next.js (porta 3000)
 ├── packages/
+│   ├── db/           # Prisma schema, seed, e gestione database
 │   └── shared/       # Tipi TypeScript condivisi
+├── supabase/
+│   └── functions/    # Supabase Edge Functions (backend API)
 └── menu-ita.pdf      # Menu originale MyKafe
 ```
 
@@ -30,11 +32,6 @@ pnpm dev
 pnpm dev:web
 ```
 
-### Avviare solo backend
-```bash
-pnpm dev:api
-```
-
 ### Gestione Database
 ```bash
 pnpm db:push      # Applica schema al database
@@ -43,7 +40,7 @@ pnpm db:studio    # Apre interfaccia grafica database
 
 ### Seed database (popola con menu)
 ```bash
-cd apps/api
+cd packages/db
 npx tsx prisma/seed.ts
 ```
 
@@ -56,7 +53,6 @@ npx tsx prisma/seed.ts
 | ... | ... (fino a tavolo-15) |
 | Kitchen Display | http://localhost:3000/kitchen |
 | Admin | http://localhost:3000/admin |
-| API Health | http://localhost:3001/api/health |
 
 ## Menu Importato
 Categorie:
@@ -99,8 +95,8 @@ Dopo aver creato Supabase, fornire:
 
 ## Stack Tecnologico
 - **Frontend**: Next.js 14, React 18, Tailwind CSS
-- **Backend**: Express.js, Socket.io
-- **Database**: SQLite (locale) → PostgreSQL/Supabase (produzione)
+- **Backend**: Supabase Edge Functions (Deno)
+- **Database**: PostgreSQL/Supabase
 - **ORM**: Prisma
 - **State Management**: Zustand
 - **Linguaggio**: TypeScript
