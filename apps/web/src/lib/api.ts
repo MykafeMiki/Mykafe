@@ -218,18 +218,10 @@ async function fetchMenuDirect(): Promise<Category[]> {
   const filtered = categories.map(category => ({
     ...category,
     items: (category.items || [])
-      .filter((item: { available: boolean, ingredients?: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }[] }) => {
-        if (!item.available) {
-          const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some(
-            (ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
-              if (!ing.isPrimary || ing.ingredient?.inStock) return false
-              return Boolean(substituteMap[ing.ingredient.id])
-            }
-          )
-          return hasPrimaryOutOfStockWithSubstitute ?? false
-        }
+      .filter((item: any) => {
+        if (!item.available) return false
         const primaryOutOfStockWithoutSubstitute = item.ingredients?.some(
-          (ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
+          (ing: any) => {
             if (!ing.isPrimary || ing.ingredient?.inStock) return false
             return !substituteMap[ing.ingredient.id]
           }
@@ -237,15 +229,11 @@ async function fetchMenuDirect(): Promise<Category[]> {
         return !primaryOutOfStockWithoutSubstitute
       })
       .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
-      .map((item: {
-        id: string,
-        modifierGroups?: { modifiers?: { available: boolean; ingredientId?: string }[] }[],
-        ingredients?: { isPrimary: boolean, ingredient: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, inStock: boolean } }[]
-      }) => {
+      .map((item: any) => {
         // Ingredienti non disponibili da associazioni esplicite
         const explicitUnavailable = (item.ingredients || [])
-          .filter(assoc => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
-          .map(assoc => ({
+          .filter((assoc: any) => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
+          .map((assoc: any) => ({
             id: assoc.ingredient.id,
             name: assoc.ingredient.name,
             nameEn: assoc.ingredient.nameEn,
@@ -274,9 +262,9 @@ async function fetchMenuDirect(): Promise<Category[]> {
           ...item,
           unavailableIngredients,
           ingredients: undefined, // Rimuovi raw ingredients dalla risposta
-          modifierGroups: item.modifierGroups?.map(group => ({
+          modifierGroups: item.modifierGroups?.map((group: any) => ({
             ...group,
-            modifiers: group.modifiers?.filter(mod =>
+            modifiers: group.modifiers?.filter((mod: any) =>
               mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
             )
           }))
@@ -285,9 +273,9 @@ async function fetchMenuDirect(): Promise<Category[]> {
   }))
 
   // Salva in cache
-  saveMenuCache(filtered)
+  saveMenuCache(filtered as Category[])
 
-  return filtered
+  return filtered as Category[]
 }
 
 function saveMenuCache(data: Category[]) {

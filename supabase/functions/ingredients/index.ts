@@ -250,93 +250,19 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Se l'ingrediente è stato marcato come esaurito, aggiorna menu items e modifiers
+      // Side effects when ingredient stock changes
       if (inStock === false) {
-        // Controlla se questo ingrediente ha un sostituto selezionato
-        const { data: settingsData } = await supabase
-          .from('AppSettings')
-          .select('value')
-          .eq('key', 'ingredient_substitutes')
-          .single()
-
-        const substituteMap = (settingsData?.value as Record<string, unknown>) || {}
-        const hasSubstitute = Boolean(substituteMap[ingredientId])
-
-        // 1. Disabilita tutti i MenuItem dove questo ingrediente è PRIMARY
-        // SOLO SE non ha un sostituto selezionato
-        if (!hasSubstitute) {
-          const { data: primaryItems } = await supabase
-            .from('MenuItemIngredient')
-            .select('menuItemId')
-            .eq('ingredientId', ingredientId)
-            .eq('isPrimary', true)
-
-          if (primaryItems && primaryItems.length > 0) {
-            const menuItemIds = primaryItems.map(item => item.menuItemId)
-            await supabase
-              .from('MenuItem')
-              .update({ available: false })
-              .in('id', menuItemIds)
-          }
-        } else {
-          console.log(`Ingredient ${ingredient.name} has a substitute, keeping primary menu items available`)
-        }
-
-        // 2. Disabilita tutti i Modifier collegati a questo ingrediente
+        // Disabilita tutti i Modifier collegati a questo ingrediente
         await supabase
           .from('Modifier')
           .update({ available: false })
           .eq('ingredientId', ingredientId)
-
-        // 3. Rimuovi automaticamente l'ingrediente dai piatti dove NON è primario
-        // (gli ingredienti primari non vengono rimossi automaticamente)
-        const { data: deletedItems, error: deleteError } = await supabase
-          .from('MenuItemIngredient')
-          .delete()
-          .eq('ingredientId', ingredientId)
-          .eq('isPrimary', false)
-          .select()
-
-        console.log('Deleted non-primary ingredient associations:', deletedItems?.length || 0, deleteError)
       } else if (inStock === true) {
-        // Se l'ingrediente torna disponibile, riabilita i modifier collegati
+        // Riabilita i modifier collegati
         await supabase
           .from('Modifier')
           .update({ available: true })
           .eq('ingredientId', ingredientId)
-
-        // Per i MenuItem, dobbiamo verificare che TUTTI gli ingredienti primari siano disponibili
-        // prima di riabilitare il piatto
-        const { data: affectedItems } = await supabase
-          .from('MenuItemIngredient')
-          .select('menuItemId')
-          .eq('ingredientId', ingredientId)
-          .eq('isPrimary', true)
-
-        if (affectedItems) {
-          for (const item of affectedItems) {
-            // Verifica se tutti gli ingredienti primari sono in stock
-            const { data: primaryIngredients } = await supabase
-              .from('MenuItemIngredient')
-              .select(`
-                ingredientId,
-                ingredient:Ingredient(inStock)
-              `)
-              .eq('menuItemId', item.menuItemId)
-              .eq('isPrimary', true)
-
-            const allPrimaryInStock = primaryIngredients?.every(
-              (pi: { ingredient: { inStock: boolean } }) => pi.ingredient?.inStock
-            )
-
-            if (allPrimaryInStock) {
-              await supabase
-                .from('MenuItem')
-                .update({ available: true })
-                .eq('id', item.menuItemId)
-            }
-          }
-        }
       }
 
       return new Response(JSON.stringify(ingredient), {

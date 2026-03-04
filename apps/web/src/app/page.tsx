@@ -128,7 +128,7 @@ export default function HomePage() {
       </header>
 
       {/* Main Menu Grid */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-4 py-8 min-h-[calc(100vh-180px)]">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {menuItems.map((item) => (
             <Link
