@@ -219,7 +219,15 @@ async function fetchMenuDirect(): Promise<Category[]> {
     ...category,
     items: (category.items || [])
       .filter((item: any) => {
-        if (!item.available) return false
+        if (!item.available) {
+          const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some(
+            (ing: any) => {
+              if (!ing.isPrimary || ing.ingredient?.inStock) return false
+              return Boolean(substituteMap[ing.ingredient.id])
+            }
+          )
+          return hasPrimaryOutOfStockWithSubstitute ?? false
+        }
         const primaryOutOfStockWithoutSubstitute = item.ingredients?.some(
           (ing: any) => {
             if (!ing.isPrimary || ing.ingredient?.inStock) return false

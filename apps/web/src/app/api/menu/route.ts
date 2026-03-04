@@ -97,7 +97,13 @@ export async function GET() {
       ...category,
       items: (category.items || [])
         .filter((item: { available: boolean, ingredients?: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }[] }) => {
-          if (!item.available) return false
+          if (!item.available) {
+            const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
+              if (!ing.isPrimary || ing.ingredient?.inStock) return false
+              return Boolean(substituteMap[ing.ingredient.id])
+            })
+            return hasPrimaryOutOfStockWithSubstitute ?? false
+          }
           const primaryOutOfStockWithoutSubstitute = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
             if (!ing.isPrimary || ing.ingredient?.inStock) return false
             return !substituteMap[ing.ingredient.id]
