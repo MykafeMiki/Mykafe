@@ -279,7 +279,7 @@ Deno.serve(async (req) => {
               .in('id', menuItemIds)
           }
         } else {
-          console.log(`Ingredient ${ingredientName} has a substitute, keeping primary menu items available`)
+          console.log(`Ingredient ${ingredient.name} has a substitute, keeping primary menu items available`)
         }
 
         // 2. Disabilita tutti i Modifier collegati a questo ingrediente

@@ -218,13 +218,23 @@ async function fetchMenuDirect(): Promise<Category[]> {
   const filtered = categories.map(category => ({
     ...category,
     items: (category.items || [])
-      .filter((item: { available: boolean, ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean } }[] }) => {
-        if (!item.available) return false
-        // Check primary ingredients
-        const primaryOutOfStock = item.ingredients?.some(
-          (ing: { isPrimary: boolean, ingredient: { inStock: boolean } }) => ing.isPrimary && !ing.ingredient?.inStock
+      .filter((item: { available: boolean, ingredients?: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }[] }) => {
+        if (!item.available) {
+          const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some(
+            (ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
+              if (!ing.isPrimary || ing.ingredient?.inStock) return false
+              return Boolean(substituteMap[ing.ingredient.id])
+            }
+          )
+          return hasPrimaryOutOfStockWithSubstitute ?? false
+        }
+        const primaryOutOfStockWithoutSubstitute = item.ingredients?.some(
+          (ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
+            if (!ing.isPrimary || ing.ingredient?.inStock) return false
+            return !substituteMap[ing.ingredient.id]
+          }
         )
-        return !primaryOutOfStock
+        return !primaryOutOfStockWithoutSubstitute
       })
       .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
       .map((item: {
