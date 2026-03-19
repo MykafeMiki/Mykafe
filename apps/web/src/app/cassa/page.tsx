@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { CreditCard, Lock, Loader2, RefreshCw, ArrowLeft, Banknote, CreditCard as CardIcon, Check, Clock, User, ShoppingBag } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { AppHeader } from '@/components/AppHeader'
+import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { formatPrice } from '@/lib/utils'
 import {
   adminLogin,
@@ -171,6 +172,7 @@ function CassaContent({ t }: CassaContentProps) {
         descriptionClassName="text-purple-100"
         rightSlot={(
           <div className="flex gap-2">
+            <LanguageSelectorCompact />
             <button
               onClick={() => {
                 if (view === 'history') {

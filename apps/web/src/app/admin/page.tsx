@@ -6,6 +6,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useLocale, useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
 import { AppHeader } from '@/components/AppHeader'
+import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { getIngredientSubstitutes, setIngredientSubstitute } from '@/lib/ingredientSubstitutes'
 import {
   getSushiStatus,
@@ -216,13 +217,16 @@ export default function AdminPage() {
         titleClassName="text-2xl"
         descriptionClassName="text-gray-200"
         rightSlot={
-          <button
-            onClick={handleLogout}
-            className="p-2 text-white hover:bg-white/10 rounded-lg transition"
-            title={t('logout')}
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <LanguageSelectorCompact />
+            <button
+              onClick={handleLogout}
+              className="p-2 text-white hover:bg-white/10 rounded-lg transition"
+              title={t('logout')}
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
         }
       />
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Volume2, VolumeX, RefreshCw, Lock, Loader2, ChefHat } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { AppHeader } from '@/components/AppHeader'
+import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { OrderCard } from '@/components/kitchen/OrderCard'
 import { getActiveOrders, updateOrderStatus, verifyToken, adminLogin, setAuthToken, getAuthToken } from '@/lib/api'
 import type { Order, OrderStatus } from '@shared/types'
@@ -190,6 +191,7 @@ export default function KitchenPage() {
         descriptionClassName="text-red-100"
         rightSlot={(
           <div className="flex items-center gap-4">
+            <LanguageSelectorCompact />
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
               className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
