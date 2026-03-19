@@ -134,7 +134,8 @@
     "notInGroupDesc": "Order only for this table",
     "selectOrEnterName": "Select your name or add a new one",
     "alreadyAtTable": "Who are you?",
-    "orNewName": "or add a new name"
+    "orNewName": "or add a new name",
+    "host": "Host"
   },
   "cart": {
     "title": "Your order",

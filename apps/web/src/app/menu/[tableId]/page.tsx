@@ -450,7 +450,7 @@ export default function MenuPage() {
                       <span className="font-medium text-gray-900">{customer.name}</span>
                       {customer.isHost && (
                         <span className="ml-auto text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full">
-                          Host
+                          {t('host')}
                         </span>
                       )}
                     </button>
@@ -505,7 +505,7 @@ export default function MenuPage() {
                 className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
               >
                 <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
+                <span>{tc('back')}</span>
               </button>
               <div>
                 <h1 className="text-xl font-bold">MyKafe</h1>
@@ -575,7 +575,7 @@ export default function MenuPage() {
                 className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
               >
                 <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
+                <span>{tc('back')}</span>
               </button>
               <div>
                 <h1 className="text-xl font-bold">MyKafe</h1>
@@ -650,7 +650,7 @@ export default function MenuPage() {
                 className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
               >
                 <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
+                <span>{tc('back')}</span>
               </button>
               <div>
                 <h1 className="text-xl font-bold">MyKafe</h1>
@@ -774,7 +774,7 @@ export default function MenuPage() {
                 className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
               >
                 <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
+                <span>{tc('back')}</span>
               </button>
               <div>
                 <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
@@ -830,7 +830,7 @@ export default function MenuPage() {
                 className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
               >
                 <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
+                <span>{tc('back')}</span>
             </button>
             <div>
               <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>

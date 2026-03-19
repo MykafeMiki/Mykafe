@@ -134,7 +134,8 @@
     "notInGroupDesc": "Ordina solo per questo tavolo",
     "selectOrEnterName": "Seleziona il tuo nome o aggiungine uno nuovo",
     "alreadyAtTable": "Chi sei?",
-    "orNewName": "o aggiungi un nuovo nome"
+    "orNewName": "o aggiungi un nuovo nome",
+    "host": "Host"
   },
   "cart": {
     "title": "Il tuo ordine",

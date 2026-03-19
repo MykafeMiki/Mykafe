@@ -129,7 +129,8 @@
     "notInGroupDesc": "Pedir solo para esta mesa",
     "selectOrEnterName": "Selecciona tu nombre o añade uno nuevo",
     "alreadyAtTable": "¿Quién eres?",
-    "orNewName": "o añade un nuevo nombre"
+    "orNewName": "o añade un nuevo nombre",
+    "host": "Anfitrión"
   },
   "cart": {
     "title": "Tu pedido",

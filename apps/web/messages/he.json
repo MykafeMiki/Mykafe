@@ -134,7 +134,8 @@
     "notInGroupDesc": "הזמן רק לשולחן זה",
     "selectOrEnterName": "בחר את שמך או הוסף שם חדש",
     "alreadyAtTable": "מי את/ה?",
-    "orNewName": "או הוסף שם חדש"
+    "orNewName": "או הוסף שם חדש",
+    "host": "מארח"
   },
   "cart": {
     "title": "ההזמנה שלך",

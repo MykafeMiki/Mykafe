@@ -129,7 +129,8 @@
     "notInGroupDesc": "Commander uniquement pour cette table",
     "selectOrEnterName": "Sélectionnez votre nom ou ajoutez-en un nouveau",
     "alreadyAtTable": "Qui êtes-vous ?",
-    "orNewName": "ou ajoutez un nouveau nom"
+    "orNewName": "ou ajoutez un nouveau nom",
+    "host": "Hôte"
   },
   "cart": {
     "title": "Votre commande",
