@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { CreditCard, Lock, Loader2, RefreshCw, ArrowLeft, Banknote, CreditCard as CardIcon, Check, Clock, User, ShoppingBag } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { AppHeader } from '@/components/AppHeader'
 import { formatPrice } from '@/lib/utils'
 import {
   adminLogin,
@@ -67,6 +68,7 @@ interface CassaContentProps {
 }
 
 function CassaContent({ t }: CassaContentProps) {
+  const tc = useTranslations('common')
   const [view, setView] = useState<View>('tables')
   const [tables, setTables] = useState<TableWithOrders[]>([])
   const [takeawayOrders, setTakeawayOrders] = useState<Order[]>([])
@@ -158,13 +160,13 @@ function CassaContent({ t }: CassaContentProps) {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-purple-600 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{t('title')}</h1>
-            <p className="text-purple-200">{t('subtitle')}</p>
-          </div>
+      <AppHeader
+        brand={tc('brand')}
+        title={t('title')}
+        description={t('subtitle')}
+        className="bg-purple-600"
+        descriptionClassName="text-purple-200"
+        rightSlot={(
           <div className="flex gap-2">
             <button
               onClick={() => {
@@ -188,8 +190,8 @@ function CassaContent({ t }: CassaContentProps) {
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
-        </div>
-      </header>
+        )}
+      />
 
       {/* Success Message */}
       {successMessage && (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -9,6 +9,7 @@ import { ItemModal } from '@/components/menu/ItemModal'
 import { CartButton } from '@/components/cart/CartButton'
 import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
+import { AppHeader } from '@/components/AppHeader'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig } from '@/lib/menuTimers'
@@ -222,15 +223,14 @@ export default function OrdinaPage() {
   if (!orderingStatus.isOpen) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <h1 className="text-xl font-bold">{tc('brand')} - {t('title')}</h1>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          title={t('title')}
+          icon={<ShoppingBag className="w-6 h-6" />}
+          rightSlot={<LanguageSelectorCompact />}
+          className="bg-orange-500"
+          descriptionClassName="text-orange-100"
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-sm">
@@ -284,26 +284,17 @@ export default function OrdinaPage() {
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('payment')}
-                className="p-2 -ml-2 rounded-full hover:bg-orange-400 transition"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="w-6 h-6" />
-                <h1 className="text-xl font-bold">{tc('brand')} - {t('title')}</h1>
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-orange-100 text-sm mt-1 ml-10">
-            {t('subtitle')} • {paymentLabel}
-          </p>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          title={t('title')}
+          description={`${t('subtitle')} - ${paymentLabel}`}
+          icon={<ShoppingBag className="w-6 h-6" />}
+          onBack={() => setStep('payment')}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+          className="bg-orange-500"
+          descriptionClassName="text-orange-100"
+        />
 
         <main className="flex-1 p-6 max-w-lg mx-auto w-full">
 
@@ -409,18 +400,15 @@ export default function OrdinaPage() {
   if (step === 'payment') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <h1 className="text-xl font-bold">{tc('brand')} - {t('title')}</h1>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-orange-100 text-sm mt-1">
-            {t('subtitle')}
-          </p>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          title={t('title')}
+          description={t('subtitle')}
+          icon={<ShoppingBag className="w-6 h-6" />}
+          rightSlot={<LanguageSelectorCompact />}
+          className="bg-orange-500"
+          descriptionClassName="text-orange-100"
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
@@ -478,47 +466,37 @@ export default function OrdinaPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <header className="bg-orange-500 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setStep('datetime')}
-              className="p-2 -ml-2 rounded-full hover:bg-orange-400 transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <div>
-                <h1 className="text-xl font-bold">{tc('brand')}</h1>
-                <p className="text-orange-100 text-sm">{t('subtitle')}</p>
-              </div>
-            </div>
-          </div>
-          <LanguageSelectorCompact />
-        </div>
-        {/* Show selected payment and pickup time */}
-        <div className="mt-2 flex items-center gap-4 text-sm">
-          <button
-            onClick={() => setStep('datetime')}
-            className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
-          >
-            <Clock className="w-4 h-4" />
-            <span>{pickupTimeDisplay}</span>
-          </button>
-          <button
-            onClick={() => setStep('payment')}
-            className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
-          >
-            {paymentMethod === PaymentMethod.CARD ? (
-              <CreditCard className="w-4 h-4" />
-            ) : (
-              <Banknote className="w-4 h-4" />
-            )}
-            <span>{paymentLabel}</span>
-          </button>
-        </div>
-      </header>
+            <AppHeader
+        brand={tc('brand')}
+        description={t('subtitle')}
+        icon={<ShoppingBag className="w-6 h-6" />}
+        onBack={() => setStep('datetime')}
+        backAriaLabel={tc('back')}
+        rightSlot={<LanguageSelectorCompact />}
+        className="bg-orange-500"
+        descriptionClassName="text-orange-100"
+      />
+      {/* Show selected payment and pickup time */}
+      <div className="bg-orange-500 text-white px-4 pb-3 flex items-center gap-4 text-sm">
+        <button
+          onClick={() => setStep('datetime')}
+          className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
+        >
+          <Clock className="w-4 h-4" />
+          <span>{pickupTimeDisplay}</span>
+        </button>
+        <button
+          onClick={() => setStep('payment')}
+          className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
+        >
+          {paymentMethod === PaymentMethod.CARD ? (
+            <CreditCard className="w-4 h-4" />
+          ) : (
+            <Banknote className="w-4 h-4" />
+          )}
+          <span>{paymentLabel}</span>
+        </button>
+      </div>
 
       <CategoryNav
         categories={filteredCategories}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, Store, User, ShoppingBag, UtensilsCrossed, ArrowLeft } from 'lucide-react'
+import { CheckCircle, Store, User, ShoppingBag, UtensilsCrossed } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -10,6 +10,7 @@ import { MenuSections, categoryToSectionMap, getSectionName, menuSections } from
 import { CartButton } from '@/components/cart/CartButton'
 import { BancoCartDrawer } from '@/components/cart/BancoCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
+import { AppHeader } from '@/components/AppHeader'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import { filterCategoriesByTime } from '@/lib/menuTimers'
@@ -212,18 +213,13 @@ export default function BancoPage() {
   if (step === 'name') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Store className="w-6 h-6" />
-              <h1 className="text-xl font-bold">{tc('brand')} - {t('title')}</h1>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-primary-100 text-sm mt-1">
-            {t('subtitle')}
-          </p>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={t('title')}
+          description={t('subtitle')}
+          icon={<Store className="w-6 h-6" />}
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
@@ -274,26 +270,14 @@ export default function BancoPage() {
   if (step === 'choice') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('name')}
-                className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2">
-                <Store className="w-6 h-6" />
-                <h1 className="text-xl font-bold">{tc('brand')}</h1>
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-primary-100 text-sm mt-1 ml-10">
-            {t('title')} • {customerName}
-          </p>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          description={`${t('title')} - ${customerName}`}
+          icon={<Store className="w-6 h-6" />}
+          onBack={() => setStep('name')}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md space-y-4">
@@ -344,20 +328,13 @@ export default function BancoPage() {
   if (step === 'sections') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('choice')}
-                className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2">
-                <Store className="w-6 h-6" />
-                <h1 className="text-xl font-bold">{tc('brand')}</h1>
-              </div>
-            </div>
+                <AppHeader
+          brand={tc('brand')}
+          description={`${t('title')} - ${serviceMode === 'takeaway' ? t('takeaway') : t('dineIn')}`}
+          icon={<Store className="w-6 h-6" />}
+          onBack={() => setStep('choice')}
+          backAriaLabel={tc('back')}
+          rightSlot={(
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
                 <User className="w-4 h-4" />
@@ -365,11 +342,8 @@ export default function BancoPage() {
               </div>
               <LanguageSelectorCompact />
             </div>
-          </div>
-          <p className="text-primary-100 text-sm mt-1 ml-10">
-            {t('title')} • {serviceMode === 'takeaway' ? t('takeaway') : t('dineIn')}
-          </p>
-        </header>
+          )}
+        />
 
         <main className="flex-1 p-4">
           <MenuSections
@@ -392,20 +366,15 @@ export default function BancoPage() {
   // Step 4: Menu
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <header className="bg-primary-500 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setStep('sections')}
-              className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <Store className="w-6 h-6" />
-              <h1 className="text-xl font-bold">{tc('brand')}</h1>
-            </div>
-          </div>
+            <AppHeader
+        brand={tc('brand')}
+        description={selectedSection
+          ? getSectionName(menuSections.find(s => s.id === selectedSection)!, locale)
+          : t('title')}
+        icon={<Store className="w-6 h-6" />}
+        onBack={() => setStep('sections')}
+        backAriaLabel={tc('back')}
+        rightSlot={(
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
               <User className="w-4 h-4" />
@@ -413,13 +382,8 @@ export default function BancoPage() {
             </div>
             <LanguageSelectorCompact />
           </div>
-        </div>
-        <p className="text-primary-100 text-sm mt-1 ml-10">
-          {selectedSection
-            ? getSectionName(menuSections.find(s => s.id === selectedSection)!, locale)
-            : t('title')}
-        </p>
-      </header>
+        )}
+      />
 
       <CategoryNav
         categories={sectionCategories}

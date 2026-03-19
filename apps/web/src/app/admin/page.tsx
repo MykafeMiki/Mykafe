@@ -5,6 +5,7 @@ import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image a
 import { QRCodeSVG } from 'qrcode.react'
 import { useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
+import { AppHeader } from '@/components/AppHeader'
 import { getIngredientSubstitutes, setIngredientSubstitute } from '@/lib/ingredientSubstitutes'
 import {
   getSushiStatus,
@@ -145,12 +146,14 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <header className="bg-gray-800 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{t('title')}</h1>
-            <p className="text-gray-400">{t('subtitle')}</p>
-          </div>
+      <AppHeader
+        brand={tc('brand')}
+        title={t('title')}
+        description={t('subtitle')}
+        className="bg-gray-800 text-white p-4"
+        titleClassName="text-2xl"
+        descriptionClassName="text-gray-400"
+        rightSlot={
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
@@ -158,8 +161,8 @@ export default function AdminPage() {
             <LogOut className="w-4 h-4" />
             {t('logout')}
           </button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Barra Chiusura Locale — sempre visibile */}
       <div className={`flex items-center justify-between px-4 py-3 ${isClosed ? 'bg-red-600' : 'bg-green-600'} text-white`}>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
-import { CheckCircle, Users, User, Link2, UserCircle, ArrowLeft, X } from 'lucide-react'
+import { CheckCircle, Users, User, Link2, UserCircle, X } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -11,6 +11,7 @@ import { MenuSections, menuSections, categoryToSectionMap, getSectionName } from
 import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
+import { AppHeader } from '@/components/AppHeader'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
 import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
@@ -407,17 +408,11 @@ export default function MenuPage() {
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">{tc('brand')}</h1>
-              {tableNumber && (
-                <p className="text-primary-100">{t('table')} {tableNumber}</p>
-              )}
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
@@ -497,26 +492,13 @@ export default function MenuPage() {
   if (step === 'choice') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('enter-name')}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>{tc('back')}</span>
-              </button>
-              <div>
-                <h1 className="text-xl font-bold">{tc('brand')}</h1>
-                {tableNumber && (
-                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
-                )}
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          onBack={() => setStep('enter-name')}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md space-y-4">
@@ -567,26 +549,13 @@ export default function MenuPage() {
   if (step === 'merge-input') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('choice')}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>{tc('back')}</span>
-              </button>
-              <div>
-                <h1 className="text-xl font-bold">{tc('brand')}</h1>
-                {tableNumber && (
-                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
-                )}
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          onBack={() => setStep('choice')}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 p-6 max-w-md mx-auto w-full">
           <div className="flex items-center gap-3 mb-6">
@@ -642,26 +611,13 @@ export default function MenuPage() {
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('enter-name')}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>{tc('back')}</span>
-              </button>
-              <div>
-                <h1 className="text-xl font-bold">{tc('brand')}</h1>
-                {tableNumber && (
-                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
-                )}
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          onBack={() => setStep('enter-name')}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md space-y-4">
@@ -722,17 +678,13 @@ export default function MenuPage() {
   if (step === 'blocked') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-red-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">{tc('brand')}</h1>
-              {tableNumber && (
-                <p className="text-red-100">{t('table')} {tableNumber}</p>
-              )}
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          rightSlot={<LanguageSelectorCompact />}
+          className="bg-red-500"
+          descriptionClassName="text-red-100"
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md text-center">
@@ -766,26 +718,15 @@ export default function MenuPage() {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
         {/* Header — sticky, non sparisce scrollando */}
-        <header className="sticky top-0 z-40 bg-primary-500 text-white p-4 shadow-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleBackToChoice}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>{tc('back')}</span>
-              </button>
-              <div>
-                <h1 className="text-2xl font-display font-semibold italic">{tc('brand')}</h1>
-                {tableNumber !== null && tableNumber > 0 && (
-                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
-                )}
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+                <AppHeader
+          brand={tc('brand')}
+          description={tableNumber !== null && tableNumber > 0 ? `${t('table')} ${tableNumber}` : undefined}
+          onBack={handleBackToChoice}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+          className="sticky top-0 z-40 bg-primary-500 shadow-md"
+          titleClassName="text-2xl font-display font-semibold italic"
+        />
 
         {/* Sections Grid */}
         <MenuSections onSelectSection={handleSelectSection} activeCategories={filteredCategories} />
@@ -822,40 +763,31 @@ export default function MenuPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header — sticky, non sparisce scrollando */}
-      <header className="sticky top-0 z-40 bg-primary-500 text-white p-4 shadow-md">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-                onClick={handleBackToSections}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>{tc('back')}</span>
-            </button>
-            <div>
-              <h1 className="text-2xl font-display font-semibold italic">{tc('brand')}</h1>
-              {tableNumber !== null && tableNumber > 0 && (
-                <p className="text-primary-100">
-                  {t('table')} {tableNumber}
-                  {tableSession && tableSession.linkedTables.length > 0 && (
-                    <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
-                      + {tableSession.linkedTables.join(', ')}
-                    </span>
-                  )}
-                </p>
-              )}
-            </div>
-          </div>
-          <LanguageSelectorCompact />
+            <AppHeader
+        brand={tc('brand')}
+        description={tableNumber !== null && tableNumber > 0 ? (
+          <>
+            {t('table')} {tableNumber}
+            {tableSession && tableSession.linkedTables.length > 0 && (
+              <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
+                + {tableSession.linkedTables.join(', ')}
+              </span>
+            )}
+          </>
+        ) : undefined}
+        onBack={handleBackToSections}
+        backAriaLabel={tc('back')}
+        rightSlot={<LanguageSelectorCompact />}
+        className="sticky top-0 z-40 bg-primary-500 shadow-md"
+        titleClassName="text-2xl font-display font-semibold italic"
+      />
+      {/* Session indicator */}
+      {tableSession && (
+        <div className="bg-primary-500 text-primary-100 px-4 pb-3 flex items-center gap-2 text-sm">
+          <Link2 className="w-4 h-4" />
+          <span>{t('sessionActive')}: {t('tables')} {tableNumber}, {tableSession.linkedTables.join(', ')}</span>
         </div>
-        {/* Session indicator */}
-        {tableSession && (
-          <div className="mt-2 flex items-center gap-2 text-sm text-primary-100">
-            <Link2 className="w-4 h-4" />
-            <span>{t('sessionActive')}: {t('tables')} {tableNumber}, {tableSession.linkedTables.join(', ')}</span>
-          </div>
-        )}
-      </header>
+      )}
 
       {/* Category Navigation (only categories in selected section) */}
       <CategoryNav

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { LanguageSelectorCompact } from "@/components/LanguageSelector";
+import { AppHeader } from "@/components/AppHeader";
 import { adminLogin, verifyToken, setAuthToken, getAuthToken } from "@/lib/api";
 
 export default function HomePage() {
@@ -110,21 +111,26 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
       <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{tc("brand")}</h1>
-            <p className="text-gray-500 mt-1">{t("subtitle")}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <LanguageSelectorCompact />
-            <button
-              onClick={handleLogout}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-              title={tl("logout") || "Logout"}
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <AppHeader
+            brand={tc("brand")}
+            description={t("subtitle")}
+            className="bg-transparent text-gray-900 p-0"
+            titleClassName="text-3xl"
+            descriptionClassName="text-gray-500 mt-1"
+            rightSlot={
+              <div className="flex items-center gap-3">
+                <LanguageSelectorCompact />
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                  title={tl("logout") || "Logout"}
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            }
+          />
         </div>
       </header>
 
