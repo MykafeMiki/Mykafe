@@ -238,15 +238,15 @@ export default function OrdinaPage() {
               <Clock className="w-10 h-10 text-orange-500" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Ordini Online Chiusi
+              {t('onlineClosedTitle')}
             </h2>
             <p className="text-gray-600 mb-4">
-              {orderingStatus.reason || 'Il servizio di ordini online non è attualmente disponibile.'}
+              {orderingStatus.reason || t('onlineClosedFallback')}
             </p>
             {orderingStatus.nextOpenTime && (
               <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                 <p className="text-sm text-orange-800">
-                  <span className="font-semibold">Prossima apertura:</span>{' '}
+                  <span className="font-semibold">{t('nextOpeningLabel')}</span>{' '}
                   {orderingStatus.nextOpenTime}
                 </p>
               </div>

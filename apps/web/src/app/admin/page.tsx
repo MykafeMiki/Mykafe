@@ -167,12 +167,12 @@ export default function AdminPage() {
           <span className="text-xl">{isClosed ? '🔒' : '✅'}</span>
           <div>
             <p className="font-bold text-sm leading-tight">
-              {isClosed ? 'LOCALE CHIUSO' : 'Locale Aperto'}
+              {isClosed ? t('restaurantClosed') : t('restaurantOpen')}
             </p>
             <p className="text-xs opacity-80">
               {isClosed
-                ? (closureBannerConfig.temporaryClosure.message || 'Chiusura in corso')
-                : 'I clienti possono ordinare'}
+                ? (closureBannerConfig.temporaryClosure.message || t('closureInProgress'))
+                : t('customersCanOrder')}
             </p>
           </div>
         </div>
@@ -181,13 +181,13 @@ export default function AdminPage() {
             onClick={() => setShowClosureBannerModal(true)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/20 hover:bg-white/30 transition"
           >
-            Programma
+            {t('schedule')}
           </button>
           <button
             onClick={handleBannerToggle}
             className={`px-4 py-2 rounded-lg font-bold text-sm transition shadow ${isClosed ? 'bg-white text-green-700 hover:bg-green-50' : 'bg-white text-red-700 hover:bg-red-50'}`}
           >
-            {isClosed ? '✅ Riapri' : '🔒 Chiudi Ora'}
+            {isClosed ? t('reopenNow') : t('closeNow')}
           </button>
         </div>
       </div>
@@ -438,8 +438,8 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
             </div>
             <p className="text-xs text-gray-600">
               {timerConfig.panini.enabled
-                ? `Visibili dalle ${timerConfig.panini.startHour}:00 (solo menu bar/banco)`
-                : 'Timer disabilitato - sempre visibili'
+                ? `${t('visibleFromHour')} ${timerConfig.panini.startHour}:00 (${t('onlyBarMenu')})`
+                : t('paniniTimerDisabledDesc')
               }
             </p>
           </div>
@@ -449,7 +449,7 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-xl">🛒</span>
-                <span className="font-medium text-gray-800">Takeaway</span>
+                <span className="font-medium text-gray-800">{t('takeaway')}</span>
               </div>
               <button
                 onClick={() => {
@@ -462,7 +462,7 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                 }}
                 className={`relative w-12 h-6 rounded-full transition-colors ${timerConfig.takeaway.enabled ? 'bg-green-500' : 'bg-gray-300'
                   }`}
-                title={timerConfig.takeaway.enabled ? 'Disabilita Takeaway' : 'Abilita Takeaway'}
+                title={timerConfig.takeaway.enabled ? t('disableTakeaway') : t('enableTakeaway')}
               >
                 <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${timerConfig.takeaway.enabled ? 'left-7' : 'left-1'
                   }`} />
@@ -476,15 +476,15 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                     ? 'bg-green-100 text-green-700'
                     : 'bg-yellow-100 text-yellow-700'
                 }`}>
-                {!timerConfig.takeaway.enabled ? 'DISATTIVO' : (takeawayStatus.isAvailable ? 'APERTO' : 'CHIUSO')}
+                {!timerConfig.takeaway.enabled ? t('inactiveBadge') : (takeawayStatus.isAvailable ? t('openBadge') : t('closedBadge'))}
               </span>
             </div>
 
             <p className="text-xs text-gray-600">
               {!timerConfig.takeaway.enabled
-                ? 'Servizio temporaneamente sospeso'
+                ? t('serviceTemporarilySuspended')
                 : timerConfig.takeaway.closedDays?.length > 0
-                  ? `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00 | Chiuso: ${timerConfig.takeaway.closedDays.map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label?.slice(0, 3)).join(', ')}`
+                  ? `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00 | ${t('closedLabel')} ${timerConfig.takeaway.closedDays.map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label?.slice(0, 3)).join(', ')}`
                   : `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00`
               }
             </p>
@@ -500,11 +500,13 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-blue-600" />
               <div className="text-left">
-                <span className="font-medium text-gray-800">Calendario Ordini Online</span>
+                <span className="font-medium text-gray-800">{t('onlineOrdersCalendar')}</span>
                 <p className="text-xs text-gray-500">
                   {closureConfig.enabled
-                    ? (isOnlineOrderingOpen(closureConfig).isOpen ? 'Aperto ora' : `Chiuso — ${isOnlineOrderingOpen(closureConfig).reason || ''}`)
-                    : 'Controllo calendario disabilitato'
+                    ? (isOnlineOrderingOpen(closureConfig).isOpen
+                      ? t('openNow')
+                      : `${t('closedBadge')} - ${isOnlineOrderingOpen(closureConfig).reason || ''}`)
+                    : t('calendarControlDisabled')
                   }
                 </p>
               </div>
@@ -549,7 +551,7 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                 : 'bg-red-500 text-white hover:bg-red-600'
             }`}
           >
-            {closureConfig.temporaryClosure.active ? '✅ Riapri' : '🔒 Chiudi Ora'}
+            {closureConfig.temporaryClosure.active ? t('reopenNow') : t('closeNow')}
           </button>
         </div>
         <div className="mt-2 text-right">
@@ -998,6 +1000,7 @@ interface ClosureConfigModalProps {
 }
 
 function ClosureConfigModal({ config, onClose, onSave }: ClosureConfigModalProps) {
+  const t = useTranslations('admin')
   const [localConfig, setLocalConfig] = useState<ClosureConfig>(config)
 
   const handleSave = () => {
@@ -1021,7 +1024,7 @@ function ClosureConfigModal({ config, onClose, onSave }: ClosureConfigModalProps
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-white rounded-xl overflow-hidden max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-bold">Calendario Ordini Online</h2>
+          <h2 className="text-lg font-bold">{t('onlineOrdersCalendar')}</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
             <X className="w-5 h-5" />
           </button>
@@ -1031,16 +1034,16 @@ function ClosureConfigModal({ config, onClose, onSave }: ClosureConfigModalProps
           {/* Live Status Preview */}
           <div className={`p-3 rounded-lg text-center text-sm font-medium ${orderingStatus.isOpen ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
             {orderingStatus.isOpen
-              ? 'Stato attuale: APERTO'
-              : `Stato attuale: CHIUSO — ${orderingStatus.reason || ''}${orderingStatus.nextOpenTime ? ` (Prossima apertura: ${orderingStatus.nextOpenTime})` : ''}`
+              ? t('currentStatusOpen')
+              : `${t('currentStatusClosed')} - ${orderingStatus.reason || ''}${orderingStatus.nextOpenTime ? ` (${t('nextOpeningLabel')} ${orderingStatus.nextOpenTime})` : ''}`
             }
           </div>
 
           {/* Master Switch */}
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-gray-900">Controllo Calendario</h3>
-              <p className="text-xs text-gray-500">Abilita/disabilita il controllo orario globale</p>
+              <h3 className="font-semibold text-gray-900">{t('calendarControl')}</h3>
+              <p className="text-xs text-gray-500">{t('calendarControlDescription')}</p>
             </div>
             <button
               onClick={() => setLocalConfig({ ...localConfig, enabled: !localConfig.enabled })}
@@ -1223,6 +1226,8 @@ interface TimerConfigModalProps {
 }
 
 function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
+  const t = useTranslations('admin')
+  const tc = useTranslations('common')
   const [localConfig, setLocalConfig] = useState<TimerConfig>(config)
 
   const handleSave = () => {
@@ -1266,7 +1271,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                 ) : (
                   <>
                     <ToggleLeft className="w-5 h-5" />
-                    <span className="text-sm">Disattivo</span>
+                    <span className="text-sm">{t('timerInactive')}</span>
                   </>
                 )}
               </button>
@@ -1396,14 +1401,11 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
 
             {localConfig.panini.enabled && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                <p className="text-sm text-gray-600">
-                  I panini saranno nascosti sul menu bar/banco prima dell'orario configurato.
-                  Sul menu takeaway (/ordina) sono sempre visibili.
-                </p>
+                <p className="text-sm text-gray-600">{t('paniniTimerDesc')}</p>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Visibili dalle ore
+                    {t('visibleFromHour')}
                   </label>
                   <select
                     value={localConfig.panini.startHour}
@@ -1423,7 +1425,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
 
             {!localConfig.panini.enabled && (
               <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
-                Timer disabilitato: i panini saranno sempre visibili su tutti i menu.
+                {t('paniniTimerDisabledDesc')}
               </p>
             )}
           </div>
@@ -1432,18 +1434,18 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
           <div className="space-y-4 border-t pt-6">
             <div className="flex items-center gap-2">
               <span className="text-2xl">🛒</span>
-              <h3 className="font-semibold text-gray-900">Servizio Takeaway</h3>
+              <h3 className="font-semibold text-gray-900">{t('takeawayService')}</h3>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4 space-y-4">
               {/* Master Toggle */}
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="font-medium text-gray-900">Takeaway Online (/ordina)</p>
+                  <p className="font-medium text-gray-900">{t('onlineTakeawayLabel')}</p>
                   <p className="text-sm text-gray-500">
                     {localConfig.takeaway.enabled
-                      ? 'I clienti possono ordinare online per il ritiro'
-                      : 'Servizio temporaneamente sospeso'}
+                      ? t('customersCanOrderOnline')
+                      : t('serviceTemporarilySuspended')}
                   </p>
                 </div>
                 <button
@@ -1464,10 +1466,10 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                   {/* Closed Days Selection */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Giorni di chiusura
+                      {t('closedDays')}
                     </label>
                     <p className="text-xs text-gray-500 mb-2">
-                      Seleziona i giorni in cui il ristorante è chiuso. Il takeaway non sarà disponibile in questi giorni.
+                      {t('closedDaysDescription')}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {DAYS_OF_WEEK.map((day) => {
@@ -1498,7 +1500,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                     </div>
                     {localConfig.takeaway.closedDays && localConfig.takeaway.closedDays.length > 0 && (
                       <p className="text-sm text-amber-600 mt-2">
-                        Chiuso: {localConfig.takeaway.closedDays
+                        {t('closedLabel')} {localConfig.takeaway.closedDays
                           .sort((a, b) => a - b)
                           .map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label)
                           .join(', ')}
@@ -1510,7 +1512,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Orario apertura
+                        {t('openingHour')}
                       </label>
                       <select
                         value={localConfig.takeaway.openingHour}
@@ -1528,7 +1530,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Orario chiusura
+                        {t('closingHour')}
                       </label>
                       <select
                         value={localConfig.takeaway.closingHour}
@@ -1546,7 +1548,10 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                   </div>
 
                   <p className="text-xs text-gray-500">
-                    I clienti potranno selezionare orari di ritiro compresi tra le {localConfig.takeaway.openingHour.toString().padStart(2, '0')}:00 e le {localConfig.takeaway.closingHour.toString().padStart(2, '0')}:00.
+                    {t('pickupHoursNotice', {
+                      opening: localConfig.takeaway.openingHour.toString().padStart(2, '0'),
+                      closing: localConfig.takeaway.closingHour.toString().padStart(2, '0')
+                    })}
                   </p>
                 </>
               )}
@@ -1554,7 +1559,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
               {!localConfig.takeaway.enabled && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <p className="text-sm text-amber-800">
-                    <strong>Takeaway disabilitato:</strong> I clienti che visitano /ordina vedranno un messaggio che indica che il servizio è temporaneamente sospeso.
+                    <strong>{t('takeawayDisabledLabel')}</strong> {t('takeawayDisabledNotice')}
                   </p>
                 </div>
               )}
@@ -1568,13 +1573,13 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
             onClick={onClose}
             className="flex-1 py-2 border rounded-lg hover:bg-gray-100"
           >
-            Annulla
+            {tc('cancel')}
           </button>
           <button
             onClick={handleSave}
             className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
-            Salva Configurazione
+            {t('saveConfig')}
           </button>
         </div>
       </div>
@@ -2463,7 +2468,7 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
       setShowAddForm(false)
     } catch (err) {
       console.error('Failed to create ingredient:', err)
-      alert('Errore nella creazione dell\'ingrediente')
+      alert(t('createIngredientError'))
     } finally {
       setCreating(false)
     }
@@ -2522,7 +2527,7 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
       setSubstitutePickerFor(null)
     } catch (err) {
       console.error('Failed to save substitute:', err)
-      alert('Errore nel salvataggio del sostituto')
+      alert(t('saveSubstituteError'))
     } finally {
       setSavingSubstitute(false)
     }
@@ -2554,18 +2559,18 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
           className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
         >
           <Plus className="w-4 h-4" />
-          Aggiungi Ingrediente
+          {t('addIngredient')}
         </button>
       </div>
 
       {/* Add Ingredient Form */}
       {showAddForm && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-          <h3 className="font-semibold text-green-800 mb-3">Nuovo Ingrediente</h3>
+          <h3 className="font-semibold text-green-800 mb-3">{t('newIngredientTitle')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nome (IT) *
+                {t('ingredientNameIt')}
               </label>
               <input
                 type="text"
@@ -2631,7 +2636,7 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
               className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              Crea Ingrediente
+              {t('createIngredient')}
             </button>
             <button
               onClick={() => {
@@ -2644,7 +2649,7 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
               }}
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
             >
-              Annulla
+              {tc('cancel')}
             </button>
           </div>
         </div>
@@ -2688,7 +2693,7 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
                         }}
                         className="ml-1 text-primary-500 hover:underline"
                       >
-                        modifica
+                        {tc('edit')}
                       </button>
                     </p>
                   )}
@@ -2700,7 +2705,7 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
                       }}
                       className="text-xs text-primary-500 hover:underline mt-0.5 block"
                     >
-                      + aggiungi sostituto
+                      {t('addSubstitute')}
                     </button>
                   )}
                 </div>
@@ -2778,23 +2783,23 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
       {substitutePickerFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Ingrediente esaurito</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">{t('outOfStockIngredientTitle')}</h3>
             <p className="text-gray-600 text-sm mb-4">
-              <strong>{substitutePickerFor.name}</strong> è stato segnato come esaurito.
-              Vuoi mostrare un ingrediente sostituto nella descrizione dei piatti?
+              {t('outOfStockIngredientPrompt', { name: substitutePickerFor.name })}
+
             </p>
             <select
               value={selectedSubstituteId}
               onChange={(e) => setSelectedSubstituteId(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm mb-4 focus:ring-2 focus:ring-primary-500"
             >
-              <option value="">Nessun sostituto</option>
+              <option value="">{t('noSubstitute')}</option>
               {ingredients
                 .filter(i => i.id !== substitutePickerFor.id)
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(i => (
                   <option key={i.id} value={i.id}>
-                    {i.name}{!i.inStock ? ' (esaurito)' : ''}
+                    {i.name}{!i.inStock ? ` (${t('outOfStock').toLowerCase()})` : ''}
                   </option>
                 ))}
             </select>
@@ -2803,14 +2808,14 @@ function IngredientsTab({ t, tc }: IngredientsTabProps) {
                 onClick={() => setSubstitutePickerFor(null)}
                 className="flex-1 px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition"
               >
-                Salta
+                {t('skip')}
               </button>
               <button
                 onClick={handleSaveSubstitute}
                 disabled={savingSubstitute}
                 className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600 disabled:opacity-50 transition"
               >
-                {savingSubstitute ? 'Salvataggio...' : 'Salva sostituto'}
+                {savingSubstitute ? t('saving') : t('saveSubstitute')}
               </button>
             </div>
           </div>
@@ -3751,3 +3756,6 @@ function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
     </div>
   )
 }
+
+
+
