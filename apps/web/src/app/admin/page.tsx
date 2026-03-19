@@ -218,10 +218,10 @@ export default function AdminPage() {
         rightSlot={
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
+            className="p-2 text-white hover:bg-white/10 rounded-lg transition"
+            title={t('logout')}
           >
-            <LogOut className="w-4 h-4" />
-            {t('logout')}
+            <LogOut className="w-5 h-5" />
           </button>
         }
       />
