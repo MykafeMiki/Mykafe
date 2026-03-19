@@ -78,7 +78,13 @@ export default function HomePage() {
   }
 
   if (!isAuthenticated) {
-    return <HomeLoginScreen onLogin={() => setIsAuthenticated(true)} t={tl} brand={tc("brand")} />;
+    return (
+      <HomeLoginScreen
+        onLogin={() => setIsAuthenticated(true)}
+        t={tl}
+        brand={tc("brand")}
+      />
+    );
   }
 
   const menuItems = [
@@ -141,29 +147,25 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <AppHeader
-            brand={tc("brand")}
-            description={t("subtitle")}
-            className="bg-transparent text-gray-900 p-0"
-            titleClassName="text-3xl"
-            descriptionClassName="text-gray-500 mt-1"
-            rightSlot={
-              <div className="flex items-center gap-3">
-                <LanguageSelectorCompact />
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                  title={tl("logout") || "Logout"}
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
-              </div>
-            }
-          />
-        </div>
-      </header>
+      <AppHeader
+        brand={tc("brand")}
+        title={t("title")}
+        description={t("subtitle")}
+        className="bg-primary-500"
+        descriptionClassName="text-primary-100"
+        rightSlot={
+          <div className="flex items-center gap-3">
+            <LanguageSelectorCompact />
+            <button
+              onClick={handleLogout}
+              className="p-2 text-white hover:bg-white/10 rounded-lg transition"
+              title={tl("logout") || "Logout"}
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
+        }
+      />
 
       {/* Main Menu Grid */}
       <main className="max-w-4xl mx-auto px-4 py-8 min-h-[calc(100vh-180px)]">
