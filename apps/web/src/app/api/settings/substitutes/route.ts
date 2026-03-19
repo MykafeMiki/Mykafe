@@ -35,6 +35,9 @@ export async function PUT(request: NextRequest) {
   try {
     const supabase = getSupabase()
     const body = await request.json()
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Invalid substitutes payload' }, { status: 400 })
+    }
 
     const { error } = await supabase
       .from('AppSettings')
