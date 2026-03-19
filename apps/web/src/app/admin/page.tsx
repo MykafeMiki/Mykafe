@@ -73,11 +73,42 @@ export default function AdminPage() {
   const [closureBannerConfig, setClosureBannerConfig] = useState<ClosureConfig>(DEFAULT_CLOSURE_CONFIG)
   const [showClosureBannerModal, setShowClosureBannerModal] = useState(false)
 
-  // Check auth on mount - TEMPORARILY BYPASSED
+  // Check auth on mount
   useEffect(() => {
-    // TODO: Re-enable auth once Supabase Edge Functions password is configured
-    setIsAuthenticated(true)
-    setLoading(false)
+    let cancelled = false
+
+    const checkAuth = async () => {
+      const token = getAuthToken()
+      if (!token) {
+        if (!cancelled) {
+          setIsAuthenticated(false)
+          setLoading(false)
+        }
+        return
+      }
+
+      try {
+        await verifyToken()
+        if (!cancelled) {
+          setIsAuthenticated(true)
+        }
+      } catch {
+        setAuthToken(null)
+        if (!cancelled) {
+          setIsAuthenticated(false)
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    checkAuth()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
