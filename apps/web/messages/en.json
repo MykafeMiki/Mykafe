@@ -29,7 +29,8 @@
     "unavailable": "Unavailable",
     "active": "Active",
     "inactive": "Inactive",
-    "hidden": "Hidden"
+    "hidden": "Hidden",
+    "brand": "MyKafe"
   },
   "language": {
     "select": "Language",

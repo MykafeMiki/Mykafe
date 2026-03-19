@@ -29,7 +29,8 @@
     "unavailable": "לא זמין",
     "active": "פעיל",
     "inactive": "לא פעיל",
-    "hidden": "מוסתר"
+    "hidden": "מוסתר",
+    "brand": "MyKafe"
   },
   "language": {
     "select": "שפה",

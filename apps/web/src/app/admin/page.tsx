@@ -2953,7 +2953,7 @@ function QRTab({ tables, t, tc }: QRTabProps) {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>QR Codes - MyKafe</title>
+        <title>QR Codes - ${tc('brand')}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
           .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
@@ -2967,7 +2967,7 @@ function QRTab({ tables, t, tc }: QRTabProps) {
         </style>
       </head>
       <body>
-        <h1 style="text-align: center; margin-bottom: 30px;">MyKafe - QR Codes</h1>
+        <h1 style="text-align: center; margin-bottom: 30px;">${tc('brand')} - QR Codes</h1>
         <div class="grid">
           ${qrCodes.map(qr => `
             <div class="qr-card">

@@ -20,6 +20,7 @@ import { adminLogin, verifyToken, setAuthToken, getAuthToken } from "@/lib/api";
 
 export default function HomePage() {
   const t = useTranslations("home");
+  const tc = useTranslations("common");
   const tl = useTranslations("login");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -45,7 +46,7 @@ export default function HomePage() {
   }
 
   if (!isAuthenticated) {
-    return <HomeLoginScreen onLogin={() => setIsAuthenticated(true)} t={tl} />;
+    return <HomeLoginScreen onLogin={() => setIsAuthenticated(true)} t={tl} brand={tc("brand")} />;
   }
 
   const menuItems = [
@@ -111,7 +112,7 @@ export default function HomePage() {
       <header className="bg-white shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">MyKafe</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{tc("brand")}</h1>
             <p className="text-gray-500 mt-1">{t("subtitle")}</p>
           </div>
           <div className="flex items-center gap-3">
@@ -170,7 +171,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="max-w-4xl mx-auto px-4 py-6 text-center text-gray-400 text-sm">
-        MyKafe &copy; {new Date().getFullYear()}
+        {tc("brand")} &copy; {new Date().getFullYear()}
       </footer>
     </div>
   );
@@ -181,9 +182,10 @@ export default function HomePage() {
 interface HomeLoginScreenProps {
   onLogin: () => void;
   t: ReturnType<typeof useTranslations<"login">>;
+  brand: string;
 }
 
-function HomeLoginScreen({ onLogin, t }: HomeLoginScreenProps) {
+function HomeLoginScreen({ onLogin, t, brand }: HomeLoginScreenProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -214,7 +216,7 @@ function HomeLoginScreen({ onLogin, t }: HomeLoginScreenProps) {
             <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">MyKafe</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{brand}</h1>
             <p className="text-gray-500 mt-1">{t("enterPassword")}</p>
           </div>
 

@@ -410,7 +410,7 @@ export default function MenuPage() {
         <header className="bg-primary-500 text-white p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold">MyKafe</h1>
+              <h1 className="text-xl font-bold">{tc('brand')}</h1>
               {tableNumber && (
                 <p className="text-primary-100">{t('table')} {tableNumber}</p>
               )}
@@ -508,7 +508,7 @@ export default function MenuPage() {
                 <span>{tc('back')}</span>
               </button>
               <div>
-                <h1 className="text-xl font-bold">MyKafe</h1>
+                <h1 className="text-xl font-bold">{tc('brand')}</h1>
                 {tableNumber && (
                   <p className="text-primary-100">{t('table')} {tableNumber}</p>
                 )}
@@ -578,7 +578,7 @@ export default function MenuPage() {
                 <span>{tc('back')}</span>
               </button>
               <div>
-                <h1 className="text-xl font-bold">MyKafe</h1>
+                <h1 className="text-xl font-bold">{tc('brand')}</h1>
                 {tableNumber && (
                   <p className="text-primary-100">{t('table')} {tableNumber}</p>
                 )}
@@ -653,7 +653,7 @@ export default function MenuPage() {
                 <span>{tc('back')}</span>
               </button>
               <div>
-                <h1 className="text-xl font-bold">MyKafe</h1>
+                <h1 className="text-xl font-bold">{tc('brand')}</h1>
                 {tableNumber && (
                   <p className="text-primary-100">{t('table')} {tableNumber}</p>
                 )}
@@ -725,7 +725,7 @@ export default function MenuPage() {
         <header className="bg-red-500 text-white p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold">MyKafe</h1>
+              <h1 className="text-xl font-bold">{tc('brand')}</h1>
               {tableNumber && (
                 <p className="text-red-100">{t('table')} {tableNumber}</p>
               )}
@@ -777,7 +777,7 @@ export default function MenuPage() {
                 <span>{tc('back')}</span>
               </button>
               <div>
-                <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
+                <h1 className="text-2xl font-display font-semibold italic">{tc('brand')}</h1>
                 {tableNumber !== null && tableNumber > 0 && (
                   <p className="text-primary-100">{t('table')} {tableNumber}</p>
                 )}
@@ -833,7 +833,7 @@ export default function MenuPage() {
                 <span>{tc('back')}</span>
             </button>
             <div>
-              <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
+              <h1 className="text-2xl font-display font-semibold italic">{tc('brand')}</h1>
               {tableNumber !== null && tableNumber > 0 && (
                 <p className="text-primary-100">
                   {t('table')} {tableNumber}

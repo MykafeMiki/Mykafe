@@ -226,7 +226,7 @@ export default function OrdinaPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+              <h1 className="text-xl font-bold">{tc('brand')} - {t('title')}</h1>
             </div>
             <LanguageSelectorCompact />
           </div>
@@ -295,7 +295,7 @@ export default function OrdinaPage() {
               </button>
               <div className="flex items-center gap-2">
                 <ShoppingBag className="w-6 h-6" />
-                <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+                <h1 className="text-xl font-bold">{tc('brand')} - {t('title')}</h1>
               </div>
             </div>
             <LanguageSelectorCompact />
@@ -413,7 +413,7 @@ export default function OrdinaPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+              <h1 className="text-xl font-bold">{tc('brand')} - {t('title')}</h1>
             </div>
             <LanguageSelectorCompact />
           </div>
@@ -490,7 +490,7 @@ export default function OrdinaPage() {
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-6 h-6" />
               <div>
-                <h1 className="text-xl font-bold">MyKafe</h1>
+                <h1 className="text-xl font-bold">{tc('brand')}</h1>
                 <p className="text-orange-100 text-sm">{t('subtitle')}</p>
               </div>
             </div>

@@ -216,7 +216,7 @@ export default function BancoPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Store className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
+              <h1 className="text-xl font-bold">{tc('brand')} - {t('title')}</h1>
             </div>
             <LanguageSelectorCompact />
           </div>
@@ -285,7 +285,7 @@ export default function BancoPage() {
               </button>
               <div className="flex items-center gap-2">
                 <Store className="w-6 h-6" />
-                <h1 className="text-xl font-bold">MyKafe</h1>
+                <h1 className="text-xl font-bold">{tc('brand')}</h1>
               </div>
             </div>
             <LanguageSelectorCompact />
@@ -355,7 +355,7 @@ export default function BancoPage() {
               </button>
               <div className="flex items-center gap-2">
                 <Store className="w-6 h-6" />
-                <h1 className="text-xl font-bold">MyKafe</h1>
+                <h1 className="text-xl font-bold">{tc('brand')}</h1>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -403,7 +403,7 @@ export default function BancoPage() {
             </button>
             <div className="flex items-center gap-2">
               <Store className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe</h1>
+              <h1 className="text-xl font-bold">{tc('brand')}</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
