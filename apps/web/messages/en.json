@@ -83,7 +83,13 @@
     "pickupConfirmation": "We'll see you {time}",
     "onlineClosedTitle": "Online orders closed",
     "onlineClosedFallback": "Online ordering is currently unavailable.",
-    "nextOpeningLabel": "Next opening:"
+    "nextOpeningLabel": "Next opening:",
+    "onlineReasonMenuDisabled": "Online ordering is disabled.",
+    "onlineReasonTemporaryClosure": "Temporarily closed.",
+    "onlineReasonClosedToday": "Closed today.",
+    "onlineReasonNotOpenYet": "Not open yet.",
+    "onlineReasonClosedForToday": "Closed for today.",
+    "onlineReasonClosed": "Closed."
   },
   "banco": {
     "title": "Order at Counter",
@@ -160,7 +166,8 @@
     "total": "Total",
     "confirmOrder": "Confirm order",
     "viewCart": "View cart",
-    "orderButton": "Order"
+    "orderButton": "Order",
+    "pickupNote": "Pickup: {date} at {time}"
   },
   "menuItem": {
     "addToCart": "Add",
@@ -373,7 +380,13 @@
     "currentStatusClosed": "Current status: CLOSED",
     "calendarControl": "Calendar control",
     "calendarControlDescription": "Enable/disable global schedule control",
-    "nextOpeningLabel": "Next opening:"
+    "nextOpeningLabel": "Next opening:",
+    "onlineReasonMenuDisabled": "Online ordering is disabled.",
+    "onlineReasonTemporaryClosure": "Temporarily closed.",
+    "onlineReasonClosedToday": "Closed today.",
+    "onlineReasonNotOpenYet": "Not open yet.",
+    "onlineReasonClosedForToday": "Closed for today.",
+    "onlineReasonClosed": "Closed."
   },
   "cassa": {
     "title": "Cashier",

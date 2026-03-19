@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image as ImageIcon, Loader2, Lock, LogOut, Download, Printer, Clock, Timer, BarChart3, DollarSign, Save, Check, Users, RefreshCw, Calendar } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
 import { AppHeader } from '@/components/AppHeader'
 import { getIngredientSubstitutes, setIngredientSubstitute } from '@/lib/ingredientSubstitutes'
@@ -60,10 +60,18 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprj
 
 type Tab = 'menu' | 'ingredients' | 'tables' | 'qr' | 'reports' | 'prices'
 
+function formatWeekday(day: number, locale: string, style: 'long' | 'short' = 'long'): string {
+  const base = new Date('2024-01-07T12:00:00') // Sunday
+  const date = new Date(base)
+  date.setDate(base.getDate() + day)
+  return new Intl.DateTimeFormat(locale, { weekday: style }).format(date)
+}
+
 export default function AdminPage() {
   const t = useTranslations('admin')
   const tc = useTranslations('common')
   const tl = useTranslations('login')
+  const locale = useLocale()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('menu')
   const [categories, setCategories] = useState<Category[]>([])
@@ -174,6 +182,27 @@ export default function AdminPage() {
 
   const isClosed = closureBannerConfig.temporaryClosure.active
 
+  const getOrderingReasonText = (status: ReturnType<typeof isOnlineOrderingOpen>) => {
+    if (status.reason) return status.reason
+
+    switch (status.reasonKey) {
+      case 'menu_disabled':
+        return t('onlineReasonMenuDisabled')
+      case 'temporary_closure':
+        return t('onlineReasonTemporaryClosure')
+      case 'closed_today':
+        return t('onlineReasonClosedToday')
+      case 'not_open_yet':
+        return t('onlineReasonNotOpenYet')
+      case 'closed_for_today':
+        return t('onlineReasonClosedForToday')
+      case 'closed':
+        return t('onlineReasonClosed')
+      default:
+        return t('serviceTemporarilySuspended')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -230,6 +259,7 @@ export default function AdminPage() {
       {showClosureBannerModal && (
         <ClosureConfigModal
           config={closureBannerConfig}
+          locale={locale}
           onClose={() => setShowClosureBannerModal(false)}
           onSave={(newConfig) => {
             setClosureBannerConfig(newConfig)
@@ -334,6 +364,7 @@ interface MenuTabProps {
 }
 
 function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
+  const locale = useLocale()
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [showItemModal, setShowItemModal] = useState(false)
   const [showTimerModal, setShowTimerModal] = useState(false)
@@ -415,9 +446,30 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
   const takeawayStatus = getTakeawayStatus()
   const isInSushiWindow = isSushiTimeActive()
 
+  const getOrderingReasonText = (status: ReturnType<typeof isOnlineOrderingOpen>) => {
+    if (status.reason) return status.reason
+
+    switch (status.reasonKey) {
+      case 'menu_disabled':
+        return t('onlineReasonMenuDisabled')
+      case 'temporary_closure':
+        return t('onlineReasonTemporaryClosure')
+      case 'closed_today':
+        return t('onlineReasonClosedToday')
+      case 'not_open_yet':
+        return t('onlineReasonNotOpenYet')
+      case 'closed_for_today':
+        return t('onlineReasonClosedForToday')
+      case 'closed':
+        return t('onlineReasonClosed')
+      default:
+        return t('serviceTemporarilySuspended')
+    }
+  }
+
   // Get day names for display
-  const getStartDayName = () => DAYS_OF_WEEK.find(d => d.value === timerConfig.sushi.startDay)?.label || ''
-  const getEndDayName = () => DAYS_OF_WEEK.find(d => d.value === timerConfig.sushi.endDay)?.label || ''
+  const getStartDayName = () => formatWeekday(timerConfig.sushi.startDay, locale, 'short')
+  const getEndDayName = () => formatWeekday(timerConfig.sushi.endDay, locale, 'short')
 
   return (
     <div className="space-y-6">
@@ -518,7 +570,7 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
               {!timerConfig.takeaway.enabled
                 ? t('serviceTemporarilySuspended')
                 : timerConfig.takeaway.closedDays?.length > 0
-                  ? `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00 | ${t('closedLabel')} ${timerConfig.takeaway.closedDays.map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label?.slice(0, 3)).join(', ')}`
+                  ? `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00 | ${t('closedLabel')} ${timerConfig.takeaway.closedDays.map(d => formatWeekday(d, locale, 'short')).join(', ')}`
                   : `${timerConfig.takeaway.openingHour}:00-${timerConfig.takeaway.closingHour}:00`
               }
             </p>
@@ -537,9 +589,9 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                 <span className="font-medium text-gray-800">{t('onlineOrdersCalendar')}</span>
                 <p className="text-xs text-gray-500">
                   {closureConfig.enabled
-                    ? (isOnlineOrderingOpen(closureConfig).isOpen
+                    ? (isOnlineOrderingOpen(closureConfig, locale).isOpen
                       ? t('openNow')
-                      : `${t('closedBadge')} - ${isOnlineOrderingOpen(closureConfig).reason || ''}`)
+                      : `${t('closedBadge')} - ${getOrderingReasonText(isOnlineOrderingOpen(closureConfig, locale))}`)
                     : t('calendarControlDisabled')
                   }
                 </p>
@@ -1013,6 +1065,7 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
       {showClosureModal && (
         <ClosureConfigModal
           config={closureConfig}
+          locale={locale}
           onClose={() => setShowClosureModal(false)}
           onSave={(newConfig) => {
             setClosureConfig(newConfig)
@@ -1029,11 +1082,12 @@ function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
 
 interface ClosureConfigModalProps {
   config: ClosureConfig
+  locale: string
   onClose: () => void
   onSave: (config: ClosureConfig) => void
 }
 
-function ClosureConfigModal({ config, onClose, onSave }: ClosureConfigModalProps) {
+function ClosureConfigModal({ config, locale, onClose, onSave }: ClosureConfigModalProps) {
   const t = useTranslations('admin')
   const [localConfig, setLocalConfig] = useState<ClosureConfig>(config)
 
@@ -1051,7 +1105,27 @@ function ClosureConfigModal({ config, onClose, onSave }: ClosureConfigModalProps
     })
   }
 
-  const orderingStatus = isOnlineOrderingOpen(localConfig)
+  const orderingStatus = isOnlineOrderingOpen(localConfig, locale)
+  const orderingReasonText = (() => {
+    if (orderingStatus.reason) return orderingStatus.reason
+
+    switch (orderingStatus.reasonKey) {
+      case 'menu_disabled':
+        return t('onlineReasonMenuDisabled')
+      case 'temporary_closure':
+        return t('onlineReasonTemporaryClosure')
+      case 'closed_today':
+        return t('onlineReasonClosedToday')
+      case 'not_open_yet':
+        return t('onlineReasonNotOpenYet')
+      case 'closed_for_today':
+        return t('onlineReasonClosedForToday')
+      case 'closed':
+        return t('onlineReasonClosed')
+      default:
+        return t('serviceTemporarilySuspended')
+    }
+  })()
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1069,7 +1143,7 @@ function ClosureConfigModal({ config, onClose, onSave }: ClosureConfigModalProps
           <div className={`p-3 rounded-lg text-center text-sm font-medium ${orderingStatus.isOpen ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
             {orderingStatus.isOpen
               ? t('currentStatusOpen')
-              : `${t('currentStatusClosed')} - ${orderingStatus.reason || ''}${orderingStatus.nextOpenTime ? ` (${t('nextOpeningLabel')} ${orderingStatus.nextOpenTime})` : ''}`
+              : `${t('currentStatusClosed')} - ${orderingReasonText}${orderingStatus.nextOpenTime ? ` (${t('nextOpeningLabel')} ${orderingStatus.nextOpenTime})` : ''}`
             }
           </div>
 
@@ -1118,7 +1192,7 @@ function ClosureConfigModal({ config, onClose, onSave }: ClosureConfigModalProps
                       >
                         {daySchedule.enabled ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
                       </button>
-                      <span className="font-medium text-gray-800 w-20 text-sm">{day.label}</span>
+                      <span className="font-medium text-gray-800 w-20 text-sm">{formatWeekday(day.value, locale, 'short')}</span>
                       {daySchedule.enabled ? (
                         <div className="flex items-center gap-2 flex-1">
                           <select
@@ -1262,6 +1336,7 @@ interface TimerConfigModalProps {
 function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
   const t = useTranslations('admin')
   const tc = useTranslations('common')
+  const locale = useLocale()
   const [localConfig, setLocalConfig] = useState<TimerConfig>(config)
 
   const handleSave = () => {
@@ -1332,7 +1407,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
                       {DAYS_OF_WEEK.map(day => (
-                        <option key={day.value} value={day.value}>{day.label}</option>
+                        <option key={day.value} value={day.value}>{formatWeekday(day.value, locale)}</option>
                       ))}
                     </select>
                   </div>
@@ -1370,7 +1445,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
                       {DAYS_OF_WEEK.map(day => (
-                        <option key={day.value} value={day.value}>{day.label}</option>
+                        <option key={day.value} value={day.value}>{formatWeekday(day.value, locale)}</option>
                       ))}
                     </select>
                   </div>
@@ -1527,7 +1602,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                                 : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
                               }`}
                           >
-                            {isSelected ? '✕ ' : ''}{day.label}
+                            {isSelected ? '✕ ' : ''}{formatWeekday(day.value, locale)}
                           </button>
                         )
                       })}
@@ -1536,7 +1611,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
                       <p className="text-sm text-amber-600 mt-2">
                         {t('closedLabel')} {localConfig.takeaway.closedDays
                           .sort((a, b) => a - b)
-                          .map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label)
+                          .map(d => formatWeekday(d, locale))
                           .join(', ')}
                       </p>
                     )}
@@ -3175,6 +3250,7 @@ interface ReportsTabProps {
 }
 
 function ReportsTab({ t, tc }: ReportsTabProps) {
+  const locale = useLocale()
   const [period, setPeriod] = useState<'week' | 'month'>('week')
   const [topProducts, setTopProducts] = useState<TopProductsReport | null>(null)
   const [peakHours, setPeakHours] = useState<PeakHoursReport | null>(null)
@@ -3203,7 +3279,7 @@ function ReportsTab({ t, tc }: ReportsTabProps) {
   }, [loadReports])
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'EUR'
     }).format(amount / 100) // Convert cents to euros

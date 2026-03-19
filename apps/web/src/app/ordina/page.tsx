@@ -12,7 +12,7 @@ import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { AppHeader } from '@/components/AppHeader'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
-import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig } from '@/lib/menuTimers'
+import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig, type OnlineOrderingReasonKey } from '@/lib/menuTimers'
 import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
@@ -62,7 +62,7 @@ export default function OrdinaPage() {
   const locale = useLocale()
 
   const [takeawayStatus, setTakeawayStatus] = useState<ReturnType<typeof getTakeawayStatus> | null>(null)
-  const [orderingStatus, setOrderingStatus] = useState<{ isOpen: boolean; reason?: string; nextOpenTime?: string }>({ isOpen: true })
+  const [orderingStatus, setOrderingStatus] = useState<{ isOpen: boolean; reasonKey?: OnlineOrderingReasonKey; reason?: string; nextOpenTime?: string }>({ isOpen: true })
   const [step, setStep] = useState<OrderStep>('payment')
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTime, setSelectedTime] = useState<string>('')
@@ -146,13 +146,34 @@ export default function OrdinaPage() {
     fetchClosureConfig()
       .then(config => {
         try {
-          setOrderingStatus(isOnlineOrderingOpen(config))
+          setOrderingStatus(isOnlineOrderingOpen(config, locale))
         } catch (e) {
           console.error('isOnlineOrderingOpen error:', e)
         }
       })
       .catch(e => console.error('fetchClosureConfig error:', e))
-  }, [loading])
+  }, [loading, locale])
+
+  const getOrderingClosedReason = () => {
+    if (orderingStatus.reason) return orderingStatus.reason
+
+    switch (orderingStatus.reasonKey) {
+      case 'menu_disabled':
+        return t('onlineReasonMenuDisabled')
+      case 'temporary_closure':
+        return t('onlineReasonTemporaryClosure')
+      case 'closed_today':
+        return t('onlineReasonClosedToday')
+      case 'not_open_yet':
+        return t('onlineReasonNotOpenYet')
+      case 'closed_for_today':
+        return t('onlineReasonClosedForToday')
+      case 'closed':
+        return t('onlineReasonClosed')
+      default:
+        return t('onlineClosedFallback')
+    }
+  }
 
   useEffect(() => {
     if (selectedDate && selectedTime) {
@@ -241,7 +262,7 @@ export default function OrdinaPage() {
               {t('onlineClosedTitle')}
             </h2>
             <p className="text-gray-600 mb-4">
-              {orderingStatus.reason || t('onlineClosedFallback')}
+              {getOrderingClosedReason()}
             </p>
             {orderingStatus.nextOpenTime && (
               <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">

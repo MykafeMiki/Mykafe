@@ -83,7 +83,13 @@
     "pickupConfirmation": "Ti aspettiamo {time}",
     "onlineClosedTitle": "Ordini online chiusi",
     "onlineClosedFallback": "Il servizio di ordini online non e attualmente disponibile.",
-    "nextOpeningLabel": "Prossima apertura:"
+    "nextOpeningLabel": "Prossima apertura:",
+    "onlineReasonMenuDisabled": "Ordini online disattivati.",
+    "onlineReasonTemporaryClosure": "Chiusura temporanea.",
+    "onlineReasonClosedToday": "Chiuso oggi.",
+    "onlineReasonNotOpenYet": "Non ancora aperto.",
+    "onlineReasonClosedForToday": "Chiuso per oggi.",
+    "onlineReasonClosed": "Chiuso."
   },
   "banco": {
     "title": "Ordina al Banco",
@@ -161,6 +167,7 @@
     "confirmOrder": "Conferma ordine",
     "viewCart": "Vedi carrello",
     "orderButton": "Ordina",
+    "pickupNote": "Ritiro: {date} alle {time}",
     "date": "Giorno",
     "time": "Ora",
     "selectDate": "Seleziona giorno",
@@ -380,7 +387,13 @@
     "currentStatusClosed": "Stato attuale: CHIUSO",
     "calendarControl": "Controllo calendario",
     "calendarControlDescription": "Abilita/disabilita il controllo orario globale",
-    "nextOpeningLabel": "Prossima apertura:"
+    "nextOpeningLabel": "Prossima apertura:",
+    "onlineReasonMenuDisabled": "Ordini online disattivati.",
+    "onlineReasonTemporaryClosure": "Chiusura temporanea.",
+    "onlineReasonClosedToday": "Chiuso oggi.",
+    "onlineReasonNotOpenYet": "Non ancora aperto.",
+    "onlineReasonClosedForToday": "Chiuso per oggi.",
+    "onlineReasonClosed": "Chiuso."
   },
   "cassa": {
     "title": "Cassa",

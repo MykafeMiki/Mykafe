@@ -6,15 +6,24 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+function getActiveLocale(): string {
+  if (typeof document === 'undefined') return 'it-IT'
+  const localeCookie = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('locale='))
+    ?.split('=')[1]
+  return localeCookie || 'it-IT'
+}
+
 export function formatPrice(cents: number): string {
-  return new Intl.NumberFormat('it-IT', {
+  return new Intl.NumberFormat(getActiveLocale(), {
     style: 'currency',
     currency: 'EUR',
   }).format(cents / 100)
 }
 
 export function formatTime(date: Date): string {
-  return new Intl.DateTimeFormat('it-IT', {
+  return new Intl.DateTimeFormat(getActiveLocale(), {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date)

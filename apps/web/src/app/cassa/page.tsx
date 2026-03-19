@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { CreditCard, Lock, Loader2, RefreshCw, ArrowLeft, Banknote, CreditCard as CardIcon, Check, Clock, User, ShoppingBag } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { AppHeader } from '@/components/AppHeader'
 import { formatPrice } from '@/lib/utils'
 import {
@@ -69,6 +69,7 @@ interface CassaContentProps {
 
 function CassaContent({ t }: CassaContentProps) {
   const tc = useTranslations('common')
+  const locale = useLocale()
   const [view, setView] = useState<View>('tables')
   const [tables, setTables] = useState<TableWithOrders[]>([])
   const [takeawayOrders, setTakeawayOrders] = useState<Order[]>([])
@@ -152,7 +153,7 @@ function CassaContent({ t }: CassaContentProps) {
   }
 
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('it-IT', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'EUR'
     }).format(cents / 100)
@@ -293,7 +294,7 @@ function CassaContent({ t }: CassaContentProps) {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <div className="text-sm text-gray-500">
-                          {new Date(order.createdAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(order.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                         </div>
                         {order.customerName && (
                           <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Volume2, VolumeX, RefreshCw, Lock, Loader2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { AppHeader } from '@/components/AppHeader'
 import { OrderCard } from '@/components/kitchen/OrderCard'
 import { getActiveOrders, updateOrderStatus, verifyToken, adminLogin, setAuthToken, getAuthToken } from '@/lib/api'
@@ -12,6 +12,7 @@ export default function KitchenPage() {
   const t = useTranslations('kitchen')
   const tc = useTranslations('common')
   const tl = useTranslations('login')
+  const locale = useLocale()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [orders, setOrders] = useState<Order[]>([])
@@ -182,7 +183,7 @@ export default function KitchenPage() {
       <AppHeader
         brand={tc('brand')}
         title={t('title')}
-        description={`${t('lastUpdate')}: ${lastUpdate.toLocaleTimeString('it-IT', {
+        description={`${t('lastUpdate')}: ${lastUpdate.toLocaleTimeString(locale, {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
