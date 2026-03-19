@@ -67,7 +67,7 @@ export function AppHeader({
                 <button
                   onClick={onBack}
                   type="button"
-                  className="p-2 rounded-full hover:bg-primary-400 transition"
+                  className="p-2 rounded-full text-white/90 hover:bg-white/15 transition"
                   aria-label={backAriaLabel}
                 >
                   <ArrowLeft className="w-5 h-5" />
