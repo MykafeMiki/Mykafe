@@ -148,8 +148,8 @@ export default function MenuPage() {
             : getTableSessionByTable(table.number).catch(() => null)
         ])
 
-        // Set customers
-        setExistingCustomers(customers || [])
+        // Set customers (defensive: backend can return non-array payloads)
+        setExistingCustomers(Array.isArray(customers) ? customers : [])
 
         // Set session
         if (existingSession) {
@@ -620,6 +620,14 @@ export default function MenuPage() {
   if (step === 'join-group' && tableSession) {
     // Tavoli del gruppo da mostrare: tutti i linked, escluso il tavolo corrente
     const otherGroupTables = tableSession.linkedTables.filter(n => n !== tableNumber)
+    const currentCustomerName = customerName.trim()
+    const rawHostName = (tableSession.hostCustomerName ?? '').trim()
+    const fallbackHostName = (Array.isArray(existingCustomers) ? existingCustomers : [])
+      .find((customer) => customer.isHost)?.name?.trim() ?? ''
+    const resolvedHostName = ['null', 'undefined', '-'].includes(rawHostName.toLowerCase())
+      ? fallbackHostName
+      : (rawHostName || fallbackHostName)
+    const hostName = currentCustomerName || resolvedHostName
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -638,8 +646,8 @@ export default function MenuPage() {
                 <Users className="w-8 h-8 text-orange-600" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {tableSession.hostCustomerName
-                  ? t('areYouWith', { name: tableSession.hostCustomerName })
+                {hostName
+                  ? t('areYouWith', { name: hostName })
                   : t('groupExists')}
               </h2>
               <p className="text-gray-600 mt-2">
