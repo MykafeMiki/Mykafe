@@ -10,6 +10,7 @@ import type { Order, OrderStatus } from '@shared/types'
 
 export default function KitchenPage() {
   const t = useTranslations('kitchen')
+  const th = useTranslations('home')
   const tc = useTranslations('common')
   const tl = useTranslations('login')
   const locale = useLocale()
@@ -182,12 +183,8 @@ export default function KitchenPage() {
     <div className="min-h-screen bg-gray-900">
       <AppHeader
         brand={tc('brand')}
-        title={t('title')}
-        description={`${t('lastUpdate')}: ${lastUpdate.toLocaleTimeString(locale, {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })}`}
+        title={th('kitchen')}
+        description={th('kitchenDesc')}
         className="bg-gray-800"
         descriptionClassName="text-gray-400"
         rightSlot={(

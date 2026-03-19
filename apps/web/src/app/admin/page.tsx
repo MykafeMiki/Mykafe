@@ -69,6 +69,7 @@ function formatWeekday(day: number, locale: string, style: 'long' | 'short' = 'l
 
 export default function AdminPage() {
   const t = useTranslations('admin')
+  const th = useTranslations('home')
   const tc = useTranslations('common')
   const tl = useTranslations('login')
   const locale = useLocale()
@@ -208,8 +209,8 @@ export default function AdminPage() {
       {/* Header */}
       <AppHeader
         brand={tc('brand')}
-        title={t('title')}
-        description={t('subtitle')}
+        title={th('admin')}
+        description={th('adminDesc')}
         className="bg-gray-800 text-white p-4"
         titleClassName="text-2xl"
         descriptionClassName="text-gray-400"

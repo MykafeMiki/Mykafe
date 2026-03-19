@@ -23,6 +23,7 @@ type PageStep = 'enter-name' | 'choice' | 'merge-input' | 'join-group' | 'blocke
 
 export default function MenuPage() {
   const t = useTranslations('tableMenu')
+  const th = useTranslations('home')
   const tc = useTranslations('common')
   const locale = useLocale()
   const params = useParams()
@@ -410,7 +411,8 @@ export default function MenuPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          title={th('table')}
+          description={th('tableDesc')}
           rightSlot={<LanguageSelectorCompact />}
         />
 
@@ -500,7 +502,8 @@ export default function MenuPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          title={th('table')}
+          description={th('tableDesc')}
           onBack={() => setStep('enter-name')}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -557,7 +560,8 @@ export default function MenuPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          title={th('table')}
+          description={th('tableDesc')}
           onBack={() => setStep('choice')}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -633,7 +637,8 @@ export default function MenuPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          title={th('table')}
+          description={th('tableDesc')}
           onBack={() => setStep('enter-name')}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -700,7 +705,8 @@ export default function MenuPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          description={tableNumber ? `${t('table')} ${tableNumber}` : undefined}
+          title={th('table')}
+          description={th('tableDesc')}
           rightSlot={<LanguageSelectorCompact />}
           className="bg-red-500"
           descriptionClassName="text-red-100"
@@ -740,7 +746,8 @@ export default function MenuPage() {
         {/* Header — sticky, non sparisce scrollando */}
                 <AppHeader
           brand={tc('brand')}
-          description={tableNumber !== null && tableNumber > 0 ? `${t('table')} ${tableNumber}` : undefined}
+          title={th('table')}
+          description={th('tableDesc')}
           onBack={handleBackToChoice}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -785,16 +792,8 @@ export default function MenuPage() {
       {/* Header — sticky, non sparisce scrollando */}
             <AppHeader
         brand={tc('brand')}
-        description={tableNumber !== null && tableNumber > 0 ? (
-          <>
-            {t('table')} {tableNumber}
-            {tableSession && tableSession.linkedTables.length > 0 && (
-              <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
-                + {tableSession.linkedTables.join(', ')}
-              </span>
-            )}
-          </>
-        ) : undefined}
+        title={th('table')}
+        description={th('tableDesc')}
         onBack={handleBackToSections}
         backAriaLabel={tc('back')}
         rightSlot={<LanguageSelectorCompact />}

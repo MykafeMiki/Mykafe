@@ -68,6 +68,7 @@ interface CassaContentProps {
 }
 
 function CassaContent({ t }: CassaContentProps) {
+  const th = useTranslations('home')
   const tc = useTranslations('common')
   const locale = useLocale()
   const [view, setView] = useState<View>('tables')
@@ -163,8 +164,8 @@ function CassaContent({ t }: CassaContentProps) {
     <div className="min-h-screen bg-gray-100">
       <AppHeader
         brand={tc('brand')}
-        title={t('title')}
-        description={t('subtitle')}
+        title={th('cashier')}
+        description={th('cashierDesc')}
         className="bg-purple-600"
         descriptionClassName="text-purple-200"
         rightSlot={(

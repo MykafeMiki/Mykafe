@@ -24,6 +24,7 @@ type ServiceMode = 'takeaway' | 'dine-in'
 
 export default function BancoPage() {
   const t = useTranslations('banco')
+  const th = useTranslations('home')
   const tc = useTranslations('common')
   const locale = useLocale()
 
@@ -215,8 +216,8 @@ export default function BancoPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <AppHeader
           brand={tc('brand')}
-          title={t('title')}
-          description={t('subtitle')}
+          title={th('takeawayCounter')}
+          description={th('takeawayCounterDesc')}
           icon={<Store className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
         />
@@ -272,7 +273,8 @@ export default function BancoPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          description={`${t('title')} - ${customerName}`}
+          title={th('takeawayCounter')}
+          description={th('takeawayCounterDesc')}
           icon={<Store className="w-6 h-6" />}
           onBack={() => setStep('name')}
           backAriaLabel={tc('back')}
@@ -330,7 +332,8 @@ export default function BancoPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          description={`${t('title')} - ${serviceMode === 'takeaway' ? t('takeaway') : t('dineIn')}`}
+          title={th('takeawayCounter')}
+          description={th('takeawayCounterDesc')}
           icon={<Store className="w-6 h-6" />}
           onBack={() => setStep('choice')}
           backAriaLabel={tc('back')}
@@ -368,9 +371,8 @@ export default function BancoPage() {
     <div className="min-h-screen bg-gray-50 pb-24">
             <AppHeader
         brand={tc('brand')}
-        description={selectedSection
-          ? getSectionName(menuSections.find(s => s.id === selectedSection)!, locale)
-          : t('title')}
+        title={th('takeawayCounter')}
+        description={th('takeawayCounterDesc')}
         icon={<Store className="w-6 h-6" />}
         onBack={() => setStep('sections')}
         backAriaLabel={tc('back')}

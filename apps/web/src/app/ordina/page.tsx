@@ -58,6 +58,7 @@ function isWithin30Minutes(selectedDate: Date, selectedTime: string): boolean {
 
 export default function OrdinaPage() {
   const t = useTranslations('ordina')
+  const th = useTranslations('home')
   const tc = useTranslations('common')
   const locale = useLocale()
 
@@ -246,7 +247,8 @@ export default function OrdinaPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          title={t('title')}
+          title={th('takeawayHome')}
+          description={th('takeawayHomeDesc')}
           icon={<ShoppingBag className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
           className="bg-orange-500"
@@ -307,8 +309,8 @@ export default function OrdinaPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          title={t('title')}
-          description={`${t('subtitle')} - ${paymentLabel}`}
+          title={th('takeawayHome')}
+          description={th('takeawayHomeDesc')}
           icon={<ShoppingBag className="w-6 h-6" />}
           onBack={() => setStep('payment')}
           backAriaLabel={tc('back')}
@@ -423,8 +425,8 @@ export default function OrdinaPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
                 <AppHeader
           brand={tc('brand')}
-          title={t('title')}
-          description={t('subtitle')}
+          title={th('takeawayHome')}
+          description={th('takeawayHomeDesc')}
           icon={<ShoppingBag className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
           className="bg-orange-500"
@@ -489,7 +491,8 @@ export default function OrdinaPage() {
     <div className="min-h-screen bg-gray-50 pb-24">
             <AppHeader
         brand={tc('brand')}
-        description={t('subtitle')}
+        title={th('takeawayHome')}
+        description={th('takeawayHomeDesc')}
         icon={<ShoppingBag className="w-6 h-6" />}
         onBack={() => setStep('datetime')}
         backAriaLabel={tc('back')}
