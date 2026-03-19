@@ -466,6 +466,12 @@ export default function MenuPage() {
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && customerName.trim() && !loadingCustomers) {
+                  e.preventDefault()
+                  handleSubmitName()
+                }
+              }}
               placeholder={t('namePlaceholder')}
               className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 focus:outline-none text-lg text-center"
               autoFocus={!hasExistingCustomers}
@@ -580,6 +586,12 @@ export default function MenuPage() {
             type="text"
             value={mergeInput}
             onChange={(e) => setMergeInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && mergeInput.trim() && !creatingSession) {
+                e.preventDefault()
+                handleConfirmMerge()
+              }
+            }}
             placeholder={t('tableNumbersPlaceholder')}
             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary-500 focus:outline-none text-lg"
           />

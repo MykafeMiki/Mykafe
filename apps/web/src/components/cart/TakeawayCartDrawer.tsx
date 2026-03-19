@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { X, Minus, Plus, Trash2, Loader2, User, Phone } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
@@ -160,6 +160,13 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
     }
   }
 
+  const handleEnterSubmit = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isSubmitting) {
+      e.preventDefault()
+      handleSubmitOrder()
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -260,6 +267,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                         type="text"
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
+                        onKeyDown={handleEnterSubmit}
                         placeholder={t('namePlaceholder')}
                         className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       />
@@ -271,6 +279,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                           type="tel"
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value)}
+                          onKeyDown={handleEnterSubmit}
                           placeholder={t('phonePlaceholder')}
                           className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         />
@@ -284,6 +293,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                           type="tel"
                           value={phoneConfirm}
                           onChange={(e) => setPhoneConfirm(e.target.value)}
+                          onKeyDown={handleEnterSubmit}
                           placeholder={t('phoneConfirmPlaceholder')}
                           className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         />
