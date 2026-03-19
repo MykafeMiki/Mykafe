@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
-import { CheckCircle, Users, User, Link2, UserCircle, X } from 'lucide-react'
+import { CheckCircle, Users, User, Link2, UserCircle, X, UtensilsCrossed } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -413,6 +413,7 @@ export default function MenuPage() {
           brand={tc('brand')}
           title={th('table')}
           description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
         />
 
@@ -504,6 +505,7 @@ export default function MenuPage() {
           brand={tc('brand')}
           title={th('table')}
           description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
           onBack={() => setStep('enter-name')}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -562,6 +564,7 @@ export default function MenuPage() {
           brand={tc('brand')}
           title={th('table')}
           description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
           onBack={() => setStep('choice')}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -639,6 +642,7 @@ export default function MenuPage() {
           brand={tc('brand')}
           title={th('table')}
           description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
           onBack={() => setStep('enter-name')}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -707,6 +711,7 @@ export default function MenuPage() {
           brand={tc('brand')}
           title={th('table')}
           description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
           className="bg-red-500"
           descriptionClassName="text-red-100"
@@ -748,6 +753,7 @@ export default function MenuPage() {
           brand={tc('brand')}
           title={th('table')}
           description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
           onBack={handleBackToChoice}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -794,6 +800,7 @@ export default function MenuPage() {
         brand={tc('brand')}
         title={th('table')}
         description={th('tableDesc')}
+        icon={<UtensilsCrossed className="w-6 h-6" />}
         onBack={handleBackToSections}
         backAriaLabel={tc('back')}
         rightSlot={<LanguageSelectorCompact />}

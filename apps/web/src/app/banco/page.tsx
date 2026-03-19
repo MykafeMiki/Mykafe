@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, Store, User, ShoppingBag, UtensilsCrossed } from 'lucide-react'
+import { CheckCircle, User, ShoppingBag, UtensilsCrossed } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -218,7 +218,7 @@ export default function BancoPage() {
           brand={tc('brand')}
           title={th('takeawayCounter')}
           description={th('takeawayCounterDesc')}
-          icon={<Store className="w-6 h-6" />}
+          icon={<ShoppingBag className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
         />
 
@@ -275,7 +275,7 @@ export default function BancoPage() {
           brand={tc('brand')}
           title={th('takeawayCounter')}
           description={th('takeawayCounterDesc')}
-          icon={<Store className="w-6 h-6" />}
+          icon={<ShoppingBag className="w-6 h-6" />}
           onBack={() => setStep('name')}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -334,7 +334,7 @@ export default function BancoPage() {
           brand={tc('brand')}
           title={th('takeawayCounter')}
           description={th('takeawayCounterDesc')}
-          icon={<Store className="w-6 h-6" />}
+          icon={<ShoppingBag className="w-6 h-6" />}
           onBack={() => setStep('choice')}
           backAriaLabel={tc('back')}
           rightSlot={(
@@ -373,7 +373,7 @@ export default function BancoPage() {
         brand={tc('brand')}
         title={th('takeawayCounter')}
         description={th('takeawayCounterDesc')}
-        icon={<Store className="w-6 h-6" />}
+        icon={<ShoppingBag className="w-6 h-6" />}
         onBack={() => setStep('sections')}
         backAriaLabel={tc('back')}
         rightSlot={(

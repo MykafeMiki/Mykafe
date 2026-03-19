@@ -166,6 +166,7 @@ function CassaContent({ t }: CassaContentProps) {
         brand={tc('brand')}
         title={th('cashier')}
         description={th('cashierDesc')}
+        icon={<CreditCard className="w-6 h-6" />}
         className="bg-purple-600"
         descriptionClassName="text-purple-200"
         rightSlot={(

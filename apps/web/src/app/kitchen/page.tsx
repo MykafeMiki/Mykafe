@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Volume2, VolumeX, RefreshCw, Lock, Loader2 } from 'lucide-react'
+import { Volume2, VolumeX, RefreshCw, Lock, Loader2, ChefHat } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { AppHeader } from '@/components/AppHeader'
 import { OrderCard } from '@/components/kitchen/OrderCard'
@@ -185,6 +185,7 @@ export default function KitchenPage() {
         brand={tc('brand')}
         title={th('kitchen')}
         description={th('kitchenDesc')}
+        icon={<ChefHat className="w-6 h-6" />}
         className="bg-gray-800"
         descriptionClassName="text-gray-400"
         rightSlot={(

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle } from 'lucide-react'
+import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle, Truck } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -249,7 +249,7 @@ export default function OrdinaPage() {
           brand={tc('brand')}
           title={th('takeawayHome')}
           description={th('takeawayHomeDesc')}
-          icon={<ShoppingBag className="w-6 h-6" />}
+          icon={<Truck className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
           className="bg-orange-500"
           descriptionClassName="text-orange-100"
@@ -311,7 +311,7 @@ export default function OrdinaPage() {
           brand={tc('brand')}
           title={th('takeawayHome')}
           description={th('takeawayHomeDesc')}
-          icon={<ShoppingBag className="w-6 h-6" />}
+          icon={<Truck className="w-6 h-6" />}
           onBack={() => setStep('payment')}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -427,7 +427,7 @@ export default function OrdinaPage() {
           brand={tc('brand')}
           title={th('takeawayHome')}
           description={th('takeawayHomeDesc')}
-          icon={<ShoppingBag className="w-6 h-6" />}
+          icon={<Truck className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
           className="bg-orange-500"
           descriptionClassName="text-orange-100"
@@ -493,7 +493,7 @@ export default function OrdinaPage() {
         brand={tc('brand')}
         title={th('takeawayHome')}
         description={th('takeawayHomeDesc')}
-        icon={<ShoppingBag className="w-6 h-6" />}
+        icon={<Truck className="w-6 h-6" />}
         onBack={() => setStep('datetime')}
         backAriaLabel={tc('back')}
         rightSlot={<LanguageSelectorCompact />}

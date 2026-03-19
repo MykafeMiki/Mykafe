@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image as ImageIcon, Loader2, Lock, LogOut, Download, Printer, Clock, Timer, BarChart3, DollarSign, Save, Check, Users, RefreshCw, Calendar } from 'lucide-react'
+import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image as ImageIcon, Loader2, Lock, LogOut, Download, Printer, Clock, Timer, BarChart3, DollarSign, Save, Check, Users, RefreshCw, Calendar, Settings } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useLocale, useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
@@ -211,6 +211,7 @@ export default function AdminPage() {
         brand={tc('brand')}
         title={th('admin')}
         description={th('adminDesc')}
+        icon={<Settings className="w-6 h-6" />}
         className="bg-gray-800 text-white p-4"
         titleClassName="text-2xl"
         descriptionClassName="text-gray-400"
