@@ -1,15 +1,20 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Volume2, VolumeX, RefreshCw, Lock, Loader2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { Volume2, VolumeX, RefreshCw, Lock, Loader2, ChefHat } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
+import { AppHeader } from '@/components/AppHeader'
+import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { OrderCard } from '@/components/kitchen/OrderCard'
 import { getActiveOrders, updateOrderStatus, verifyToken, adminLogin, setAuthToken, getAuthToken } from '@/lib/api'
 import type { Order, OrderStatus } from '@shared/types'
 
 export default function KitchenPage() {
   const t = useTranslations('kitchen')
+  const th = useTranslations('home')
+  const tc = useTranslations('common')
   const tl = useTranslations('login')
+  const locale = useLocale()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [orders, setOrders] = useState<Order[]>([])
@@ -177,42 +182,38 @@ export default function KitchenPage() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <header className="bg-gray-800 text-white p-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{t('title')}</h1>
-          <p className="text-gray-400 text-sm">
-            {t('lastUpdate')}:{' '}
-            {lastUpdate.toLocaleTimeString('it-IT', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            })}
-          </p>
-        </div>
+      <AppHeader
+        brand={tc('brand')}
+        title={th('kitchen')}
+        description={th('kitchenDesc')}
+        icon={<ChefHat className="w-6 h-6" />}
+        className="bg-red-500"
+        descriptionClassName="text-red-100"
+        rightSlot={(
+          <div className="flex items-center gap-4">
+            <LanguageSelectorCompact />
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className="p-2 text-white hover:bg-white/10 rounded-lg transition"
+              title={soundEnabled ? t('soundOff') : t('soundOn')}
+            >
+              {soundEnabled ? (
+                <Volume2 className="w-6 h-6" />
+              ) : (
+                <VolumeX className="w-6 h-6" />
+              )}
+            </button>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
-            title={soundEnabled ? t('soundOff') : t('soundOn')}
-          >
-            {soundEnabled ? (
-              <Volume2 className="w-6 h-6" />
-            ) : (
-              <VolumeX className="w-6 h-6" />
-            )}
-          </button>
-
-          <button
-            onClick={fetchOrders}
-            className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
-            title={t('refresh')}
-          >
-            <RefreshCw className="w-6 h-6" />
-          </button>
-        </div>
-      </header>
+            <button
+              onClick={fetchOrders}
+              className="p-2 text-white hover:bg-white/10 rounded-lg transition"
+              title={t('refresh')}
+            >
+              <RefreshCw className="w-6 h-6" />
+            </button>
+          </div>
+        )}
+      />
 
       {/* Main Content */}
       <main className="p-4">

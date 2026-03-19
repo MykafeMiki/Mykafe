@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle, Truck } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -9,9 +9,10 @@ import { ItemModal } from '@/components/menu/ItemModal'
 import { CartButton } from '@/components/cart/CartButton'
 import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
+import { AppHeader } from '@/components/AppHeader'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
-import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig } from '@/lib/menuTimers'
+import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig, type OnlineOrderingReasonKey } from '@/lib/menuTimers'
 import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
@@ -57,11 +58,12 @@ function isWithin30Minutes(selectedDate: Date, selectedTime: string): boolean {
 
 export default function OrdinaPage() {
   const t = useTranslations('ordina')
+  const th = useTranslations('home')
   const tc = useTranslations('common')
   const locale = useLocale()
 
   const [takeawayStatus, setTakeawayStatus] = useState<ReturnType<typeof getTakeawayStatus> | null>(null)
-  const [orderingStatus, setOrderingStatus] = useState<{ isOpen: boolean; reason?: string; nextOpenTime?: string }>({ isOpen: true })
+  const [orderingStatus, setOrderingStatus] = useState<{ isOpen: boolean; reasonKey?: OnlineOrderingReasonKey; reason?: string; nextOpenTime?: string }>({ isOpen: true })
   const [step, setStep] = useState<OrderStep>('payment')
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTime, setSelectedTime] = useState<string>('')
@@ -145,13 +147,34 @@ export default function OrdinaPage() {
     fetchClosureConfig()
       .then(config => {
         try {
-          setOrderingStatus(isOnlineOrderingOpen(config))
+          setOrderingStatus(isOnlineOrderingOpen(config, locale))
         } catch (e) {
           console.error('isOnlineOrderingOpen error:', e)
         }
       })
       .catch(e => console.error('fetchClosureConfig error:', e))
-  }, [loading])
+  }, [loading, locale])
+
+  const getOrderingClosedReason = () => {
+    if (orderingStatus.reason) return orderingStatus.reason
+
+    switch (orderingStatus.reasonKey) {
+      case 'menu_disabled':
+        return t('onlineReasonMenuDisabled')
+      case 'temporary_closure':
+        return t('onlineReasonTemporaryClosure')
+      case 'closed_today':
+        return t('onlineReasonClosedToday')
+      case 'not_open_yet':
+        return t('onlineReasonNotOpenYet')
+      case 'closed_for_today':
+        return t('onlineReasonClosedForToday')
+      case 'closed':
+        return t('onlineReasonClosed')
+      default:
+        return t('onlineClosedFallback')
+    }
+  }
 
   useEffect(() => {
     if (selectedDate && selectedTime) {
@@ -222,15 +245,15 @@ export default function OrdinaPage() {
   if (!orderingStatus.isOpen) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={th('takeawayHome')}
+          description={th('takeawayHomeDesc')}
+          icon={<Truck className="w-6 h-6" />}
+          rightSlot={<LanguageSelectorCompact />}
+          className="bg-orange-500"
+          descriptionClassName="text-orange-100"
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-sm">
@@ -238,15 +261,15 @@ export default function OrdinaPage() {
               <Clock className="w-10 h-10 text-orange-500" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Ordini Online Chiusi
+              {t('onlineClosedTitle')}
             </h2>
             <p className="text-gray-600 mb-4">
-              {orderingStatus.reason || 'Il servizio di ordini online non è attualmente disponibile.'}
+              {getOrderingClosedReason()}
             </p>
             {orderingStatus.nextOpenTime && (
               <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                 <p className="text-sm text-orange-800">
-                  <span className="font-semibold">Prossima apertura:</span>{' '}
+                  <span className="font-semibold">{t('nextOpeningLabel')}</span>{' '}
                   {orderingStatus.nextOpenTime}
                 </p>
               </div>
@@ -284,26 +307,17 @@ export default function OrdinaPage() {
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('payment')}
-                className="p-2 -ml-2 rounded-full hover:bg-orange-400 transition"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="w-6 h-6" />
-                <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-orange-100 text-sm mt-1 ml-10">
-            {t('subtitle')} • {paymentLabel}
-          </p>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={th('takeawayHome')}
+          description={th('takeawayHomeDesc')}
+          icon={<Truck className="w-6 h-6" />}
+          onBack={() => setStep('payment')}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+          className="bg-orange-500"
+          descriptionClassName="text-orange-100"
+        />
 
         <main className="flex-1 p-6 max-w-lg mx-auto w-full">
 
@@ -409,18 +423,15 @@ export default function OrdinaPage() {
   if (step === 'payment') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-orange-100 text-sm mt-1">
-            {t('subtitle')}
-          </p>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={th('takeawayHome')}
+          description={th('takeawayHomeDesc')}
+          icon={<Truck className="w-6 h-6" />}
+          rightSlot={<LanguageSelectorCompact />}
+          className="bg-orange-500"
+          descriptionClassName="text-orange-100"
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
@@ -478,47 +489,38 @@ export default function OrdinaPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <header className="bg-orange-500 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setStep('datetime')}
-              className="p-2 -ml-2 rounded-full hover:bg-orange-400 transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <div>
-                <h1 className="text-xl font-bold">MyKafe</h1>
-                <p className="text-orange-100 text-sm">{t('subtitle')}</p>
-              </div>
-            </div>
-          </div>
-          <LanguageSelectorCompact />
-        </div>
-        {/* Show selected payment and pickup time */}
-        <div className="mt-2 flex items-center gap-4 text-sm">
-          <button
-            onClick={() => setStep('datetime')}
-            className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
-          >
-            <Clock className="w-4 h-4" />
-            <span>{pickupTimeDisplay}</span>
-          </button>
-          <button
-            onClick={() => setStep('payment')}
-            className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
-          >
-            {paymentMethod === PaymentMethod.CARD ? (
-              <CreditCard className="w-4 h-4" />
-            ) : (
-              <Banknote className="w-4 h-4" />
-            )}
-            <span>{paymentLabel}</span>
-          </button>
-        </div>
-      </header>
+      <AppHeader
+        brand={tc('brand')}
+        title={th('takeawayHome')}
+        description={th('takeawayHomeDesc')}
+        icon={<Truck className="w-6 h-6" />}
+        onBack={() => setStep('datetime')}
+        backAriaLabel={tc('back')}
+        rightSlot={<LanguageSelectorCompact />}
+        className="bg-orange-500"
+        descriptionClassName="text-orange-100"
+      />
+      {/* Show selected payment and pickup time */}
+      <div className="bg-orange-500 text-white px-4 pb-3 flex items-center gap-4 text-sm">
+        <button
+          onClick={() => setStep('datetime')}
+          className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
+        >
+          <Clock className="w-4 h-4" />
+          <span>{pickupTimeDisplay}</span>
+        </button>
+        <button
+          onClick={() => setStep('payment')}
+          className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
+        >
+          {paymentMethod === PaymentMethod.CARD ? (
+            <CreditCard className="w-4 h-4" />
+          ) : (
+            <Banknote className="w-4 h-4" />
+          )}
+          <span>{paymentLabel}</span>
+        </button>
+      </div>
 
       <CategoryNav
         categories={filteredCategories}

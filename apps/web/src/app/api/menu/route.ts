@@ -68,6 +68,10 @@ export async function GET() {
       .eq('key', 'ingredient_substitutes')
       .single()
 
+    if (substitutesRes.error && substitutesRes.error.code !== 'PGRST116') {
+      throw substitutesRes.error
+    }
+
     const substituteMap: Record<string, { id: string; name: string; nameEn?: string; nameFr?: string; nameEs?: string; nameHe?: string }> =
       (substitutesRes.data as { value?: Record<string, unknown> } | null)?.value as Record<string, { id: string; name: string }> || {}
 
@@ -92,41 +96,73 @@ export async function GET() {
       }
     }
 
+    // Supabase nested select can return relation fields as object or single-item array.
+    // Normalize access once to avoid brittle runtime/type errors.
+    const getIngredientFromAssoc = (
+      assoc: { ingredient?: unknown } | null | undefined
+    ): {
+      id: string
+      name: string
+      nameEn?: string
+      nameFr?: string
+      nameEs?: string
+      nameHe?: string
+      inStock: boolean
+    } | null => {
+      const raw = assoc?.ingredient
+      const ingredient = Array.isArray(raw) ? raw[0] : raw
+      if (!ingredient || typeof ingredient !== 'object') return null
+      return ingredient as {
+        id: string
+        name: string
+        nameEn?: string
+        nameFr?: string
+        nameEs?: string
+        nameHe?: string
+        inStock: boolean
+      }
+    }
+
     // Filtra items e modifiers
     const menu = categories.map(category => ({
       ...category,
       items: (category.items || [])
-        .filter((item: { available: boolean, ingredients?: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }[] }) => {
+        .filter((item) => {
           if (!item.available) {
-            const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
-              if (!ing.isPrimary || ing.ingredient?.inStock) return false
-              return Boolean(substituteMap[ing.ingredient.id])
+            const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some((ing) => {
+              const ingredient = getIngredientFromAssoc(ing)
+              if (!ing.isPrimary || !ingredient || ingredient.inStock) return false
+              return Boolean(substituteMap[ingredient.id])
             })
             return hasPrimaryOutOfStockWithSubstitute ?? false
           }
-          const primaryOutOfStockWithoutSubstitute = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
-            if (!ing.isPrimary || ing.ingredient?.inStock) return false
-            return !substituteMap[ing.ingredient.id]
+          const primaryOutOfStockWithoutSubstitute = item.ingredients?.some((ing) => {
+            const ingredient = getIngredientFromAssoc(ing)
+            if (!ing.isPrimary || !ingredient || ingredient.inStock) return false
+            return !substituteMap[ingredient.id]
           })
           return !primaryOutOfStockWithoutSubstitute
         })
         .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
-        .map((item: {
-          id: string,
-          modifierGroups?: { modifiers?: { available: boolean; ingredientId?: string }[] }[],
-          ingredients?: { isPrimary: boolean, ingredient: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, inStock: boolean } }[]
-        }) => {
+        .map((item) => {
           // Ingredienti non disponibili da associazioni esplicite
           const explicitUnavailable = (item.ingredients || [])
-            .filter(assoc => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
-            .map(assoc => ({
-              id: assoc.ingredient.id,
-              name: assoc.ingredient.name,
-              nameEn: assoc.ingredient.nameEn,
-              nameFr: assoc.ingredient.nameFr,
-              nameEs: assoc.ingredient.nameEs,
-              nameHe: assoc.ingredient.nameHe
+            .map((assoc) => ({
+              isPrimary: assoc.isPrimary,
+              ingredient: getIngredientFromAssoc(assoc)
             }))
+            .filter((assoc) => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
+            .map((assoc) => {
+              const ingredient = assoc.ingredient!
+              return {
+                id: ingredient.id,
+                name: ingredient.name,
+                nameEn: ingredient.nameEn,
+                nameFr: ingredient.nameFr,
+                nameEs: ingredient.nameEs,
+                nameHe: ingredient.nameHe
+              }
+            })
 
           // Ingredienti non disponibili da description matching pre-calcolato
           const descriptionMatches = itemUnavailableMap.get(item.id) || []
@@ -150,7 +186,7 @@ export async function GET() {
             ingredients: undefined, // Rimuovi raw ingredients
             modifierGroups: item.modifierGroups?.map(group => ({
               ...group,
-              modifiers: group.modifiers?.filter(mod =>
+              modifiers: group.modifiers?.filter((mod: { available: boolean; ingredientId?: string }) =>
                 mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
               )
             }))

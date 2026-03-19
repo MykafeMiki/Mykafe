@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams } from 'next/navigation'
-import { CheckCircle, Users, User, Link2, UserCircle, ArrowLeft, X } from 'lucide-react'
+import { CheckCircle, Users, User, Link2, UserCircle, X, UtensilsCrossed } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -11,6 +11,7 @@ import { MenuSections, menuSections, categoryToSectionMap, getSectionName } from
 import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
+import { AppHeader } from '@/components/AppHeader'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
 import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
@@ -22,6 +23,7 @@ type PageStep = 'enter-name' | 'choice' | 'merge-input' | 'join-group' | 'blocke
 
 export default function MenuPage() {
   const t = useTranslations('tableMenu')
+  const th = useTranslations('home')
   const tc = useTranslations('common')
   const locale = useLocale()
   const params = useParams()
@@ -147,8 +149,8 @@ export default function MenuPage() {
             : getTableSessionByTable(table.number).catch(() => null)
         ])
 
-        // Set customers
-        setExistingCustomers(customers || [])
+        // Set customers (defensive: backend can return non-array payloads)
+        setExistingCustomers(Array.isArray(customers) ? customers : [])
 
         // Set session
         if (existingSession) {
@@ -407,17 +409,15 @@ export default function MenuPage() {
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">MyKafe</h1>
-              {tableNumber && (
-                <p className="text-primary-100">{t('table')} {tableNumber}</p>
-              )}
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={th('table')}
+          description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
+          className="bg-blue-500"
+          descriptionClassName="text-blue-100"
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
@@ -450,7 +450,7 @@ export default function MenuPage() {
                       <span className="font-medium text-gray-900">{customer.name}</span>
                       {customer.isHost && (
                         <span className="ml-auto text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded-full">
-                          Host
+                          {t('host')}
                         </span>
                       )}
                     </button>
@@ -471,6 +471,12 @@ export default function MenuPage() {
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && customerName.trim() && !loadingCustomers) {
+                  e.preventDefault()
+                  handleSubmitName()
+                }
+              }}
               placeholder={t('namePlaceholder')}
               className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-primary-500 focus:outline-none text-lg text-center"
               autoFocus={!hasExistingCustomers}
@@ -497,26 +503,17 @@ export default function MenuPage() {
   if (step === 'choice') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('enter-name')}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
-              </button>
-              <div>
-                <h1 className="text-xl font-bold">MyKafe</h1>
-                {tableNumber && (
-                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
-                )}
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={th('table')}
+          description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
+          className="bg-blue-500"
+          descriptionClassName="text-blue-100"
+          onBack={() => setStep('enter-name')}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md space-y-4">
@@ -567,26 +564,17 @@ export default function MenuPage() {
   if (step === 'merge-input') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('choice')}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
-              </button>
-              <div>
-                <h1 className="text-xl font-bold">MyKafe</h1>
-                {tableNumber && (
-                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
-                )}
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={th('table')}
+          description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
+          className="bg-blue-500"
+          descriptionClassName="text-blue-100"
+          onBack={() => setStep('choice')}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 p-6 max-w-md mx-auto w-full">
           <div className="flex items-center gap-3 mb-6">
@@ -611,6 +599,12 @@ export default function MenuPage() {
             type="text"
             value={mergeInput}
             onChange={(e) => setMergeInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && mergeInput.trim() && !creatingSession) {
+                e.preventDefault()
+                handleConfirmMerge()
+              }
+            }}
             placeholder={t('tableNumbersPlaceholder')}
             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary-500 focus:outline-none text-lg"
           />
@@ -639,29 +633,28 @@ export default function MenuPage() {
   if (step === 'join-group' && tableSession) {
     // Tavoli del gruppo da mostrare: tutti i linked, escluso il tavolo corrente
     const otherGroupTables = tableSession.linkedTables.filter(n => n !== tableNumber)
+    const currentCustomerName = customerName.trim()
+    const rawHostName = (tableSession.hostCustomerName ?? '').trim()
+    const fallbackHostName = (Array.isArray(existingCustomers) ? existingCustomers : [])
+      .find((customer) => customer.isHost)?.name?.trim() ?? ''
+    const resolvedHostName = ['null', 'undefined', '-'].includes(rawHostName.toLowerCase())
+      ? fallbackHostName
+      : (rawHostName || fallbackHostName)
+    const hostName = currentCustomerName || resolvedHostName
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('enter-name')}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
-              </button>
-              <div>
-                <h1 className="text-xl font-bold">MyKafe</h1>
-                {tableNumber && (
-                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
-                )}
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={th('table')}
+          description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
+          className="bg-blue-500"
+          descriptionClassName="text-blue-100"
+          onBack={() => setStep('enter-name')}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md space-y-4">
@@ -670,8 +663,8 @@ export default function MenuPage() {
                 <Users className="w-8 h-8 text-orange-600" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {tableSession.hostCustomerName
-                  ? t('areYouWith', { name: tableSession.hostCustomerName })
+                {hostName
+                  ? t('areYouWith', { name: hostName })
                   : t('groupExists')}
               </h2>
               <p className="text-gray-600 mt-2">
@@ -722,17 +715,15 @@ export default function MenuPage() {
   if (step === 'blocked') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-red-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">MyKafe</h1>
-              {tableNumber && (
-                <p className="text-red-100">{t('table')} {tableNumber}</p>
-              )}
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={th('table')}
+          description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
+          className="bg-blue-500"
+          descriptionClassName="text-blue-100"
+          rightSlot={<LanguageSelectorCompact />}
+        />
 
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md text-center">
@@ -766,26 +757,18 @@ export default function MenuPage() {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
         {/* Header — sticky, non sparisce scrollando */}
-        <header className="sticky top-0 z-40 bg-primary-500 text-white p-4 shadow-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleBackToChoice}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
-              </button>
-              <div>
-                <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
-                {tableNumber !== null && tableNumber > 0 && (
-                  <p className="text-primary-100">{t('table')} {tableNumber}</p>
-                )}
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
+        <AppHeader
+          brand={tc('brand')}
+          title={th('table')}
+          description={th('tableDesc')}
+          icon={<UtensilsCrossed className="w-6 h-6" />}
+          onBack={handleBackToChoice}
+          backAriaLabel={tc('back')}
+          rightSlot={<LanguageSelectorCompact />}
+          className="sticky top-0 z-40 shadow-md bg-blue-500"
+          descriptionClassName="text-blue-100"
+          titleClassName="text-2xl font-display font-semibold italic"
+        />
 
         {/* Sections Grid */}
         <MenuSections onSelectSection={handleSelectSection} activeCategories={filteredCategories} />
@@ -822,40 +805,25 @@ export default function MenuPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header — sticky, non sparisce scrollando */}
-      <header className="sticky top-0 z-40 bg-primary-500 text-white p-4 shadow-md">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-                onClick={handleBackToSections}
-                className="flex items-center gap-2 px-4 py-2.5 -ml-1 rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 transition font-semibold text-base shadow"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                <span>Indietro</span>
-            </button>
-            <div>
-              <h1 className="text-2xl font-display font-semibold italic">MyKafe</h1>
-              {tableNumber !== null && tableNumber > 0 && (
-                <p className="text-primary-100">
-                  {t('table')} {tableNumber}
-                  {tableSession && tableSession.linkedTables.length > 0 && (
-                    <span className="ml-2 text-xs bg-primary-400 px-2 py-0.5 rounded-full">
-                      + {tableSession.linkedTables.join(', ')}
-                    </span>
-                  )}
-                </p>
-              )}
-            </div>
-          </div>
-          <LanguageSelectorCompact />
+      <AppHeader
+        brand={tc('brand')}
+        title={th('table')}
+        description={th('tableDesc')}
+        icon={<UtensilsCrossed className="w-6 h-6" />}
+        onBack={handleBackToSections}
+        backAriaLabel={tc('back')}
+        rightSlot={<LanguageSelectorCompact />}
+        className="sticky top-0 z-40 shadow-md bg-blue-500"
+        descriptionClassName="text-blue-100"
+        titleClassName="text-2xl font-display font-semibold italic"
+      />
+      {/* Session indicator */}
+      {tableSession && (
+        <div className="bg-blue-500 text-blue-100 px-4 pb-3 flex items-center gap-2 text-sm">
+          <Link2 className="w-4 h-4" />
+          <span>{t('sessionActive')}: {t('tables')} {tableNumber}, {tableSession.linkedTables.join(', ')}</span>
         </div>
-        {/* Session indicator */}
-        {tableSession && (
-          <div className="mt-2 flex items-center gap-2 text-sm text-primary-100">
-            <Link2 className="w-4 h-4" />
-            <span>{t('sessionActive')}: {t('tables')} {tableNumber}, {tableSession.linkedTables.join(', ')}</span>
-          </div>
-        )}
-      </header>
+      )}
 
       {/* Category Navigation (only categories in selected section) */}
       <CategoryNav

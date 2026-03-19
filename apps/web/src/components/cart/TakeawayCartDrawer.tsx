@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { X, Minus, Plus, Trash2, Loader2, User, Phone } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
 import { formatPrice, getItemPrice as getContextPrice } from '@/lib/utils'
 import { createOrder } from '@/lib/api'
@@ -39,6 +39,7 @@ function calculateItemPrice(basePrice: number, modifiersPrice: number, quantity:
 
 export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMethod }: TakeawayCartDrawerProps) {
   const t = useTranslations('cart')
+  const locale = useLocale()
   const { items, tableId, priceContext, updateQuantity, removeItem, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -71,7 +72,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
       tomorrow.setDate(today.getDate() + 1)
       const isTomorrow = date.toDateString() === tomorrow.toDateString()
 
-      let label = date.toLocaleDateString('it-IT')
+      let label = date.toLocaleDateString(locale)
       if (isToday) label = t('today')
       if (isTomorrow) label = t('tomorrow')
 
@@ -141,7 +142,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
         paymentMethod,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
-        notes: `Ritiro: ${scheduledDate} alle ${scheduledTime}`, // Store in notes for now if backend doesn't support it directly
+        notes: t('pickupNote', { date: scheduledDate, time: scheduledTime }), // Store in notes for now if backend doesn't support it directly
       })
 
       clearCart()
@@ -157,6 +158,13 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
       console.error(err)
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleEnterSubmit = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isSubmitting) {
+      e.preventDefault()
+      handleSubmitOrder()
     }
   }
 
@@ -260,6 +268,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                         type="text"
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
+                        onKeyDown={handleEnterSubmit}
                         placeholder={t('namePlaceholder')}
                         className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                       />
@@ -271,6 +280,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                           type="tel"
                           value={customerPhone}
                           onChange={(e) => setCustomerPhone(e.target.value)}
+                          onKeyDown={handleEnterSubmit}
                           placeholder={t('phonePlaceholder')}
                           className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         />
@@ -284,6 +294,7 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                           type="tel"
                           value={phoneConfirm}
                           onChange={(e) => setPhoneConfirm(e.target.value)}
+                          onKeyDown={handleEnterSubmit}
                           placeholder={t('phoneConfirmPlaceholder')}
                           className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         />

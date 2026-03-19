@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { CreditCard, Lock, Loader2, RefreshCw, ArrowLeft, Banknote, CreditCard as CardIcon, Check, Clock, User, ShoppingBag } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { AppHeader } from '@/components/AppHeader'
+import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { formatPrice } from '@/lib/utils'
 import {
   adminLogin,
@@ -67,6 +69,9 @@ interface CassaContentProps {
 }
 
 function CassaContent({ t }: CassaContentProps) {
+  const th = useTranslations('home')
+  const tc = useTranslations('common')
+  const locale = useLocale()
   const [view, setView] = useState<View>('tables')
   const [tables, setTables] = useState<TableWithOrders[]>([])
   const [takeawayOrders, setTakeawayOrders] = useState<Order[]>([])
@@ -150,7 +155,7 @@ function CassaContent({ t }: CassaContentProps) {
   }
 
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('it-IT', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'EUR'
     }).format(cents / 100)
@@ -158,14 +163,16 @@ function CassaContent({ t }: CassaContentProps) {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-purple-600 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{t('title')}</h1>
-            <p className="text-purple-200">{t('subtitle')}</p>
-          </div>
+      <AppHeader
+        brand={tc('brand')}
+        title={th('cashier')}
+        description={th('cashierDesc')}
+        icon={<CreditCard className="w-6 h-6" />}
+        className="bg-purple-500"
+        descriptionClassName="text-purple-100"
+        rightSlot={(
           <div className="flex gap-2">
+            <LanguageSelectorCompact />
             <button
               onClick={() => {
                 if (view === 'history') {
@@ -183,13 +190,13 @@ function CassaContent({ t }: CassaContentProps) {
             </button>
             <button
               onClick={() => view === 'history' ? loadHistory() : loadData()}
-              className="p-2 bg-purple-500 rounded-lg hover:bg-purple-400 transition"
+              className="p-2 text-white hover:bg-white/10 rounded-lg transition"
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
-        </div>
-      </header>
+        )}
+      />
 
       {/* Success Message */}
       {successMessage && (
@@ -291,7 +298,7 @@ function CassaContent({ t }: CassaContentProps) {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <div className="text-sm text-gray-500">
-                          {new Date(order.createdAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(order.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                         </div>
                         {order.customerName && (
                           <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">

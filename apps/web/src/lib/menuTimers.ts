@@ -465,6 +465,14 @@ export interface ClosureConfig {
   }
 }
 
+export type OnlineOrderingReasonKey =
+  | 'menu_disabled'
+  | 'temporary_closure'
+  | 'closed_today'
+  | 'closed'
+  | 'not_open_yet'
+  | 'closed_for_today'
+
 const DEFAULT_DAY_SCHEDULE: DaySchedule = {
   enabled: true,
   openHour: 11,
@@ -526,14 +534,32 @@ export async function saveClosureConfigToServer(config: ClosureConfig): Promise<
 /**
  * Check if online ordering is currently available
  */
-export function isOnlineOrderingOpen(config: ClosureConfig): {
+function formatWeekdayName(day: number, locale: string): string {
+  const base = new Date('2024-01-07T12:00:00') // Sunday
+  const date = new Date(base)
+  date.setDate(base.getDate() + day)
+  return new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(date)
+}
+
+function formatHourMinute(hour: number, minute: number, locale: string): string {
+  const date = new Date('2024-01-01T00:00:00')
+  date.setHours(hour, minute, 0, 0)
+  return new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date)
+}
+
+export function isOnlineOrderingOpen(config: ClosureConfig, locale: string = 'it-IT'): {
   isOpen: boolean
+  reasonKey?: OnlineOrderingReasonKey
   reason?: string
   nextOpenTime?: string
 } {
   // Master switch off
   if (!config.enabled) {
-    return { isOpen: false, reason: 'Menu online disabilitato' }
+    return { isOpen: false, reasonKey: 'menu_disabled' }
   }
 
   // Temporary closure active
@@ -543,13 +569,14 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
       if (new Date() < untilDate) {
         return {
           isOpen: false,
-          reason: config.temporaryClosure.message || 'Chiusura temporanea',
-          nextOpenTime: new Date(config.temporaryClosure.until).toLocaleDateString('it-IT', {
+          reasonKey: 'temporary_closure',
+          reason: config.temporaryClosure.message,
+          nextOpenTime: new Date(config.temporaryClosure.until).toLocaleString(locale, {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
           })
         }
       }
@@ -558,7 +585,8 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
     } else {
       return {
         isOpen: false,
-        reason: config.temporaryClosure.message || 'Chiusura temporanea'
+        reasonKey: 'temporary_closure',
+        reason: config.temporaryClosure.message
       }
     }
   }
@@ -578,15 +606,14 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
       const nextDay = (dayOfWeek + i) % 7
       const nextSchedule = config.schedule[nextDay]
       if (nextSchedule?.enabled) {
-        const dayName = DAYS_OF_WEEK.find(d => d.value === nextDay)?.label || ''
         return {
           isOpen: false,
-          reason: 'Chiuso oggi',
-          nextOpenTime: `${dayName} alle ${nextSchedule.openHour.toString().padStart(2, '0')}:${nextSchedule.openMinute.toString().padStart(2, '0')}`
+          reasonKey: 'closed_today',
+          nextOpenTime: `${formatWeekdayName(nextDay, locale)} ${formatHourMinute(nextSchedule.openHour, nextSchedule.openMinute, locale)}`
         }
       }
     }
-    return { isOpen: false, reason: 'Chiuso' }
+    return { isOpen: false, reasonKey: 'closed' }
   }
 
   const openTime = todaySchedule.openHour * 60 + todaySchedule.openMinute
@@ -596,8 +623,8 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
   if (currentTime < openTime) {
     return {
       isOpen: false,
-      reason: 'Non ancora aperto',
-      nextOpenTime: `oggi alle ${todaySchedule.openHour.toString().padStart(2, '0')}:${todaySchedule.openMinute.toString().padStart(2, '0')}`
+      reasonKey: 'not_open_yet',
+      nextOpenTime: formatHourMinute(todaySchedule.openHour, todaySchedule.openMinute, locale)
     }
   }
 
@@ -608,15 +635,14 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
       const nextDay = (dayOfWeek + i) % 7
       const nextSchedule = config.schedule[nextDay]
       if (nextSchedule?.enabled) {
-        const dayName = DAYS_OF_WEEK.find(d => d.value === nextDay)?.label || ''
         return {
           isOpen: false,
-          reason: 'Chiuso per oggi',
-          nextOpenTime: `${dayName} alle ${nextSchedule.openHour.toString().padStart(2, '0')}:${nextSchedule.openMinute.toString().padStart(2, '0')}`
+          reasonKey: 'closed_for_today',
+          nextOpenTime: `${formatWeekdayName(nextDay, locale)} ${formatHourMinute(nextSchedule.openHour, nextSchedule.openMinute, locale)}`
         }
       }
     }
-    return { isOpen: false, reason: 'Chiuso' }
+    return { isOpen: false, reasonKey: 'closed' }
   }
 
   // Currently open!

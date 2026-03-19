@@ -16,19 +16,52 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { LanguageSelectorCompact } from "@/components/LanguageSelector";
+import { AppHeader } from "@/components/AppHeader";
 import { adminLogin, verifyToken, setAuthToken, getAuthToken } from "@/lib/api";
 
 export default function HomePage() {
   const t = useTranslations("home");
+  const tc = useTranslations("common");
   const tl = useTranslations("login");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Check auth on mount - TEMPORARILY BYPASSED
+  // Check auth on mount
   useEffect(() => {
-    // TODO: Re-enable auth once Supabase Edge Functions password is configured
-    setIsAuthenticated(true);
-    setAuthLoading(false);
+    let cancelled = false;
+
+    const checkAuth = async () => {
+      const token = getAuthToken();
+      if (!token) {
+        if (!cancelled) {
+          setIsAuthenticated(false);
+          setAuthLoading(false);
+        }
+        return;
+      }
+
+      try {
+        await verifyToken();
+        if (!cancelled) {
+          setIsAuthenticated(true);
+        }
+      } catch {
+        setAuthToken(null);
+        if (!cancelled) {
+          setIsAuthenticated(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthLoading(false);
+        }
+      }
+    };
+
+    checkAuth();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleLogout = () => {
@@ -45,7 +78,13 @@ export default function HomePage() {
   }
 
   if (!isAuthenticated) {
-    return <HomeLoginScreen onLogin={() => setIsAuthenticated(true)} t={tl} />;
+    return (
+      <HomeLoginScreen
+        onLogin={() => setIsAuthenticated(true)}
+        t={tl}
+        brand={tc("brand")}
+      />
+    );
   }
 
   const menuItems = [
@@ -108,24 +147,25 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">MyKafe</h1>
-            <p className="text-gray-500 mt-1">{t("subtitle")}</p>
-          </div>
+      <AppHeader
+        brand={tc("brand")}
+        title={t("title")}
+        description={t("subtitle")}
+        className="bg-primary-500"
+        descriptionClassName="text-primary-100"
+        rightSlot={
           <div className="flex items-center gap-3">
             <LanguageSelectorCompact />
             <button
               onClick={handleLogout}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 text-white hover:bg-white/10 rounded-lg transition"
               title={tl("logout") || "Logout"}
             >
               <LogOut className="w-5 h-5" />
             </button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Menu Grid */}
       <main className="max-w-4xl mx-auto px-4 py-8 min-h-[calc(100vh-180px)]">
@@ -170,7 +210,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="max-w-4xl mx-auto px-4 py-6 text-center text-gray-400 text-sm">
-        MyKafe &copy; {new Date().getFullYear()}
+        {tc("brand")} &copy; {new Date().getFullYear()}
       </footer>
     </div>
   );
@@ -181,9 +221,10 @@ export default function HomePage() {
 interface HomeLoginScreenProps {
   onLogin: () => void;
   t: ReturnType<typeof useTranslations<"login">>;
+  brand: string;
 }
 
-function HomeLoginScreen({ onLogin, t }: HomeLoginScreenProps) {
+function HomeLoginScreen({ onLogin, t, brand }: HomeLoginScreenProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -214,7 +255,7 @@ function HomeLoginScreen({ onLogin, t }: HomeLoginScreenProps) {
             <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">MyKafe</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{brand}</h1>
             <p className="text-gray-500 mt-1">{t("enterPassword")}</p>
           </div>
 

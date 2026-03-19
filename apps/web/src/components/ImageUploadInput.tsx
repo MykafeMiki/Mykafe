@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Image as ImageIcon, Upload, Loader2 } from 'lucide-react'
 
 interface ImageUploadInputProps {
@@ -18,6 +19,7 @@ export function ImageUploadInput({
   className = '',
   size = 'md'
 }: ImageUploadInputProps) {
+  const t = useTranslations('imageUpload')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
 
@@ -30,27 +32,22 @@ export function ImageUploadInput({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validazione tipo file
       const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif']
-
-      // Su iOS, HEIC potrebbe avere type vuoto
       const isValidType = validTypes.includes(file.type) ||
         file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i)
 
       if (!isValidType) {
-        alert('Formato non supportato. Usa JPG, PNG, GIF o WebP.')
+        alert(t('unsupportedFormat'))
         return
       }
 
-      // Validazione dimensione (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Immagine troppo grande. Massimo 5MB.')
+        alert(t('fileTooLarge'))
         return
       }
 
       onFileSelect(file)
     }
-    // Reset input per permettere re-upload stesso file
     e.target.value = ''
   }
 
@@ -72,7 +69,7 @@ export function ImageUploadInput({
         accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif"
         onChange={handleFileChange}
         className="hidden"
-        aria-label="Carica immagine"
+        aria-label={t('ariaUploadImage')}
       />
 
       <button
@@ -95,7 +92,6 @@ export function ImageUploadInput({
           group
         `}
       >
-        {/* Immagine esistente */}
         {currentImageUrl && !uploading && (
           <img
             src={currentImageUrl}
@@ -104,22 +100,19 @@ export function ImageUploadInput({
           />
         )}
 
-        {/* Placeholder quando non c'è immagine */}
         {!currentImageUrl && !uploading && (
           <div className="flex flex-col items-center justify-center text-gray-400">
             <ImageIcon className="w-6 h-6 mb-1" />
-            <span className="text-xs">Carica</span>
+            <span className="text-xs">{t('upload')}</span>
           </div>
         )}
 
-        {/* Overlay hover */}
         {!uploading && (
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
             <Upload className="w-6 h-6 text-white" />
           </div>
         )}
 
-        {/* Loading spinner */}
         {uploading && (
           <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
             <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
@@ -140,26 +133,29 @@ interface SimpleImageUploadProps {
 export function SimpleImageUpload({
   onFileSelect,
   uploading,
-  buttonText = 'Carica immagine',
-  uploadingText = 'Caricamento...'
+  buttonText,
+  uploadingText
 }: SimpleImageUploadProps) {
+  const t = useTranslations('imageUpload')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const resolvedButtonText = buttonText ?? t('uploadImage')
+  const resolvedUploadingText = uploadingText ?? t('uploading')
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validazione estesa per iOS
       const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif']
       const isValidType = validTypes.includes(file.type) ||
         file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i)
 
       if (!isValidType) {
-        alert('Formato non supportato. Usa JPG, PNG, GIF o WebP.')
+        alert(t('unsupportedFormat'))
         return
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        alert('Immagine troppo grande. Massimo 5MB.')
+        alert(t('fileTooLarge'))
         return
       }
 
@@ -176,7 +172,7 @@ export function SimpleImageUpload({
         accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif"
         onChange={handleFileChange}
         className="hidden"
-        aria-label="Carica immagine"
+        aria-label={t('ariaUploadImage')}
       />
       <button
         type="button"
@@ -189,7 +185,7 @@ export function SimpleImageUpload({
         ) : (
           <Upload className="w-4 h-4" />
         )}
-        {uploading ? uploadingText : buttonText}
+        {uploading ? resolvedUploadingText : resolvedButtonText}
       </button>
     </>
   )

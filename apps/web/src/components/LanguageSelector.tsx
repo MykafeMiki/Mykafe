@@ -113,10 +113,10 @@ export function LanguageSelectorCompact({ className = '' }: { className?: string
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-white/10 transition"
+        className="p-2.5 rounded-lg hover:bg-white/10 transition"
         aria-label="Change language"
       >
-        <Globe className="w-5 h-5" />
+        <Globe className="w-6 h-6" />
       </button>
 
       {isOpen && (
