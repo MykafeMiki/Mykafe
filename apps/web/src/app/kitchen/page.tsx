@@ -194,7 +194,7 @@ export default function KitchenPage() {
             <LanguageSelectorCompact />
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
+              className="p-2 text-white hover:bg-white/10 rounded-lg transition"
               title={soundEnabled ? t('soundOff') : t('soundOn')}
             >
               {soundEnabled ? (
@@ -206,7 +206,7 @@ export default function KitchenPage() {
 
             <button
               onClick={fetchOrders}
-              className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
+              className="p-2 text-white hover:bg-white/10 rounded-lg transition"
               title={t('refresh')}
             >
               <RefreshCw className="w-6 h-6" />

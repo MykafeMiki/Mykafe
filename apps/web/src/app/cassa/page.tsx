@@ -190,7 +190,7 @@ function CassaContent({ t }: CassaContentProps) {
             </button>
             <button
               onClick={() => view === 'history' ? loadHistory() : loadData()}
-              className="p-2 bg-purple-500 rounded-lg hover:bg-purple-400 transition"
+              className="p-2 text-white hover:bg-white/10 rounded-lg transition"
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
