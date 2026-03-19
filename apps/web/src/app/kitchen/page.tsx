@@ -186,8 +186,8 @@ export default function KitchenPage() {
         title={th('kitchen')}
         description={th('kitchenDesc')}
         icon={<ChefHat className="w-6 h-6" />}
-        className="bg-gray-800"
-        descriptionClassName="text-gray-400"
+        className="bg-red-500"
+        descriptionClassName="text-red-100"
         rightSlot={(
           <div className="flex items-center gap-4">
             <button

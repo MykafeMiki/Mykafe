@@ -245,7 +245,7 @@ export default function OrdinaPage() {
   if (!orderingStatus.isOpen) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-                <AppHeader
+        <AppHeader
           brand={tc('brand')}
           title={th('takeawayHome')}
           description={th('takeawayHomeDesc')}
@@ -307,7 +307,7 @@ export default function OrdinaPage() {
 
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-                <AppHeader
+        <AppHeader
           brand={tc('brand')}
           title={th('takeawayHome')}
           description={th('takeawayHomeDesc')}
@@ -423,7 +423,7 @@ export default function OrdinaPage() {
   if (step === 'payment') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-                <AppHeader
+        <AppHeader
           brand={tc('brand')}
           title={th('takeawayHome')}
           description={th('takeawayHomeDesc')}
@@ -489,7 +489,7 @@ export default function OrdinaPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-            <AppHeader
+      <AppHeader
         brand={tc('brand')}
         title={th('takeawayHome')}
         description={th('takeawayHomeDesc')}

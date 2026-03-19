@@ -167,8 +167,8 @@ function CassaContent({ t }: CassaContentProps) {
         title={th('cashier')}
         description={th('cashierDesc')}
         icon={<CreditCard className="w-6 h-6" />}
-        className="bg-purple-600"
-        descriptionClassName="text-purple-200"
+        className="bg-purple-500"
+        descriptionClassName="text-purple-100"
         rightSlot={(
           <div className="flex gap-2">
             <button

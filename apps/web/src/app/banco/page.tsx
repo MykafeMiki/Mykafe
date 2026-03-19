@@ -219,6 +219,8 @@ export default function BancoPage() {
           title={th('takeawayCounter')}
           description={th('takeawayCounterDesc')}
           icon={<ShoppingBag className="w-6 h-6" />}
+          className="bg-emerald-500"
+          descriptionClassName="text-emerald-100"
           rightSlot={<LanguageSelectorCompact />}
         />
 
@@ -271,11 +273,13 @@ export default function BancoPage() {
   if (step === 'choice') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-                <AppHeader
+        <AppHeader
           brand={tc('brand')}
           title={th('takeawayCounter')}
           description={th('takeawayCounterDesc')}
           icon={<ShoppingBag className="w-6 h-6" />}
+          className="bg-emerald-500"
+          descriptionClassName="text-emerald-100"
           onBack={() => setStep('name')}
           backAriaLabel={tc('back')}
           rightSlot={<LanguageSelectorCompact />}
@@ -330,11 +334,13 @@ export default function BancoPage() {
   if (step === 'sections') {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-                <AppHeader
+        <AppHeader
           brand={tc('brand')}
           title={th('takeawayCounter')}
           description={th('takeawayCounterDesc')}
           icon={<ShoppingBag className="w-6 h-6" />}
+          className="bg-emerald-500"
+          descriptionClassName="text-emerald-100"
           onBack={() => setStep('choice')}
           backAriaLabel={tc('back')}
           rightSlot={(
@@ -369,11 +375,13 @@ export default function BancoPage() {
   // Step 4: Menu
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-            <AppHeader
+      <AppHeader
         brand={tc('brand')}
         title={th('takeawayCounter')}
         description={th('takeawayCounterDesc')}
         icon={<ShoppingBag className="w-6 h-6" />}
+        className="bg-emerald-500"
+        descriptionClassName="text-emerald-100"
         onBack={() => setStep('sections')}
         backAriaLabel={tc('back')}
         rightSlot={(

@@ -212,9 +212,9 @@ export default function AdminPage() {
         title={th('admin')}
         description={th('adminDesc')}
         icon={<Settings className="w-6 h-6" />}
-        className="bg-gray-800 text-white p-4"
+        className="bg-gray-700"
         titleClassName="text-2xl"
-        descriptionClassName="text-gray-400"
+        descriptionClassName="text-gray-200"
         rightSlot={
           <button
             onClick={handleLogout}
