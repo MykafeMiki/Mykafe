@@ -1,40 +1,40 @@
-'use client'
+"use client";
 
-import { ShoppingBag } from 'lucide-react'
-import { useTranslations } from 'next-intl'
-import { useCart } from '@/lib/cart'
-import { formatPrice } from '@/lib/utils'
-import { PaymentMethod } from '@shared/types'
+import { ShoppingBag } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useCart } from "@/lib/cart";
+import { formatPrice } from "@/lib/utils";
+import { PaymentMethod } from "@shared/types";
 
 interface CartButtonProps {
-  onClick: () => void
-  paymentMethod?: PaymentMethod | null
+  onClick: () => void;
+  paymentMethod?: PaymentMethod | null;
 }
 
-const CARD_MULTIPLIER = 1.03
+const CARD_MULTIPLIER = 1.03;
 
 // Arrotonda ai 10 centesimi per eccesso
 function roundUpToTenCents(amount: number): number {
-  return Math.ceil(amount / 10) * 10
+  return Math.ceil(amount / 10) * 10;
 }
 
 export function CartButton({ onClick, paymentMethod }: CartButtonProps) {
-  const t = useTranslations('cart')
-  const itemCount = useCart((state) => state.getItemCount())
-  const items = useCart((state) => state.items)
-  const baseTotal = useCart((state) => state.getTotal())
+  const t = useTranslations("cart");
+  const itemCount = useCart((state) => state.getItemCount());
+  const items = useCart((state) => state.items);
+  const baseTotal = useCart((state) => state.getTotal());
 
   // Calcola il totale con eventuale maggiorazione carta
-  const isCard = paymentMethod === PaymentMethod.CARD
+  const isCard = paymentMethod === PaymentMethod.CARD;
   const total = isCard
     ? items.reduce((sum, item) => {
-        const modifiersPrice = item.selectedModifiers.reduce((s, m) => s + m.price, 0)
-        const itemTotal = (item.menuItem.price + modifiersPrice) * item.quantity
-        return sum + roundUpToTenCents(Math.round(itemTotal * CARD_MULTIPLIER))
+        const modifiersPrice = item.selectedModifiers.reduce((s, m) => s + m.price, 0);
+        const itemTotal = (item.menuItem.price + modifiersPrice) * item.quantity;
+        return sum + roundUpToTenCents(Math.round(itemTotal * CARD_MULTIPLIER));
       }, 0)
-    : baseTotal
+    : baseTotal;
 
-  if (itemCount === 0) return null
+  if (itemCount === 0) return null;
 
   return (
     <button
@@ -48,9 +48,9 @@ export function CartButton({ onClick, paymentMethod }: CartButtonProps) {
             {itemCount}
           </span>
         </div>
-        <span className="font-semibold">{t('viewCart')}</span>
+        <span className="font-semibold">{t("viewCart")}</span>
       </div>
       <span className="font-bold text-lg">{formatPrice(total)}</span>
     </button>
-  )
+  );
 }

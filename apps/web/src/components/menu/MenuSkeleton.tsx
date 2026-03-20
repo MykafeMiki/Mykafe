@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 export function MenuSkeleton() {
   return (
@@ -7,10 +7,7 @@ export function MenuSkeleton() {
       <div className="sticky top-0 bg-white z-10 border-b">
         <div className="flex gap-2 p-4 overflow-x-auto">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="h-8 w-20 bg-gray-200 rounded-full flex-shrink-0"
-            />
+            <div key={i} className="h-8 w-20 bg-gray-200 rounded-full flex-shrink-0" />
           ))}
         </div>
       </div>
@@ -25,10 +22,7 @@ export function MenuSkeleton() {
             {/* Items */}
             <div className="space-y-3">
               {[1, 2, 3].map((item) => (
-                <div
-                  key={item}
-                  className="flex gap-4 p-4 bg-white rounded-xl shadow-sm"
-                >
+                <div key={item} className="flex gap-4 p-4 bg-white rounded-xl shadow-sm">
                   {/* Image placeholder */}
                   <div className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0" />
 
@@ -49,7 +43,7 @@ export function MenuSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // Compact skeleton for section grid
@@ -59,14 +53,11 @@ export function SectionGridSkeleton() {
       <div className="h-8 w-48 bg-gray-200 rounded mb-6 mx-auto" />
       <div className="grid grid-cols-3 gap-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div
-            key={i}
-            className="aspect-square bg-gray-200 rounded-2xl"
-          />
+          <div key={i} className="aspect-square bg-gray-200 rounded-2xl" />
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // Single item skeleton (for lazy loading)
@@ -80,5 +71,5 @@ export function MenuItemSkeleton() {
         <div className="h-4 w-1/2 bg-gray-100 rounded" />
       </div>
     </div>
-  )
+  );
 }

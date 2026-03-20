@@ -1,11 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "https://biefwzrprjqusjynqwus.supabase.co/functions/v1";
+  process.env.NEXT_PUBLIC_API_URL || "https://biefwzrprjqusjynqwus.supabase.co/functions/v1";
 const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://biefwzrprjqusjynqwus.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://biefwzrprjqusjynqwus.supabase.co";
 const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZWZ3enJwcmpxdXNqeW5xd3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMDgzMTgsImV4cCI6MjA3OTY4NDMxOH0.CfLbUJa3znC9zNYXdYa0zrFzZM4ASvgw9Ousq27ZqCw";
@@ -35,10 +33,7 @@ export function getAuthToken(): string | null {
   return authToken;
 }
 
-async function fetchApi<T>(
-  endpoint: string,
-  options?: RequestInit,
-): Promise<T> {
+async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
@@ -57,10 +52,7 @@ async function fetchApi<T>(
   return res.json();
 }
 
-async function fetchApiAuth<T>(
-  endpoint: string,
-  options?: RequestInit,
-): Promise<T> {
+async function fetchApiAuth<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const token = getAuthToken();
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
@@ -88,8 +80,7 @@ export const adminLogin = (password: string) =>
     body: JSON.stringify({ password }),
   });
 
-export const verifyToken = () =>
-  fetchApiAuth<{ valid: boolean }>("/auth/verify");
+export const verifyToken = () => fetchApiAuth<{ valid: boolean }>("/auth/verify");
 
 function sanitizeOrderableMenu(categories: Category[]): Category[] {
   console.log("Sanitizing menu for orderable items...", categories);
@@ -102,8 +93,7 @@ function sanitizeOrderableMenu(categories: Category[]): Category[] {
 
       // Required modifier groups without choices are not orderable.
       const hasEmptyRequiredGroup = (item.modifierGroups || []).some(
-        (group) =>
-          group.required && (!group.modifiers || group.modifiers.length === 0),
+        (group) => group.required && (!group.modifiers || group.modifiers.length === 0)
       );
       return !hasEmptyRequiredGroup;
     }),
@@ -115,8 +105,7 @@ export const getMenu = async () => {
   const menu = await fetchApi<Category[]>("/menu");
   return sanitizeOrderableMenu(menu);
 };
-export const getMenuItem = (id: string) =>
-  fetchApi<MenuItem>(`/menu/items/${id}`);
+export const getMenuItem = (id: string) => fetchApi<MenuItem>(`/menu/items/${id}`);
 
 // ============ MENU CACHING (Query Diretta Supabase) ============
 
@@ -170,13 +159,12 @@ export const getMenuCached = async (): Promise<Category[]> => {
 // Query diretta a Supabase (bypassa Edge Function)
 async function fetchMenuDirect(): Promise<Category[]> {
   // Query parallele per massima velocità
-  const [categoriesResult, outOfStockResult, substitutesResult] =
-    await Promise.all([
-      // Menu principale
-      supabase
-        .from("Category")
-        .select(
-          `
+  const [categoriesResult, outOfStockResult, substitutesResult] = await Promise.all([
+    // Menu principale
+    supabase
+      .from("Category")
+      .select(
+        `
         id, name, nameEn, nameFr, nameEs, nameHe,
         description, descriptionEn, descriptionFr, descriptionEs, descriptionHe,
         imageUrl, sortOrder, active,
@@ -198,29 +186,25 @@ async function fetchMenuDirect(): Promise<Category[]> {
             ingredient:Ingredient(id, name, nameEn, nameFr, nameEs, nameHe, inStock)
           )
         )
-      `,
-        )
-        .eq("active", true)
-        .order("sortOrder", { ascending: true }),
+      `
+      )
+      .eq("active", true)
+      .order("sortOrder", { ascending: true }),
 
-      // Ingredienti non disponibili con match pre-calcolati
-      supabase
-        .from("Ingredient")
-        .select(
-          `
+    // Ingredienti non disponibili con match pre-calcolati
+    supabase
+      .from("Ingredient")
+      .select(
+        `
         id, name, nameEn, nameFr, nameEs, nameHe,
         menuItemMatches:MenuItemUnavailableIngredient(menuItemId)
-      `,
-        )
-        .eq("inStock", false),
+      `
+      )
+      .eq("inStock", false),
 
-      // Mappa sostituti ingredienti
-      supabase
-        .from("AppSettings")
-        .select("value")
-        .eq("key", "ingredient_substitutes")
-        .single(),
-    ]);
+    // Mappa sostituti ingredienti
+    supabase.from("AppSettings").select("value").eq("key", "ingredient_substitutes").single(),
+  ]);
 
   if (categoriesResult.error) {
     console.error("Menu fetch error:", categoriesResult.error);
@@ -241,8 +225,10 @@ async function fetchMenuDirect(): Promise<Category[]> {
       nameHe?: string;
     }
   > =
-    ((substitutesResult.data as { value?: Record<string, unknown> } | null)
-      ?.value as Record<string, { id: string; name: string }>) || {};
+    ((substitutesResult.data as { value?: Record<string, unknown> } | null)?.value as Record<
+      string,
+      { id: string; name: string }
+    >) || {};
 
   // Mappa: menuItemId -> ingredienti non disponibili (da description matching)
   const itemUnavailableMap = new Map<
@@ -278,27 +264,27 @@ async function fetchMenuDirect(): Promise<Category[]> {
   const getIngredientFromAssoc = (
     assoc: { ingredient?: unknown } | null | undefined
   ): {
-    id: string
-    name: string
-    nameEn?: string
-    nameFr?: string
-    nameEs?: string
-    nameHe?: string
-    inStock: boolean
+    id: string;
+    name: string;
+    nameEn?: string;
+    nameFr?: string;
+    nameEs?: string;
+    nameHe?: string;
+    inStock: boolean;
   } | null => {
-    const raw = assoc?.ingredient
-    const ingredient = Array.isArray(raw) ? raw[0] : raw
-    if (!ingredient || typeof ingredient !== 'object') return null
+    const raw = assoc?.ingredient;
+    const ingredient = Array.isArray(raw) ? raw[0] : raw;
+    if (!ingredient || typeof ingredient !== "object") return null;
     return ingredient as {
-      id: string
-      name: string
-      nameEn?: string
-      nameFr?: string
-      nameEs?: string
-      nameHe?: string
-      inStock: boolean
-    }
-  }
+      id: string;
+      name: string;
+      nameEn?: string;
+      nameFr?: string;
+      nameEs?: string;
+      nameHe?: string;
+      inStock: boolean;
+    };
+  };
 
   // Filtra items e modifiers
   const filtered = categories.map((category) => ({
@@ -308,29 +294,24 @@ async function fetchMenuDirect(): Promise<Category[]> {
         if (!item.available) {
           return false;
         }
-        const primaryOutOfStockWithoutSubstitute = item.ingredients?.some(
-          (ing) => {
-            const ingredient = getIngredientFromAssoc(ing)
-            if (!ing.isPrimary || !ingredient || ingredient.inStock) return false
-            return !substituteMap[ingredient.id]
-          },
-        );
+        const primaryOutOfStockWithoutSubstitute = item.ingredients?.some((ing) => {
+          const ingredient = getIngredientFromAssoc(ing);
+          if (!ing.isPrimary || !ingredient || ingredient.inStock) return false;
+          return !substituteMap[ingredient.id];
+        });
         return !primaryOutOfStockWithoutSubstitute;
       })
-      .sort(
-        (a: { sortOrder: number }, b: { sortOrder: number }) =>
-          a.sortOrder - b.sortOrder,
-      )
+      .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
       .map((item) => {
         // Ingredienti non disponibili da associazioni esplicite
         const explicitUnavailable = (item.ingredients || [])
           .map((assoc) => ({
             isPrimary: assoc.isPrimary,
-            ingredient: getIngredientFromAssoc(assoc)
+            ingredient: getIngredientFromAssoc(assoc),
           }))
           .filter((assoc) => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
           .map((assoc) => {
-            const ingredient = assoc.ingredient!
+            const ingredient = assoc.ingredient!;
             return {
               id: ingredient.id,
               name: ingredient.name,
@@ -338,7 +319,7 @@ async function fetchMenuDirect(): Promise<Category[]> {
               nameFr: ingredient.nameFr,
               nameEs: ingredient.nameEs,
               nameHe: ingredient.nameHe,
-            }
+            };
           });
 
         // Ingredienti non disponibili da description matching
@@ -380,8 +361,7 @@ async function fetchMenuDirect(): Promise<Category[]> {
             ...group,
             modifiers: group.modifiers?.filter(
               (mod: { available: boolean; ingredientId?: string }) =>
-                mod.available &&
-                (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId)),
+                mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
             ),
           })),
         };
@@ -433,9 +413,7 @@ export const clearMenuCache = async () => {
 // Use this for SSR/SSG pages
 export const getMenuISR = async (): Promise<Category[]> => {
   const baseUrl =
-    typeof window !== "undefined"
-      ? ""
-      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    typeof window !== "undefined" ? "" : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   const res = await fetch(`${baseUrl}/api/menu`, {
     next: { revalidate: 60 },
@@ -453,11 +431,11 @@ export const getMenuISR = async (): Promise<Category[]> => {
 export const preloadMenu = () => {
   if (typeof window !== "undefined") {
     if ("requestIdleCallback" in window) {
-      (
-        window as Window & { requestIdleCallback: (cb: () => void) => void }
-      ).requestIdleCallback(() => {
-        getMenuCached().catch(console.error);
-      });
+      (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(
+        () => {
+          getMenuCached().catch(console.error);
+        }
+      );
     } else {
       setTimeout(() => {
         getMenuCached().catch(console.error);
@@ -467,8 +445,7 @@ export const preloadMenu = () => {
 };
 
 // Admin Menu
-export const getAdminCategories = () =>
-  fetchApi<Category[]>("/menu/admin/categories");
+export const getAdminCategories = () => fetchApi<Category[]>("/menu/admin/categories");
 
 export const createCategory = (data: {
   name: string;
@@ -489,7 +466,7 @@ export const updateCategory = (
     imageUrl?: string;
     sortOrder?: number;
     active?: boolean;
-  },
+  }
 ) =>
   fetchApi<Category>(`/menu/categories/${id}`, {
     method: "PATCH",
@@ -520,7 +497,7 @@ export const updateMenuItem = (
     imageUrl?: string;
     sortOrder?: number;
     available?: boolean;
-  },
+  }
 ) =>
   fetchApi<MenuItem>(`/menu/items/${id}`, {
     method: "PATCH",
@@ -535,8 +512,7 @@ export const updateItemAvailability = (id: string, available: boolean) =>
 
 // Tables
 export const getTables = () => fetchApi<Table[]>("/tables");
-export const getTableByQr = (qrCode: string) =>
-  fetchApi<Table>(`/tables/qr/${qrCode}`);
+export const getTableByQr = (qrCode: string) => fetchApi<Table>(`/tables/qr/${qrCode}`);
 export const getTable = (id: string) => fetchApi<Table>(`/tables/${id}`);
 
 // Orders
@@ -584,7 +560,7 @@ export const updateIngredient = (
     nameHe?: string;
     inStock?: boolean;
     menuType?: string;
-  },
+  }
 ) =>
   fetchApiAuth<Ingredient>(`/ingredients/${id}`, {
     method: "PATCH",
@@ -600,7 +576,7 @@ export const setIngredientStock = (id: string, inStock: boolean) =>
 // Menu Item Ingredients
 export const setMenuItemIngredients = (
   menuItemId: string,
-  ingredients: { id: string; isPrimary: boolean }[],
+  ingredients: { id: string; isPrimary: boolean }[]
 ) =>
   fetchApiAuth<{ success: boolean }>(`/menu/items/${menuItemId}/ingredients`, {
     method: "PUT",
@@ -609,7 +585,7 @@ export const setMenuItemIngredients = (
 
 export const getMenuItemIngredients = (menuItemId: string) =>
   fetchApiAuth<{ ingredientId: string; isPrimary: boolean }[]>(
-    `/menu/items/${menuItemId}/ingredients`,
+    `/menu/items/${menuItemId}/ingredients`
   );
 
 // Party Sessions (deprecated)
@@ -619,8 +595,7 @@ export const createParty = (data: { tableId: string; name?: string }) =>
     body: JSON.stringify(data),
   });
 
-export const getPartyByCode = (code: string) =>
-  fetchApi<PartySession>(`/party/${code}`);
+export const getPartyByCode = (code: string) => fetchApi<PartySession>(`/party/${code}`);
 
 export const joinParty = (code: string, tableId: string) =>
   fetchApi<PartySession>(`/party/${code}/join`, {
@@ -628,8 +603,7 @@ export const joinParty = (code: string, tableId: string) =>
     body: JSON.stringify({ tableId }),
   });
 
-export const getPartyBill = (code: string) =>
-  fetchApi<PartyBillResponse>(`/party/${code}/bill`);
+export const getPartyBill = (code: string) => fetchApi<PartyBillResponse>(`/party/${code}/bill`);
 
 export const closeParty = (code: string) =>
   fetchApiAuth<PartySession>(`/party/${code}/close`, {
@@ -648,10 +622,7 @@ export interface TableSession {
   hostCustomerName?: string | null;
 }
 
-export const createTableSession = (data: {
-  hostTableId: string;
-  linkedTableNumbers: number[];
-}) =>
+export const createTableSession = (data: { hostTableId: string; linkedTableNumbers: number[] }) =>
   fetchApi<TableSession>("/table-sessions", {
     method: "POST",
     body: JSON.stringify(data),
@@ -678,7 +649,7 @@ export const addModifierGroup = (
     minSelect?: number;
     maxSelect?: number;
     modifiers?: { name: string; price?: number; ingredientId?: string }[];
-  },
+  }
 ) =>
   fetchApiAuth<ModifierGroup>(`/menu/items/${menuItemId}/modifier-groups`, {
     method: "POST",
@@ -691,7 +662,7 @@ export const addModifier = (
     name: string;
     price?: number;
     ingredientId?: string;
-  },
+  }
 ) =>
   fetchApiAuth<Modifier>(`/menu/modifier-groups/${modifierGroupId}/modifiers`, {
     method: "POST",
@@ -705,7 +676,7 @@ export const updateModifier = (
     price?: number;
     available?: boolean;
     ingredientId?: string;
-  },
+  }
 ) =>
   fetchApiAuth<Modifier>(`/menu/modifiers/${id}`, {
     method: "PATCH",
@@ -748,9 +719,7 @@ export const uploadItemImage = async (file: File): Promise<UploadResult> => {
   return res.json();
 };
 
-export const uploadCategoryImage = async (
-  file: File,
-): Promise<UploadResult> => {
+export const uploadCategoryImage = async (file: File): Promise<UploadResult> => {
   const token = getAuthToken();
   const formData = new FormData();
   formData.append("image", file);
@@ -770,10 +739,7 @@ export const uploadCategoryImage = async (
   return res.json();
 };
 
-export const uploadSectionImage = async (
-  sectionId: string,
-  file: File,
-): Promise<UploadResult> => {
+export const uploadSectionImage = async (sectionId: string, file: File): Promise<UploadResult> => {
   const token = getAuthToken();
   const formData = new FormData();
   formData.append("image", file);
@@ -858,19 +824,17 @@ export interface SummaryReport {
 }
 
 export const getTopProducts = async (
-  period: "week" | "month" = "week",
+  period: "week" | "month" = "week"
 ): Promise<TopProductsReport> => {
   return fetchApi<TopProductsReport>(`/reports/top-products?period=${period}`);
 };
 
-export const getPeakHours = async (
-  period: "week" | "month" = "week",
-): Promise<PeakHoursReport> => {
+export const getPeakHours = async (period: "week" | "month" = "week"): Promise<PeakHoursReport> => {
   return fetchApi<PeakHoursReport>(`/reports/peak-hours?period=${period}`);
 };
 
 export const getSummaryReport = async (
-  period: "week" | "month" = "week",
+  period: "week" | "month" = "week"
 ): Promise<SummaryReport> => {
   return fetchApi<SummaryReport>(`/reports/summary?period=${period}`);
 };
@@ -910,8 +874,7 @@ export interface CashierHistoryResponse {
   };
 }
 
-export const getCashierTables = () =>
-  fetchApi<CashierTablesResponse>("/cashier/tables");
+export const getCashierTables = () => fetchApi<CashierTablesResponse>("/cashier/tables");
 
 export const getTableOrders = (tableId: string) =>
   fetchApi<TableOrdersResponse>(`/cashier/table/${tableId}`);
@@ -928,8 +891,7 @@ export const payTable = (tableId: string, paymentMethod: "CASH" | "CARD") =>
     body: JSON.stringify({ paymentMethod }),
   });
 
-export const getCashierHistory = () =>
-  fetchApi<CashierHistoryResponse>("/cashier/history");
+export const getCashierHistory = () => fetchApi<CashierHistoryResponse>("/cashier/history");
 
 // ============ TABLE CUSTOMERS ============
 
@@ -963,8 +925,7 @@ export const getTableCustomers = (tableId: string) =>
   fetchApi<TableCustomer[]>(`/tables/${tableId}/customers`);
 
 // Get host customer at table
-export const getTableHost = (tableId: string) =>
-  fetchApi<TableCustomer>(`/tables/${tableId}/host`);
+export const getTableHost = (tableId: string) => fetchApi<TableCustomer>(`/tables/${tableId}/host`);
 
 // Clear all customers from table (admin/cashier)
 export const clearTableCustomers = (tableId: string) =>
@@ -973,10 +934,7 @@ export const clearTableCustomers = (tableId: string) =>
   });
 
 // Update table status
-export const updateTableStatus = (
-  tableId: string,
-  status: "AVAILABLE" | "OCCUPIED" | "RESERVED",
-) =>
+export const updateTableStatus = (tableId: string, status: "AVAILABLE" | "OCCUPIED" | "RESERVED") =>
   fetchApi<Table>(`/tables/${tableId}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),

@@ -1,27 +1,28 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 // Force dynamic: evita pre-rendering a build time (env vars non disponibili)
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function getSupabase() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  )
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://biefwzrprjqusjynqwus.supabase.co",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+  );
 }
 
 export async function GET() {
-  const supabase = getSupabase()
+  const supabase = getSupabase();
 
   try {
     // Query parallele per massima velocità
     const [categoriesResult, outOfStockResult] = await Promise.all([
       // Menu principale con ingredienti
       supabase
-        .from('Category')
-        .select(`
+        .from("Category")
+        .select(
+          `
           id, name, nameEn, nameFr, nameEs, nameHe,
           description, descriptionEn, descriptionFr, descriptionEs, descriptionHe,
           imageUrl, sortOrder, active,
@@ -43,47 +44,73 @@ export async function GET() {
               ingredient:Ingredient(id, name, nameEn, nameFr, nameEs, nameHe, inStock)
             )
           )
-        `)
-        .eq('active', true)
-        .order('sortOrder', { ascending: true }),
+        `
+        )
+        .eq("active", true)
+        .order("sortOrder", { ascending: true }),
 
       // Ingredienti non disponibili con match pre-calcolati
       supabase
-        .from('Ingredient')
-        .select(`
+        .from("Ingredient")
+        .select(
+          `
           id, name, nameEn, nameFr, nameEs, nameHe,
           menuItemMatches:MenuItemUnavailableIngredient(menuItemId)
-        `)
-        .eq('inStock', false)
-    ])
+        `
+        )
+        .eq("inStock", false),
+    ]);
 
-    if (categoriesResult.error) throw categoriesResult.error
+    if (categoriesResult.error) throw categoriesResult.error;
 
-    const categories = categoriesResult.data || []
+    const categories = categoriesResult.data || [];
 
     // Mappa sostituti: ingredientId -> { id, name, ... } — query separata per non rompere i tipi
     const substitutesRes = await supabase
-      .from('AppSettings')
-      .select('value')
-      .eq('key', 'ingredient_substitutes')
-      .single()
+      .from("AppSettings")
+      .select("value")
+      .eq("key", "ingredient_substitutes")
+      .single();
 
-    if (substitutesRes.error && substitutesRes.error.code !== 'PGRST116') {
-      throw substitutesRes.error
+    if (substitutesRes.error && substitutesRes.error.code !== "PGRST116") {
+      throw substitutesRes.error;
     }
 
-    const substituteMap: Record<string, { id: string; name: string; nameEn?: string; nameFr?: string; nameEs?: string; nameHe?: string }> =
-      (substitutesRes.data as { value?: Record<string, unknown> } | null)?.value as Record<string, { id: string; name: string }> || {}
+    const substituteMap: Record<
+      string,
+      {
+        id: string;
+        name: string;
+        nameEn?: string;
+        nameFr?: string;
+        nameEs?: string;
+        nameHe?: string;
+      }
+    > =
+      ((substitutesRes.data as { value?: Record<string, unknown> } | null)?.value as Record<
+        string,
+        { id: string; name: string }
+      >) || {};
 
     // Mappa: menuItemId -> ingredienti non disponibili (da description matching pre-calcolato)
-    const itemUnavailableMap = new Map<string, { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[]>()
-    const outOfStockIds = new Set<string>()
+    const itemUnavailableMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        nameEn?: string;
+        nameFr?: string;
+        nameEs?: string;
+        nameHe?: string;
+      }[]
+    >();
+    const outOfStockIds = new Set<string>();
 
     for (const ing of outOfStockResult.data || []) {
-      outOfStockIds.add(ing.id)
+      outOfStockIds.add(ing.id);
       for (const match of ing.menuItemMatches || []) {
         if (!itemUnavailableMap.has(match.menuItemId)) {
-          itemUnavailableMap.set(match.menuItemId, [])
+          itemUnavailableMap.set(match.menuItemId, []);
         }
         itemUnavailableMap.get(match.menuItemId)!.push({
           id: ing.id,
@@ -91,8 +118,8 @@ export async function GET() {
           nameEn: ing.nameEn,
           nameFr: ing.nameFr,
           nameEs: ing.nameEs,
-          nameHe: ing.nameHe
-        })
+          nameHe: ing.nameHe,
+        });
       }
     }
 
@@ -101,42 +128,42 @@ export async function GET() {
     const getIngredientFromAssoc = (
       assoc: { ingredient?: unknown } | null | undefined
     ): {
-      id: string
-      name: string
-      nameEn?: string
-      nameFr?: string
-      nameEs?: string
-      nameHe?: string
-      inStock: boolean
+      id: string;
+      name: string;
+      nameEn?: string;
+      nameFr?: string;
+      nameEs?: string;
+      nameHe?: string;
+      inStock: boolean;
     } | null => {
-      const raw = assoc?.ingredient
-      const ingredient = Array.isArray(raw) ? raw[0] : raw
-      if (!ingredient || typeof ingredient !== 'object') return null
+      const raw = assoc?.ingredient;
+      const ingredient = Array.isArray(raw) ? raw[0] : raw;
+      if (!ingredient || typeof ingredient !== "object") return null;
       return ingredient as {
-        id: string
-        name: string
-        nameEn?: string
-        nameFr?: string
-        nameEs?: string
-        nameHe?: string
-        inStock: boolean
-      }
-    }
+        id: string;
+        name: string;
+        nameEn?: string;
+        nameFr?: string;
+        nameEs?: string;
+        nameHe?: string;
+        inStock: boolean;
+      };
+    };
 
     // Filtra items e modifiers
-    const menu = categories.map(category => ({
+    const menu = categories.map((category) => ({
       ...category,
       items: (category.items || [])
         .filter((item) => {
           if (!item.available) {
-            return false
+            return false;
           }
           const primaryOutOfStockWithoutSubstitute = item.ingredients?.some((ing) => {
-            const ingredient = getIngredientFromAssoc(ing)
-            if (!ing.isPrimary || !ingredient || ingredient.inStock) return false
-            return !substituteMap[ingredient.id]
-          })
-          return !primaryOutOfStockWithoutSubstitute
+            const ingredient = getIngredientFromAssoc(ing);
+            if (!ing.isPrimary || !ingredient || ingredient.inStock) return false;
+            return !substituteMap[ingredient.id];
+          });
+          return !primaryOutOfStockWithoutSubstitute;
         })
         .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
         .map((item) => {
@@ -144,65 +171,82 @@ export async function GET() {
           const explicitUnavailable = (item.ingredients || [])
             .map((assoc) => ({
               isPrimary: assoc.isPrimary,
-              ingredient: getIngredientFromAssoc(assoc)
+              ingredient: getIngredientFromAssoc(assoc),
             }))
             .filter((assoc) => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
             .map((assoc) => {
-              const ingredient = assoc.ingredient!
+              const ingredient = assoc.ingredient!;
               return {
                 id: ingredient.id,
                 name: ingredient.name,
                 nameEn: ingredient.nameEn,
                 nameFr: ingredient.nameFr,
                 nameEs: ingredient.nameEs,
-                nameHe: ingredient.nameHe
-              }
-            })
+                nameHe: ingredient.nameHe,
+              };
+            });
 
           // Ingredienti non disponibili da description matching pre-calcolato
-          const descriptionMatches = itemUnavailableMap.get(item.id) || []
+          const descriptionMatches = itemUnavailableMap.get(item.id) || [];
 
           // Merge e deduplica, aggiunge sostituto se disponibile
-          const seenIds = new Set<string>()
-          const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, substitute?: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[] = []
+          const seenIds = new Set<string>();
+          const unavailableIngredients: {
+            id: string;
+            name: string;
+            nameEn?: string;
+            nameFr?: string;
+            nameEs?: string;
+            nameHe?: string;
+            substitute?: {
+              id: string;
+              name: string;
+              nameEn?: string;
+              nameFr?: string;
+              nameEs?: string;
+              nameHe?: string;
+            };
+          }[] = [];
           for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
             if (!seenIds.has(ing.id)) {
-              seenIds.add(ing.id)
+              seenIds.add(ing.id);
               unavailableIngredients.push({
                 ...ing,
-                substitute: substituteMap[ing.id] ?? undefined
-              })
+                substitute: substituteMap[ing.id] ?? undefined,
+              });
             }
           }
 
-          const normalizedModifierGroups = item.modifierGroups?.map(group => ({
+          const normalizedModifierGroups = item.modifierGroups?.map((group) => ({
             ...group,
-            modifiers: group.modifiers?.filter((mod: { available: boolean; ingredientId?: string }) =>
-              mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
-            )
-          }))
+            modifiers: group.modifiers?.filter(
+              (mod: { available: boolean; ingredientId?: string }) =>
+                mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
+            ),
+          }));
 
           return {
             ...item,
             unavailableIngredients,
             ingredients: undefined, // Rimuovi raw ingredients
-            modifierGroups: normalizedModifierGroups
-          }
+            modifierGroups: normalizedModifierGroups,
+          };
         })
-        .filter((item) => !(item.modifierGroups || []).some((group) => group.required && (!group.modifiers || group.modifiers.length === 0)))
-    }))
+        .filter(
+          (item) =>
+            !(item.modifierGroups || []).some(
+              (group) => group.required && (!group.modifiers || group.modifiers.length === 0)
+            )
+        ),
+    }));
 
     return NextResponse.json(menu, {
       headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-      }
-    })
-
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    });
   } catch (error) {
-    console.error('Menu API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch menu' },
-      { status: 500 }
-    )
+    console.error("Menu API error:", error);
+    return NextResponse.json({ error: "Failed to fetch menu" }, { status: 500 });
   }
 }

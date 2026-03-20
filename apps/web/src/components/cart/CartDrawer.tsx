@@ -1,31 +1,41 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { X, Minus, Plus, Trash2, Loader2, UtensilsCrossed, ShoppingBag } from 'lucide-react'
-import { useTranslations } from 'next-intl'
-import { useCart } from '@/lib/cart'
-import { formatPrice, cn } from '@/lib/utils'
-import { createOrder } from '@/lib/api'
-import { ConsumeMode } from '@shared/types'
+import { useState } from "react";
+import { X, Minus, Plus, Trash2, Loader2, UtensilsCrossed, ShoppingBag } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useCart } from "@/lib/cart";
+import { formatPrice, cn } from "@/lib/utils";
+import { createOrder } from "@/lib/api";
+import { ConsumeMode } from "@shared/types";
 
 interface CartDrawerProps {
-  isOpen: boolean
-  onClose: () => void
-  onOrderSuccess: (estimatedWaitMinutes?: number) => void
+  isOpen: boolean;
+  onClose: () => void;
+  onOrderSuccess: (estimatedWaitMinutes?: number) => void;
 }
 
 export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps) {
-  const t = useTranslations('cart')
-  const tm = useTranslations('menuItem')
-  const { items, tableId, tableSessionId, customerName, updateQuantity, updateConsumeMode, removeItem, clearCart, getTotal } = useCart()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const t = useTranslations("cart");
+  const tm = useTranslations("menuItem");
+  const {
+    items,
+    tableId,
+    tableSessionId,
+    customerName,
+    updateQuantity,
+    updateConsumeMode,
+    removeItem,
+    clearCart,
+    getTotal,
+  } = useCart();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmitOrder = async () => {
-    if (!tableId || items.length === 0) return
+    if (!tableId || items.length === 0) return;
 
-    setIsSubmitting(true)
-    setError(null)
+    setIsSubmitting(true);
+    setError(null);
 
     try {
       const response = await createOrder({
@@ -39,20 +49,20 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
           modifierIds: item.selectedModifiers.map((m) => m.id),
           consumeMode: item.consumeMode,
         })),
-      })
+      });
 
-      clearCart()
-      onOrderSuccess(response.estimatedWaitMinutes)
-      onClose()
+      clearCart();
+      onOrderSuccess(response.estimatedWaitMinutes);
+      onClose();
     } catch (err) {
-      setError(t('orderError'))
-      console.error(err)
+      setError(t("orderError"));
+      console.error(err);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -61,11 +71,8 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
       <div className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-bold text-gray-900">{t('title')}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition"
-          >
+          <h2 className="text-lg font-bold text-gray-900">{t("title")}</h2>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -73,30 +80,21 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {items.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">
-              {t('empty')}
-            </p>
+            <p className="text-center text-gray-500 py-8">{t("empty")}</p>
           ) : (
             <div className="space-y-4">
               {items.map((item, index) => (
-                <div
-                  key={index}
-                  className="p-3 bg-gray-50 rounded-lg"
-                >
+                <div key={index} className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex gap-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900">
-                        {item.menuItem.name}
-                      </h3>
+                      <h3 className="font-semibold text-gray-900">{item.menuItem.name}</h3>
                       {item.selectedModifiers.length > 0 && (
                         <p className="text-sm text-gray-500">
-                          {item.selectedModifiers.map((m) => m.name).join(', ')}
+                          {item.selectedModifiers.map((m) => m.name).join(", ")}
                         </p>
                       )}
                       {item.notes && (
-                        <p className="text-sm text-gray-400 italic">
-                          &quot;{item.notes}&quot;
-                        </p>
+                        <p className="text-sm text-gray-400 italic">&quot;{item.notes}&quot;</p>
                       )}
                       <p className="font-semibold text-primary-600 mt-1">
                         {formatPrice(
@@ -122,9 +120,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
                         >
                           <Minus className="w-4 h-4" />
                         </button>
-                        <span className="w-6 text-center font-semibold">
-                          {item.quantity}
-                        </span>
+                        <span className="w-6 text-center font-semibold">{item.quantity}</span>
                         <button
                           onClick={() => updateQuantity(index, item.quantity + 1)}
                           className="p-2 hover:bg-gray-100 transition"
@@ -140,26 +136,26 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
                     <button
                       onClick={() => updateConsumeMode(index, ConsumeMode.DINE_IN)}
                       className={cn(
-                        'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition',
+                        "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition",
                         item.consumeMode === ConsumeMode.DINE_IN
-                          ? 'bg-primary-100 text-primary-700 border border-primary-300'
-                          : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'
+                          ? "bg-primary-100 text-primary-700 border border-primary-300"
+                          : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"
                       )}
                     >
                       <UtensilsCrossed className="w-3.5 h-3.5" />
-                      {tm('eatHere')}
+                      {tm("eatHere")}
                     </button>
                     <button
                       onClick={() => updateConsumeMode(index, ConsumeMode.TAKEAWAY)}
                       className={cn(
-                        'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition',
+                        "flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded text-xs font-medium transition",
                         item.consumeMode === ConsumeMode.TAKEAWAY
-                          ? 'bg-orange-100 text-orange-700 border border-orange-300'
-                          : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300'
+                          ? "bg-orange-100 text-orange-700 border border-orange-300"
+                          : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"
                       )}
                     >
                       <ShoppingBag className="w-3.5 h-3.5" />
-                      {tm('takeaway')}
+                      {tm("takeaway")}
                     </button>
                   </div>
                 </div>
@@ -171,12 +167,10 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
         {/* Footer */}
         {items.length > 0 && (
           <div className="p-4 border-t bg-gray-50">
-            {error && (
-              <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
 
             <div className="flex items-center justify-between mb-4">
-              <span className="text-gray-600">{t('total')}</span>
+              <span className="text-gray-600">{t("total")}</span>
               <span className="text-xl font-bold">{formatPrice(getTotal())}</span>
             </div>
 
@@ -188,15 +182,15 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  {t('sending')}
+                  {t("sending")}
                 </>
               ) : (
-                t('confirmOrder')
+                t("confirmOrder")
               )}
             </button>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
