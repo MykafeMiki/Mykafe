@@ -129,12 +129,7 @@ export async function GET() {
       items: (category.items || [])
         .filter((item) => {
           if (!item.available) {
-            const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some((ing) => {
-              const ingredient = getIngredientFromAssoc(ing)
-              if (!ing.isPrimary || !ingredient || ingredient.inStock) return false
-              return Boolean(substituteMap[ingredient.id])
-            })
-            return hasPrimaryOutOfStockWithSubstitute ?? false
+            return false
           }
           const primaryOutOfStockWithoutSubstitute = item.ingredients?.some((ing) => {
             const ingredient = getIngredientFromAssoc(ing)
@@ -180,18 +175,21 @@ export async function GET() {
             }
           }
 
+          const normalizedModifierGroups = item.modifierGroups?.map(group => ({
+            ...group,
+            modifiers: group.modifiers?.filter((mod: { available: boolean; ingredientId?: string }) =>
+              mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
+            )
+          }))
+
           return {
             ...item,
             unavailableIngredients,
             ingredients: undefined, // Rimuovi raw ingredients
-            modifierGroups: item.modifierGroups?.map(group => ({
-              ...group,
-              modifiers: group.modifiers?.filter((mod: { available: boolean; ingredientId?: string }) =>
-                mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
-              )
-            }))
+            modifierGroups: normalizedModifierGroups
           }
         })
+        .filter((item) => !(item.modifierGroups || []).some((group) => group.required && (!group.modifiers || group.modifiers.length === 0)))
     }))
 
     return NextResponse.json(menu, {
