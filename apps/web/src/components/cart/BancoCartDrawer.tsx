@@ -105,7 +105,7 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
                     )}
                     {item.notes && (
                       <p className="text-sm text-gray-400 italic">
-                        "{item.notes}"
+                        &quot;{item.notes}&quot;
                       </p>
                     )}
                     <p className="font-semibold text-primary-600 mt-1">

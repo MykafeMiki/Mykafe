@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle, Truck } from 'lucide-react'
+import { CheckCircle, Banknote, CreditCard, Calendar, Clock, AlertTriangle, Truck } from 'lucide-react'
 import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
@@ -204,8 +204,7 @@ export default function OrdinaPage() {
   const handleAddWithModifiers = (
     quantity: number,
     modifiers: Modifier[],
-    notes?: string,
-    consumeMode?: ConsumeMode
+    notes?: string
   ) => {
     if (selectedItem) {
       addToCart(selectedItem, quantity, modifiers, notes, ConsumeMode.TAKEAWAY)
@@ -303,8 +302,6 @@ export default function OrdinaPage() {
 
   // Step 2: Date/Time Selection (after payment choice)
   if (step === 'datetime') {
-    const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cashAtPickup')
-
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <AppHeader

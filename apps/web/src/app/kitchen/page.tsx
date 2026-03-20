@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Volume2, VolumeX, RefreshCw, Lock, Loader2, ChefHat } from 'lucide-react'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { AppHeader } from '@/components/AppHeader'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { OrderCard } from '@/components/kitchen/OrderCard'
@@ -14,13 +14,11 @@ export default function KitchenPage() {
   const th = useTranslations('home')
   const tc = useTranslations('common')
   const tl = useTranslations('login')
-  const locale = useLocale()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [soundEnabled, setSoundEnabled] = useState(true)
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
   // Check auth on mount
   useEffect(() => {

@@ -7,7 +7,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
 import { ItemModal } from '@/components/menu/ItemModal'
-import { MenuSections, menuSections, categoryToSectionMap, getSectionName } from '@/components/menu/MenuSections'
+import { MenuSections, categoryToSectionMap } from '@/components/menu/MenuSections'
 import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
@@ -16,8 +16,7 @@ import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr, getTableSessionByTable, createTableSession, getTableCustomers, addCustomerToTable, type TableSession, type TableCustomer } from '@/lib/api'
 import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
-import type { Category, MenuItem, Modifier, Table } from '@shared/types'
-import { ConsumeMode } from '@shared/types'
+import type { Category, MenuItem, Modifier } from '@shared/types'
 
 type PageStep = 'enter-name' | 'choice' | 'merge-input' | 'join-group' | 'blocked' | 'sections' | 'menu'
 
@@ -196,7 +195,7 @@ export default function MenuPage() {
       window.history.pushState({ mykafe: 'guard' }, '', location.href)
     }
 
-    const handlePopState = (_e: PopStateEvent) => {
+    const handlePopState = () => {
       // Naviga indietro nel flusso interno
       setStepRaw(prev => {
         if (prev === 'menu') return 'sections'
@@ -239,11 +238,10 @@ export default function MenuPage() {
   const handleAddWithModifiers = (
     quantity: number,
     modifiers: Modifier[],
-    notes?: string,
-    consumeMode?: ConsumeMode
+    notes?: string
   ) => {
     if (selectedItem) {
-      addToCart(selectedItem, quantity, modifiers, notes, consumeMode)
+      addToCart(selectedItem, quantity, modifiers, notes)
     }
   }
 

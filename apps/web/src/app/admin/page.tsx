@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image as ImageIcon, Loader2, Lock, LogOut, Download, Printer, Clock, Timer, BarChart3, DollarSign, Save, Check, Users, RefreshCw, Calendar, Settings } from 'lucide-react'
+import { Plus, Edit, ToggleLeft, ToggleRight, X, Upload, Image as ImageIcon, Loader2, Lock, LogOut, Download, Printer, Timer, BarChart3, DollarSign, Save, Check, Users, RefreshCw, Calendar, Settings } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useLocale, useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
@@ -184,27 +184,6 @@ export default function AdminPage() {
 
   const isClosed = closureBannerConfig.temporaryClosure.active
 
-  const getOrderingReasonText = (status: ReturnType<typeof isOnlineOrderingOpen>) => {
-    if (status.reason) return status.reason
-
-    switch (status.reasonKey) {
-      case 'menu_disabled':
-        return t('onlineReasonMenuDisabled')
-      case 'temporary_closure':
-        return t('onlineReasonTemporaryClosure')
-      case 'closed_today':
-        return t('onlineReasonClosedToday')
-      case 'not_open_yet':
-        return t('onlineReasonNotOpenYet')
-      case 'closed_for_today':
-        return t('onlineReasonClosedForToday')
-      case 'closed':
-        return t('onlineReasonClosed')
-      default:
-        return t('serviceTemporarilySuspended')
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -350,7 +329,7 @@ export default function AdminPage() {
           <QRTab tables={tables} t={t} tc={tc} />
         )}
         {activeTab === 'reports' && (
-          <ReportsTab t={t} tc={tc} />
+          <ReportsTab t={t} />
         )}
         {activeTab === 'prices' && (
           <PricesTab categories={categories} onUpdate={loadData} t={t} tc={tc} />
@@ -1478,7 +1457,7 @@ function TimerConfigModal({ config, onClose, onSave }: TimerConfigModalProps) {
 
             {!localConfig.sushi.enabled && (
               <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
-                Timer disabilitato: il sushi sara visibile in base al toggle della categoria nell'elenco menu.
+                Timer disabilitato: il sushi sara visibile in base al toggle della categoria nell&apos;elenco menu.
               </p>
             )}
           </div>
@@ -3252,10 +3231,9 @@ function QRTab({ tables, t, tc }: QRTabProps) {
 
 interface ReportsTabProps {
   t: ReturnType<typeof useTranslations<'admin'>>
-  tc: ReturnType<typeof useTranslations<'common'>>
 }
 
-function ReportsTab({ t, tc }: ReportsTabProps) {
+function ReportsTab({ t }: ReportsTabProps) {
   const locale = useLocale()
   const [period, setPeriod] = useState<'week' | 'month'>('week')
   const [topProducts, setTopProducts] = useState<TopProductsReport | null>(null)

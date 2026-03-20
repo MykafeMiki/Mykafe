@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
 import { ItemModal } from '@/components/menu/ItemModal'
-import { MenuSections, categoryToSectionMap, getSectionName, menuSections } from '@/components/menu/MenuSections'
+import { MenuSections, categoryToSectionMap } from '@/components/menu/MenuSections'
 import { CartButton } from '@/components/cart/CartButton'
 import { BancoCartDrawer } from '@/components/cart/BancoCartDrawer'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
@@ -111,7 +111,7 @@ export default function BancoPage() {
     }
 
     loadData()
-  }, [setTableIdInCart, setPriceContext])
+  }, [setTableIdInCart, setPriceContext, tc])
 
   const scrollToCategory = (categoryId: string) => {
     setActiveCategory(categoryId)
@@ -136,8 +136,7 @@ export default function BancoPage() {
   const handleAddWithModifiers = (
     quantity: number,
     modifiers: Modifier[],
-    notes?: string,
-    consumeMode?: ConsumeMode
+    notes?: string
   ) => {
     if (selectedItem) {
       addToCart(selectedItem, quantity, modifiers, notes, currentConsumeMode)

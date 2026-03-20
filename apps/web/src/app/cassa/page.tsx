@@ -5,7 +5,6 @@ import { CreditCard, Lock, Loader2, RefreshCw, ArrowLeft, Banknote, CreditCard a
 import { useLocale, useTranslations } from 'next-intl'
 import { AppHeader } from '@/components/AppHeader'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
-import { formatPrice } from '@/lib/utils'
 import {
   adminLogin,
   verifyToken,

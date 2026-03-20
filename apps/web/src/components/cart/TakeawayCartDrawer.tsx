@@ -7,7 +7,6 @@ import { useCart } from '@/lib/cart'
 import { formatPrice, getItemPrice as getContextPrice } from '@/lib/utils'
 import { createOrder } from '@/lib/api'
 import { PaymentMethod, OrderType, ConsumeMode } from '@shared/types'
-import type { MenuItem } from '@shared/types'
 import {
   getTimerConfig,
   getAvailableDates as getDates,
@@ -210,11 +209,11 @@ export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMet
                           {item.selectedModifiers.map((m) => m.name).join(', ')}
                         </p>
                       )}
-                      {item.notes && (
-                        <p className="text-sm text-gray-400 italic">
-                          "{item.notes}"
-                        </p>
-                      )}
+                    {item.notes && (
+                      <p className="text-sm text-gray-400 italic">
+                          &quot;{item.notes}&quot;
+                      </p>
+                    )}
                       <p className="font-semibold text-primary-600 mt-1">
                         {formatPrice(
                           calculateItemPrice(

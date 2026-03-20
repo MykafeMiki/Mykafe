@@ -275,18 +275,44 @@ async function fetchMenuDirect(): Promise<Category[]> {
     }
   }
 
+  const getIngredientFromAssoc = (
+    assoc: { ingredient?: unknown } | null | undefined
+  ): {
+    id: string
+    name: string
+    nameEn?: string
+    nameFr?: string
+    nameEs?: string
+    nameHe?: string
+    inStock: boolean
+  } | null => {
+    const raw = assoc?.ingredient
+    const ingredient = Array.isArray(raw) ? raw[0] : raw
+    if (!ingredient || typeof ingredient !== 'object') return null
+    return ingredient as {
+      id: string
+      name: string
+      nameEn?: string
+      nameFr?: string
+      nameEs?: string
+      nameHe?: string
+      inStock: boolean
+    }
+  }
+
   // Filtra items e modifiers
   const filtered = categories.map((category) => ({
     ...category,
     items: (category.items || [])
-      .filter((item: any) => {
+      .filter((item) => {
         if (!item.available) {
           return false;
         }
         const primaryOutOfStockWithoutSubstitute = item.ingredients?.some(
-          (ing: any) => {
-            if (!ing.isPrimary || ing.ingredient?.inStock) return false;
-            return !substituteMap[ing.ingredient.id];
+          (ing) => {
+            const ingredient = getIngredientFromAssoc(ing)
+            if (!ing.isPrimary || !ingredient || ingredient.inStock) return false
+            return !substituteMap[ingredient.id]
           },
         );
         return !primaryOutOfStockWithoutSubstitute;
@@ -295,21 +321,25 @@ async function fetchMenuDirect(): Promise<Category[]> {
         (a: { sortOrder: number }, b: { sortOrder: number }) =>
           a.sortOrder - b.sortOrder,
       )
-      .map((item: any) => {
+      .map((item) => {
         // Ingredienti non disponibili da associazioni esplicite
         const explicitUnavailable = (item.ingredients || [])
-          .filter(
-            (assoc: any) =>
-              !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock,
-          )
-          .map((assoc: any) => ({
-            id: assoc.ingredient.id,
-            name: assoc.ingredient.name,
-            nameEn: assoc.ingredient.nameEn,
-            nameFr: assoc.ingredient.nameFr,
-            nameEs: assoc.ingredient.nameEs,
-            nameHe: assoc.ingredient.nameHe,
-          }));
+          .map((assoc) => ({
+            isPrimary: assoc.isPrimary,
+            ingredient: getIngredientFromAssoc(assoc)
+          }))
+          .filter((assoc) => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
+          .map((assoc) => {
+            const ingredient = assoc.ingredient!
+            return {
+              id: ingredient.id,
+              name: ingredient.name,
+              nameEn: ingredient.nameEn,
+              nameFr: ingredient.nameFr,
+              nameEs: ingredient.nameEs,
+              nameHe: ingredient.nameHe,
+            }
+          });
 
         // Ingredienti non disponibili da description matching
         const descriptionMatches = itemUnavailableMap.get(item.id) || [];
@@ -346,10 +376,10 @@ async function fetchMenuDirect(): Promise<Category[]> {
           ...item,
           unavailableIngredients,
           ingredients: undefined, // Rimuovi raw ingredients dalla risposta
-          modifierGroups: item.modifierGroups?.map((group: any) => ({
+          modifierGroups: item.modifierGroups?.map((group) => ({
             ...group,
             modifiers: group.modifiers?.filter(
-              (mod: any) =>
+              (mod: { available: boolean; ingredientId?: string }) =>
                 mod.available &&
                 (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId)),
             ),

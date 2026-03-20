@@ -28,11 +28,11 @@ export function TranslatedNote({ note, className, showOriginal = true }: Transla
       <div className={cn("text-sm", className)}>
         <p className="text-orange-600 font-medium flex items-center gap-1">
           <Languages className="w-3 h-3" />
-          "{translated}"
+          &quot;{translated}&quot;
         </p>
         {showOriginal && (
           <p className="text-gray-400 text-xs italic mt-0.5">
-            (originale: "{note}")
+            (originale: &quot;{note}&quot;)
           </p>
         )}
       </div>
@@ -42,7 +42,7 @@ export function TranslatedNote({ note, className, showOriginal = true }: Transla
   // No translation needed, show original
   return (
     <p className={cn("text-sm text-orange-600 italic", className)}>
-      "{note}"
+      &quot;{note}&quot;
     </p>
   )
 }

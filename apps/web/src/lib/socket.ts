@@ -29,21 +29,11 @@ export interface OrderEvent {
   old: Record<string, unknown>
 }
 
-// Store callbacks for reconnection
-let storedOnNewOrder: ((order: unknown) => void) | null = null
-let storedOnOrderUpdate: ((order: unknown) => void) | null = null
-let storedOnConnectionChange: ((connected: boolean) => void) | null = null
-
 export function subscribeToOrders(
   onNewOrder: (order: unknown) => void,
   onOrderUpdate: (order: unknown) => void,
   onConnectionChange?: (connected: boolean) => void
 ) {
-  // Store callbacks for reconnection
-  storedOnNewOrder = onNewOrder
-  storedOnOrderUpdate = onOrderUpdate
-  storedOnConnectionChange = onConnectionChange || null
-
   if (ordersChannel) {
     ordersChannel.unsubscribe()
   }
@@ -127,9 +117,6 @@ export function unsubscribeFromOrders() {
     ordersChannel.unsubscribe()
     ordersChannel = null
   }
-  storedOnNewOrder = null
-  storedOnOrderUpdate = null
-  storedOnConnectionChange = null
   reconnectAttempts = 0
 }
 
