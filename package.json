@@ -19,7 +19,9 @@
     "db:generate": "pnpm --filter db db:generate",
     "db:seed": "pnpm --filter db db:seed",
     "db:studio": "pnpm --filter db db:studio",
-    "postinstall": "pnpm --filter db db:generate"
+    "postinstall": "pnpm --filter db db:generate",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
   },
   "keywords": [
     "restaurant",
@@ -34,7 +36,8 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "next": "14.2.33"
+    "next": "14.2.33",
+    "prettier": "^3.8.1"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.88.0"
