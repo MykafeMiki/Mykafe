@@ -4,12 +4,9 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  distDir: ".next-webpack",
   reactStrictMode: true,
   transpilePackages: ["@shared/types"],
-
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
 
   typescript: {
     ignoreBuildErrors: true,
@@ -32,6 +29,13 @@ const nextConfig = {
   // Experimental performance optimizations
   experimental: {
     optimizePackageImports: ["lucide-react"],
+  },
+  webpack: (config, { dev }) => {
+    // Avoid Windows EBUSY rename races in persistent filesystem cache.
+    if (dev) {
+      config.cache = false;
+    }
+    return config;
   },
 };
 
