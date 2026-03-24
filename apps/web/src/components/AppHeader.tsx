@@ -45,12 +45,7 @@ export function AppHeader({
 
   return (
     <header className={cn("bg-primary-500 text-white p-4", className)}>
-      <div
-        className={cn(
-          "flex items-center justify-between gap-4",
-          contentClassName,
-        )}
-      >
+      <div className={cn("flex items-center justify-between gap-4", contentClassName)}>
         <div className="flex min-w-0 items-center gap-3">
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-8">
@@ -83,7 +78,7 @@ export function AppHeader({
                     <h1
                       className={cn(
                         "text-xl font-bold leading-tight min-h-[1.75rem]",
-                        titleClassName,
+                        titleClassName
                       )}
                     >
                       {hasTitle ? title : <span className="invisible">.</span>}
@@ -92,7 +87,7 @@ export function AppHeader({
                       <p
                         className={cn(
                           "text-primary-100 text-sm mt-0.5 leading-tight",
-                          descriptionClassName,
+                          descriptionClassName
                         )}
                       >
                         {description}

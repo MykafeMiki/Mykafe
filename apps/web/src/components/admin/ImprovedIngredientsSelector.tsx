@@ -1,16 +1,16 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useTranslations } from 'next-intl'
-import { Search, Check, Plus, Loader2 } from 'lucide-react'
-import type { Ingredient } from '@shared/types'
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { Search, Check, Plus, Loader2 } from "lucide-react";
+import type { Ingredient } from "@shared/types";
 
 interface ImprovedIngredientsSelectorProps {
-  allIngredients: Ingredient[]
-  selectedIngredients: { id: string; isPrimary: boolean }[]
-  onSelectionChange: (ingredients: { id: string; isPrimary: boolean }[]) => void
-  onCreateIngredient: (name: string) => Promise<Ingredient>
-  loading: boolean
+  allIngredients: Ingredient[];
+  selectedIngredients: { id: string; isPrimary: boolean }[];
+  onSelectionChange: (ingredients: { id: string; isPrimary: boolean }[]) => void;
+  onCreateIngredient: (name: string) => Promise<Ingredient>;
+  loading: boolean;
 }
 
 export function ImprovedIngredientsSelector({
@@ -18,83 +18,89 @@ export function ImprovedIngredientsSelector({
   selectedIngredients,
   onSelectionChange,
   onCreateIngredient,
-  loading
+  loading,
 }: ImprovedIngredientsSelectorProps) {
-  const t = useTranslations('ingredientSelector')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showQuickAdd, setShowQuickAdd] = useState(false)
-  const [newIngredientName, setNewIngredientName] = useState('')
-  const [creating, setCreating] = useState(false)
+  const t = useTranslations("ingredientSelector");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [newIngredientName, setNewIngredientName] = useState("");
+  const [creating, setCreating] = useState(false);
 
-  const filteredIngredients = allIngredients.filter(ing =>
+  const filteredIngredients = allIngredients.filter((ing) =>
     ing.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  );
 
-  const selected = filteredIngredients.filter(ing =>
-    selectedIngredients.some(s => s.id === ing.id)
-  )
-  const notSelected = filteredIngredients.filter(ing =>
-    !selectedIngredients.some(s => s.id === ing.id)
-  )
+  const selected = filteredIngredients.filter((ing) =>
+    selectedIngredients.some((s) => s.id === ing.id)
+  );
+  const notSelected = filteredIngredients.filter(
+    (ing) => !selectedIngredients.some((s) => s.id === ing.id)
+  );
 
   const handleToggle = (ingredientId: string) => {
-    const existing = selectedIngredients.find(i => i.id === ingredientId)
+    const existing = selectedIngredients.find((i) => i.id === ingredientId);
     if (existing) {
-      onSelectionChange(selectedIngredients.filter(i => i.id !== ingredientId))
+      onSelectionChange(selectedIngredients.filter((i) => i.id !== ingredientId));
     } else {
-      onSelectionChange([...selectedIngredients, { id: ingredientId, isPrimary: false }])
+      onSelectionChange([...selectedIngredients, { id: ingredientId, isPrimary: false }]);
     }
-  }
+  };
 
   const handleTogglePrimary = (ingredientId: string) => {
     onSelectionChange(
-      selectedIngredients.map(i =>
+      selectedIngredients.map((i) =>
         i.id === ingredientId ? { ...i, isPrimary: !i.isPrimary } : i
       )
-    )
-  }
+    );
+  };
 
   const handleQuickAdd = async () => {
-    if (!newIngredientName.trim()) return
+    if (!newIngredientName.trim()) return;
 
-    setCreating(true)
+    setCreating(true);
     try {
-      const newIng = await onCreateIngredient(newIngredientName.trim())
-      onSelectionChange([...selectedIngredients, { id: newIng.id, isPrimary: false }])
-      setNewIngredientName('')
-      setShowQuickAdd(false)
+      const newIng = await onCreateIngredient(newIngredientName.trim());
+      onSelectionChange([...selectedIngredients, { id: newIng.id, isPrimary: false }]);
+      setNewIngredientName("");
+      setShowQuickAdd(false);
     } catch (err) {
-      console.error('Failed to create ingredient:', err)
+      console.error("Failed to create ingredient:", err);
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-4">
       <div className="bg-blue-50 rounded-lg p-3 text-sm">
-        <p className="font-medium text-blue-800 mb-1">{t('howItWorksTitle')}</p>
+        <p className="font-medium text-blue-800 mb-1">{t("howItWorksTitle")}</p>
         <ul className="text-blue-700 space-y-1">
           <li>
             <span className="inline-flex items-center gap-1">
-              <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">{t('primary')}</span>
-              {' - '}
-              {t('primaryDescriptionPrefix')} <strong>{t('hidden')}</strong> {t('primaryDescriptionSuffix')}
+              <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
+                {t("primary")}
+              </span>
+              {" - "}
+              {t("primaryDescriptionPrefix")} <strong>{t("hidden")}</strong>{" "}
+              {t("primaryDescriptionSuffix")}
             </span>
           </li>
           <li>
             <span className="inline-flex items-center gap-1">
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">{t('secondary')}</span>
-              {' - '}
-              {t('secondaryDescriptionPrefix')} <strong>{t('crossedOut')}</strong> {t('secondaryDescriptionSuffix')}
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">
+                {t("secondary")}
+              </span>
+              {" - "}
+              {t("secondaryDescriptionPrefix")} <strong>{t("crossedOut")}</strong>{" "}
+              {t("secondaryDescriptionSuffix")}
             </span>
           </li>
         </ul>
@@ -104,7 +110,7 @@ export function ImprovedIngredientsSelector({
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"
-          placeholder={t('searchPlaceholder')}
+          placeholder={t("searchPlaceholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 text-sm"
@@ -113,19 +119,19 @@ export function ImprovedIngredientsSelector({
 
       {selected.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-500 uppercase">{t('selected', { count: selected.length })}</p>
+          <p className="text-xs font-medium text-gray-500 uppercase">
+            {t("selected", { count: selected.length })}
+          </p>
           <div className="space-y-1.5">
-            {selected.map(ing => {
-              const config = selectedIngredients.find(s => s.id === ing.id)
-              const isPrimary = config?.isPrimary || false
+            {selected.map((ing) => {
+              const config = selectedIngredients.find((s) => s.id === ing.id);
+              const isPrimary = config?.isPrimary || false;
 
               return (
                 <div
                   key={ing.id}
                   className={`flex items-center gap-2 p-2.5 rounded-lg border-2 transition ${
-                    isPrimary
-                      ? 'border-red-200 bg-red-50'
-                      : 'border-primary-200 bg-primary-50'
+                    isPrimary ? "border-red-200 bg-red-50" : "border-primary-200 bg-primary-50"
                   }`}
                 >
                   <button
@@ -140,7 +146,7 @@ export function ImprovedIngredientsSelector({
 
                   {!ing.inStock && (
                     <span className="text-xs px-2 py-0.5 bg-red-500 text-white rounded-full">
-                      {t('outOfStock')}
+                      {t("outOfStock")}
                     </span>
                   )}
 
@@ -149,14 +155,14 @@ export function ImprovedIngredientsSelector({
                     onClick={() => handleTogglePrimary(ing.id)}
                     className={`text-xs px-3 py-1 rounded-full font-medium transition ${
                       isPrimary
-                        ? 'bg-red-500 text-white hover:bg-red-600'
-                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        ? "bg-red-500 text-white hover:bg-red-600"
+                        : "bg-gray-200 text-gray-600 hover:bg-gray-300"
                     }`}
                   >
-                    {isPrimary ? t('primary') : t('secondary')}
+                    {isPrimary ? t("primary") : t("secondary")}
                   </button>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
@@ -165,10 +171,10 @@ export function ImprovedIngredientsSelector({
       {notSelected.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-500 uppercase">
-            {t('available', { count: notSelected.length })}
+            {t("available", { count: notSelected.length })}
           </p>
           <div className="max-h-40 overflow-y-auto space-y-1 border rounded-lg p-2 bg-gray-50">
-            {notSelected.map(ing => (
+            {notSelected.map((ing) => (
               <button
                 key={ing.id}
                 type="button"
@@ -178,7 +184,7 @@ export function ImprovedIngredientsSelector({
                 <div className="w-5 h-5 border-2 border-gray-300 rounded flex-shrink-0" />
                 <span className="text-sm flex-1">{ing.name}</span>
                 {!ing.inStock && (
-                  <span className="text-xs text-red-500">({t('outOfStock').toLowerCase()})</span>
+                  <span className="text-xs text-red-500">({t("outOfStock").toLowerCase()})</span>
                 )}
               </button>
             ))}
@@ -188,18 +194,16 @@ export function ImprovedIngredientsSelector({
 
       {filteredIngredients.length === 0 && searchTerm && (
         <div className="text-center py-4">
-          <p className="text-sm text-gray-500 mb-2">
-            {t('noResults', { term: searchTerm })}
-          </p>
+          <p className="text-sm text-gray-500 mb-2">{t("noResults", { term: searchTerm })}</p>
           <button
             type="button"
             onClick={() => {
-              setNewIngredientName(searchTerm)
-              setShowQuickAdd(true)
+              setNewIngredientName(searchTerm);
+              setShowQuickAdd(true);
             }}
             className="text-sm text-primary-500 hover:underline"
           >
-            {t('createFromSearch', { term: searchTerm })}
+            {t("createFromSearch", { term: searchTerm })}
           </button>
         </div>
       )}
@@ -211,16 +215,16 @@ export function ImprovedIngredientsSelector({
           className="flex items-center gap-2 text-sm text-primary-500 hover:text-primary-600"
         >
           <Plus className="w-4 h-4" />
-          {t('addNewIngredient')}
+          {t("addNewIngredient")}
         </button>
       ) : (
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder={t('namePlaceholder')}
+            placeholder={t("namePlaceholder")}
             value={newIngredientName}
             onChange={(e) => setNewIngredientName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
+            onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
             className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
             autoFocus
           />
@@ -231,13 +235,13 @@ export function ImprovedIngredientsSelector({
             className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600 disabled:opacity-50 flex items-center gap-2"
           >
             {creating && <Loader2 className="w-4 h-4 animate-spin" />}
-            {t('create')}
+            {t("create")}
           </button>
           <button
             type="button"
             onClick={() => {
-              setShowQuickAdd(false)
-              setNewIngredientName('')
+              setShowQuickAdd(false);
+              setNewIngredientName("");
             }}
             className="px-3 py-2 border rounded-lg text-sm hover:bg-gray-50"
           >
@@ -246,5 +250,5 @@ export function ImprovedIngredientsSelector({
         </div>
       )}
     </div>
-  )
+  );
 }

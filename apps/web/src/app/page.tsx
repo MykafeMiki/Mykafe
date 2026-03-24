@@ -78,13 +78,7 @@ export default function HomePage() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <HomeLoginScreen
-        onLogin={() => setIsAuthenticated(true)}
-        t={tl}
-        brand={tc("brand")}
-      />
-    );
+    return <HomeLoginScreen onLogin={() => setIsAuthenticated(true)} t={tl} brand={tc("brand")} />;
   }
 
   const menuItems = [
@@ -182,14 +176,10 @@ export default function HomePage() {
                 >
                   <item.icon className={`w-7 h-7 ${item.iconColor}`} />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-1">
-                  {item.label}
-                </h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">{item.label}</h2>
                 <p className="text-gray-500 text-sm">{item.description}</p>
               </div>
-              <div
-                className={`absolute left-0 right-0 bottom-0 h-1.5 ${item.color} opacity-80`}
-              />
+              <div className={`absolute left-0 right-0 bottom-0 h-1.5 ${item.color} opacity-80`} />
             </Link>
           ))}
         </div>
@@ -271,9 +261,7 @@ function HomeLoginScreen({ onLogin, t, brand }: HomeLoginScreenProps) {
               />
             </div>
 
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
+            {error && <div className="text-red-500 text-sm text-center">{error}</div>}
 
             <button
               type="submit"

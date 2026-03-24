@@ -1,244 +1,269 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle, Truck } from 'lucide-react'
-import { useTranslations, useLocale } from 'next-intl'
-import { CategoryNav } from '@/components/menu/CategoryNav'
-import { MenuItemCard } from '@/components/menu/MenuItemCard'
-import { ItemModal } from '@/components/menu/ItemModal'
-import { CartButton } from '@/components/cart/CartButton'
-import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
-import { LanguageSelectorCompact } from '@/components/LanguageSelector'
-import { AppHeader } from '@/components/AppHeader'
-import { useCart } from '@/lib/cart'
-import { getMenu, getTableByQr } from '@/lib/api'
-import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig, type OnlineOrderingReasonKey } from '@/lib/menuTimers'
-import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
-import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
-import type { Category, MenuItem, Modifier } from '@shared/types'
-import { ConsumeMode, PaymentMethod } from '@shared/types'
-import { cn } from '@/lib/utils'
+import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  CheckCircle,
+  Banknote,
+  CreditCard,
+  Calendar,
+  Clock,
+  AlertTriangle,
+  Truck,
+} from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
+import { CategoryNav } from "@/components/menu/CategoryNav";
+import { MenuItemCard } from "@/components/menu/MenuItemCard";
+import { ItemModal } from "@/components/menu/ItemModal";
+import { CartButton } from "@/components/cart/CartButton";
+import { TakeawayCartDrawer } from "@/components/cart/TakeawayCartDrawer";
+import { LanguageSelectorCompact } from "@/components/LanguageSelector";
+import { AppHeader } from "@/components/AppHeader";
+import { useCart } from "@/lib/cart";
+import { getMenu, getTableByQr } from "@/lib/api";
+import {
+  filterCategoriesByTime,
+  getTakeawayConfig,
+  getTakeawayStatus,
+  fetchClosureConfig,
+  isOnlineOrderingOpen,
+  getAvailableDates as getAvailableDatesFromConfig,
+  type OnlineOrderingReasonKey,
+} from "@/lib/menuTimers";
+import { TakeawayUnavailableMessage } from "@/components/TakeawayUnavailableMessage";
+import { getTranslatedName, getTranslatedDescription } from "@/lib/translations";
+import type { Category, MenuItem, Modifier } from "@shared/types";
+import { ConsumeMode, PaymentMethod } from "@shared/types";
+import { cn } from "@/lib/utils";
 
-type OrderStep = 'payment' | 'datetime' | 'menu'
+type OrderStep = "payment" | "datetime" | "menu";
 
-
-function getAvailableTimeSlots(selectedDate: Date, openingHour: number, closingHour: number): string[] {
-  const slots: string[] = []
-  const now = new Date()
-  const isToday = selectedDate.toDateString() === now.toDateString()
+function getAvailableTimeSlots(
+  selectedDate: Date,
+  openingHour: number,
+  closingHour: number
+): string[] {
+  const slots: string[] = [];
+  const now = new Date();
+  const isToday = selectedDate.toDateString() === now.toDateString();
 
   for (let hour = openingHour; hour < closingHour; hour++) {
     for (let minute = 0; minute < 60; minute += 15) {
-      const slotTime = new Date(selectedDate)
-      slotTime.setHours(hour, minute, 0, 0)
+      const slotTime = new Date(selectedDate);
+      slotTime.setHours(hour, minute, 0, 0);
 
       if (isToday && slotTime <= now) {
-        continue
+        continue;
       }
 
-      const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-      slots.push(timeStr)
+      const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+      slots.push(timeStr);
     }
   }
 
-  return slots
+  return slots;
 }
 
 function isWithin30Minutes(selectedDate: Date, selectedTime: string): boolean {
-  const now = new Date()
-  const [hours, minutes] = selectedTime.split(':').map(Number)
-  const pickupTime = new Date(selectedDate)
-  pickupTime.setHours(hours, minutes, 0, 0)
+  const now = new Date();
+  const [hours, minutes] = selectedTime.split(":").map(Number);
+  const pickupTime = new Date(selectedDate);
+  pickupTime.setHours(hours, minutes, 0, 0);
 
-  const diffMs = pickupTime.getTime() - now.getTime()
-  const diffMinutes = diffMs / (1000 * 60)
+  const diffMs = pickupTime.getTime() - now.getTime();
+  const diffMinutes = diffMs / (1000 * 60);
 
-  return diffMinutes < 30
+  return diffMinutes < 30;
 }
 
 export default function OrdinaPage() {
-  const t = useTranslations('ordina')
-  const th = useTranslations('home')
-  const tc = useTranslations('common')
-  const locale = useLocale()
+  const t = useTranslations("ordina");
+  const th = useTranslations("home");
+  const tc = useTranslations("common");
+  const locale = useLocale();
 
-  const [takeawayStatus, setTakeawayStatus] = useState<ReturnType<typeof getTakeawayStatus> | null>(null)
-  const [orderingStatus, setOrderingStatus] = useState<{ isOpen: boolean; reasonKey?: OnlineOrderingReasonKey; reason?: string; nextOpenTime?: string }>({ isOpen: true })
-  const [step, setStep] = useState<OrderStep>('payment')
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [selectedTime, setSelectedTime] = useState<string>('')
-  const [categories, setCategories] = useState<Category[]>([])
-  const [activeCategory, setActiveCategory] = useState<string>('')
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
-  const [isCartOpen, setIsCartOpen] = useState(false)
-  const [orderSuccess, setOrderSuccess] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null)
+  const [takeawayStatus, setTakeawayStatus] = useState<ReturnType<typeof getTakeawayStatus> | null>(
+    null
+  );
+  const [orderingStatus, setOrderingStatus] = useState<{
+    isOpen: boolean;
+    reasonKey?: OnlineOrderingReasonKey;
+    reason?: string;
+    nextOpenTime?: string;
+  }>({ isOpen: true });
+  const [step, setStep] = useState<OrderStep>("payment");
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>("");
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
 
-  const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
-  const setTableIdInCart = useCart((state) => state.setTableId)
-  const setPickupTime = useCart((state) => state.setPickupTime)
-  const setPriceContext = useCart((state) => state.setPriceContext)
-  const addToCart = useCart((state) => state.addItem)
+  const categoryRefs = useRef<Record<string, HTMLElement | null>>({});
+  const setTableIdInCart = useCart((state) => state.setTableId);
+  const setPickupTime = useCart((state) => state.setPickupTime);
+  const setPriceContext = useCart((state) => state.setPriceContext);
+  const addToCart = useCart((state) => state.addItem);
 
   // Filter categories - takeaway context shows panini always, but still respects sushi timer
   const filteredCategories = useMemo(() => {
-    return filterCategoriesByTime(categories, 'takeaway')
-  }, [categories])
+    return filterCategoriesByTime(categories, "takeaway");
+  }, [categories]);
 
   // Get takeaway pickup hours config
-  const takeawayConfig = getTakeawayConfig()
+  const takeawayConfig = getTakeawayConfig();
 
-  const availableDates = getAvailableDatesFromConfig(7)
-  const availableTimeSlots = getAvailableTimeSlots(selectedDate, takeawayConfig.openingHour, takeawayConfig.closingHour)
-  const showWarning = selectedTime && isWithin30Minutes(selectedDate, selectedTime)
+  const availableDates = getAvailableDatesFromConfig(7);
+  const availableTimeSlots = getAvailableTimeSlots(
+    selectedDate,
+    takeawayConfig.openingHour,
+    takeawayConfig.closingHour
+  );
+  const showWarning = selectedTime && isWithin30Minutes(selectedDate, selectedTime);
 
   const formatDate = (date: Date): string => {
-    const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(today.getDate() + 1)
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
 
     if (date.toDateString() === today.toDateString()) {
-      return t('today')
+      return t("today");
     } else if (date.toDateString() === tomorrow.toDateString()) {
-      return t('tomorrow')
+      return t("tomorrow");
     } else {
-      return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })
+      return date.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
     }
-  }
+  };
 
   // Check takeaway availability on mount
   useEffect(() => {
-    const status = getTakeawayStatus()
-    setTakeawayStatus(status)
-  }, [])
+    const status = getTakeawayStatus();
+    setTakeawayStatus(status);
+  }, []);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const table = await getTableByQr('takeaway')
-        setTableIdInCart(table.id)
-        setPriceContext('takeaway-remote')
+        const table = await getTableByQr("takeaway");
+        setTableIdInCart(table.id);
+        setPriceContext("takeaway-remote");
 
-        const menuData = await getMenu()
-        setCategories(menuData)
+        const menuData = await getMenu();
+        setCategories(menuData);
         if (menuData.length > 0) {
           // Set active category to first filtered category
-          const filtered = filterCategoriesByTime(menuData, 'takeaway')
+          const filtered = filterCategoriesByTime(menuData, "takeaway");
           if (filtered.length > 0) {
-            setActiveCategory(filtered[0].id)
+            setActiveCategory(filtered[0].id);
           }
         }
       } catch (err) {
-        setError(tc('error'))
-        console.error(err)
+        setError(tc("error"));
+        console.error(err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    loadData()
-  }, [setTableIdInCart, setPriceContext, tc])
+    loadData();
+  }, [setTableIdInCart, setPriceContext, tc]);
 
   // Check chiusura separato: non blocca il caricamento del menu
   useEffect(() => {
-    if (loading) return
+    if (loading) return;
     fetchClosureConfig()
-      .then(config => {
+      .then((config) => {
         try {
-          setOrderingStatus(isOnlineOrderingOpen(config, locale))
+          setOrderingStatus(isOnlineOrderingOpen(config, locale));
         } catch (e) {
-          console.error('isOnlineOrderingOpen error:', e)
+          console.error("isOnlineOrderingOpen error:", e);
         }
       })
-      .catch(e => console.error('fetchClosureConfig error:', e))
-  }, [loading, locale])
+      .catch((e) => console.error("fetchClosureConfig error:", e));
+  }, [loading, locale]);
 
   const getOrderingClosedReason = () => {
-    if (orderingStatus.reason) return orderingStatus.reason
+    if (orderingStatus.reason) return orderingStatus.reason;
 
     switch (orderingStatus.reasonKey) {
-      case 'menu_disabled':
-        return t('onlineReasonMenuDisabled')
-      case 'temporary_closure':
-        return t('onlineReasonTemporaryClosure')
-      case 'closed_today':
-        return t('onlineReasonClosedToday')
-      case 'not_open_yet':
-        return t('onlineReasonNotOpenYet')
-      case 'closed_for_today':
-        return t('onlineReasonClosedForToday')
-      case 'closed':
-        return t('onlineReasonClosed')
+      case "menu_disabled":
+        return t("onlineReasonMenuDisabled");
+      case "temporary_closure":
+        return t("onlineReasonTemporaryClosure");
+      case "closed_today":
+        return t("onlineReasonClosedToday");
+      case "not_open_yet":
+        return t("onlineReasonNotOpenYet");
+      case "closed_for_today":
+        return t("onlineReasonClosedForToday");
+      case "closed":
+        return t("onlineReasonClosed");
       default:
-        return t('onlineClosedFallback')
+        return t("onlineClosedFallback");
     }
-  }
+  };
 
   useEffect(() => {
     if (selectedDate && selectedTime) {
-      const [hours, minutes] = selectedTime.split(':').map(Number)
-      const pickupDateTime = new Date(selectedDate)
-      pickupDateTime.setHours(hours, minutes, 0, 0)
-      setPickupTime(pickupDateTime.toISOString())
+      const [hours, minutes] = selectedTime.split(":").map(Number);
+      const pickupDateTime = new Date(selectedDate);
+      pickupDateTime.setHours(hours, minutes, 0, 0);
+      setPickupTime(pickupDateTime.toISOString());
     }
-  }, [selectedDate, selectedTime, setPickupTime])
+  }, [selectedDate, selectedTime, setPickupTime]);
 
   const scrollToCategory = (categoryId: string) => {
-    setActiveCategory(categoryId)
+    setActiveCategory(categoryId);
     categoryRefs.current[categoryId]?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
-  }
+      behavior: "smooth",
+      block: "start",
+    });
+  };
 
   const handleAddItem = (item: MenuItem) => {
     if (item.modifierGroups && item.modifierGroups.length > 0) {
-      setSelectedItem(item)
+      setSelectedItem(item);
     } else {
-      addToCart(item, 1, [], undefined, ConsumeMode.TAKEAWAY)
+      addToCart(item, 1, [], undefined, ConsumeMode.TAKEAWAY);
     }
-  }
+  };
 
-  const handleAddWithModifiers = (
-    quantity: number,
-    modifiers: Modifier[],
-    notes?: string,
-    consumeMode?: ConsumeMode
-  ) => {
+  const handleAddWithModifiers = (quantity: number, modifiers: Modifier[], notes?: string) => {
     if (selectedItem) {
-      addToCart(selectedItem, quantity, modifiers, notes, ConsumeMode.TAKEAWAY)
+      addToCart(selectedItem, quantity, modifiers, notes, ConsumeMode.TAKEAWAY);
     }
-  }
+  };
 
   const handleOrderSuccess = () => {
-    setOrderSuccess(true)
-    setTimeout(() => setOrderSuccess(false), 5000)
-  }
+    setOrderSuccess(true);
+    setTimeout(() => setOrderSuccess(false), 5000);
+  };
 
   const handleContinueToMenu = () => {
     if (selectedTime) {
-      setStep('menu')
+      setStep("menu");
     }
-  }
+  };
 
   const handleSelectPayment = (method: PaymentMethod) => {
-    setPaymentMethod(method)
-    setStep('datetime')
-  }
+    setPaymentMethod(method);
+    setStep("datetime");
+  };
 
   const handleCheckout = () => {
     // Open cart drawer directly since payment and time are already selected
-    setIsCartOpen(true)
-  }
+    setIsCartOpen(true);
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-gray-500">{tc('loading')}</div>
+        <div className="animate-pulse text-gray-500">{tc("loading")}</div>
       </div>
-    )
+    );
   }
 
   // Show closure message if online ordering is closed
@@ -246,9 +271,9 @@ export default function OrdinaPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <AppHeader
-          brand={tc('brand')}
-          title={th('takeawayHome')}
-          description={th('takeawayHomeDesc')}
+          brand={tc("brand")}
+          title={th("takeawayHome")}
+          description={th("takeawayHomeDesc")}
           icon={<Truck className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
           className="bg-orange-500"
@@ -260,16 +285,12 @@ export default function OrdinaPage() {
             <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Clock className="w-10 h-10 text-orange-500" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {t('onlineClosedTitle')}
-            </h2>
-            <p className="text-gray-600 mb-4">
-              {getOrderingClosedReason()}
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t("onlineClosedTitle")}</h2>
+            <p className="text-gray-600 mb-4">{getOrderingClosedReason()}</p>
             {orderingStatus.nextOpenTime && (
               <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                 <p className="text-sm text-orange-800">
-                  <span className="font-semibold">{t('nextOpeningLabel')}</span>{' '}
+                  <span className="font-semibold">{t("nextOpeningLabel")}</span>{" "}
                   {orderingStatus.nextOpenTime}
                 </p>
               </div>
@@ -277,12 +298,12 @@ export default function OrdinaPage() {
           </div>
         </main>
       </div>
-    )
+    );
   }
 
   // Show unavailable message if takeaway is not available
   if (takeawayStatus && !takeawayStatus.isAvailable) {
-    return <TakeawayUnavailableMessage status={takeawayStatus} />
+    return <TakeawayUnavailableMessage status={takeawayStatus} />;
   }
 
   if (error) {
@@ -294,64 +315,57 @@ export default function OrdinaPage() {
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-primary-500 text-white rounded-lg"
           >
-            {tc('retry')}
+            {tc("retry")}
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   // Step 2: Date/Time Selection (after payment choice)
-  if (step === 'datetime') {
-    const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cashAtPickup')
-
+  if (step === "datetime") {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <AppHeader
-          brand={tc('brand')}
-          title={th('takeawayHome')}
-          description={th('takeawayHomeDesc')}
+          brand={tc("brand")}
+          title={th("takeawayHome")}
+          description={th("takeawayHomeDesc")}
           icon={<Truck className="w-6 h-6" />}
-          onBack={() => setStep('payment')}
-          backAriaLabel={tc('back')}
+          onBack={() => setStep("payment")}
+          backAriaLabel={tc("back")}
           rightSlot={<LanguageSelectorCompact />}
           className="bg-orange-500"
           descriptionClassName="text-orange-100"
         />
 
         <main className="flex-1 p-6 max-w-lg mx-auto w-full">
-
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {t('pickupQuestion')}
-          </h2>
-          <p className="text-gray-500 mb-6">
-            {t('selectDateTime')}
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t("pickupQuestion")}</h2>
+          <p className="text-gray-500 mb-6">{t("selectDateTime")}</p>
 
           {/* Date Selection */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="w-5 h-5 text-gray-500" />
-              <span className="font-medium text-gray-700">{t('day')}</span>
+              <span className="font-medium text-gray-700">{t("day")}</span>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {availableDates.map((date) => (
                 <button
                   key={date.toISOString()}
                   onClick={() => {
-                    setSelectedDate(date)
-                    setSelectedTime('')
+                    setSelectedDate(date);
+                    setSelectedTime("");
                   }}
                   className={cn(
-                    'flex-shrink-0 px-4 py-3 rounded-xl border-2 transition text-center min-w-[100px]',
+                    "flex-shrink-0 px-4 py-3 rounded-xl border-2 transition text-center min-w-[100px]",
                     selectedDate.toDateString() === date.toDateString()
-                      ? 'border-orange-500 bg-orange-50 text-orange-700'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
+                      ? "border-orange-500 bg-orange-50 text-orange-700"
+                      : "border-gray-200 bg-white hover:border-gray-300"
                   )}
                 >
                   <div className="font-semibold">{formatDate(date)}</div>
                   <div className="text-xs text-gray-500">
-                    {date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
+                    {date.toLocaleDateString(locale, { day: "numeric", month: "short" })}
                   </div>
                 </button>
               ))}
@@ -362,12 +376,10 @@ export default function OrdinaPage() {
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Clock className="w-5 h-5 text-gray-500" />
-              <span className="font-medium text-gray-700">{t('time')}</span>
+              <span className="font-medium text-gray-700">{t("time")}</span>
             </div>
             {availableTimeSlots.length === 0 ? (
-              <p className="text-gray-500 text-sm">
-                {t('noTimeSlots')}
-              </p>
+              <p className="text-gray-500 text-sm">{t("noTimeSlots")}</p>
             ) : (
               <div className="grid grid-cols-4 gap-2">
                 {availableTimeSlots.map((time) => (
@@ -375,10 +387,10 @@ export default function OrdinaPage() {
                     key={time}
                     onClick={() => setSelectedTime(time)}
                     className={cn(
-                      'py-2 px-3 rounded-lg border-2 transition text-sm font-medium',
+                      "py-2 px-3 rounded-lg border-2 transition text-sm font-medium",
                       selectedTime === time
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
+                        ? "border-orange-500 bg-orange-50 text-orange-700"
+                        : "border-gray-200 bg-white hover:border-gray-300"
                     )}
                   >
                     {time}
@@ -393,10 +405,8 @@ export default function OrdinaPage() {
             <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3">
               <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />
               <div>
-                <p className="font-medium text-amber-800">{t('shortNotice')}</p>
-                <p className="text-sm text-amber-700">
-                  {t('shortNoticeWarning')}
-                </p>
+                <p className="font-medium text-amber-800">{t("shortNotice")}</p>
+                <p className="text-sm text-amber-700">{t("shortNoticeWarning")}</p>
               </div>
             </div>
           )}
@@ -406,27 +416,27 @@ export default function OrdinaPage() {
             onClick={handleContinueToMenu}
             disabled={!selectedTime}
             className={cn(
-              'w-full py-4 rounded-xl font-semibold text-lg transition',
+              "w-full py-4 rounded-xl font-semibold text-lg transition",
               selectedTime
-                ? 'bg-orange-500 text-white hover:bg-orange-600'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                ? "bg-orange-500 text-white hover:bg-orange-600"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"
             )}
           >
-            {tc('continue')}
+            {tc("continue")}
           </button>
         </main>
       </div>
-    )
+    );
   }
 
   // Step 1: Payment Selection (first step)
-  if (step === 'payment') {
+  if (step === "payment") {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <AppHeader
-          brand={tc('brand')}
-          title={th('takeawayHome')}
-          description={th('takeawayHomeDesc')}
+          brand={tc("brand")}
+          title={th("takeawayHome")}
+          description={th("takeawayHomeDesc")}
           icon={<Truck className="w-6 h-6" />}
           rightSlot={<LanguageSelectorCompact />}
           className="bg-orange-500"
@@ -436,11 +446,9 @@ export default function OrdinaPage() {
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="w-full max-w-md">
             <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              {t('paymentQuestion')}
+              {t("paymentQuestion")}
             </h2>
-            <p className="text-gray-500 text-center mb-8">
-              {t('selectPayment')}
-            </p>
+            <p className="text-gray-500 text-center mb-8">{t("selectPayment")}</p>
 
             <div className="space-y-4">
               <button
@@ -452,11 +460,9 @@ export default function OrdinaPage() {
                 </div>
                 <div className="text-left">
                   <span className="block font-semibold text-lg text-gray-900">
-                    {t('cashAtPickup')}
+                    {t("cashAtPickup")}
                   </span>
-                  <span className="text-sm text-gray-500">
-                    {t('cashDescription')}
-                  </span>
+                  <span className="text-sm text-gray-500">{t("cashDescription")}</span>
                 </div>
               </button>
 
@@ -468,34 +474,30 @@ export default function OrdinaPage() {
                   <CreditCard className="w-7 h-7 text-blue-600" />
                 </div>
                 <div className="text-left">
-                  <span className="block font-semibold text-lg text-gray-900">
-                    {t('card')}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {t('cardDescription')}
-                  </span>
+                  <span className="block font-semibold text-lg text-gray-900">{t("card")}</span>
+                  <span className="text-sm text-gray-500">{t("cardDescription")}</span>
                 </div>
               </button>
             </div>
           </div>
         </main>
       </div>
-    )
+    );
   }
 
   // Step 3: Menu view (final step)
-  const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cashAtPickup')
-  const pickupTimeDisplay = `${formatDate(selectedDate)} ${selectedTime}`
+  const paymentLabel = paymentMethod === PaymentMethod.CARD ? t("card") : t("cashAtPickup");
+  const pickupTimeDisplay = `${formatDate(selectedDate)} ${selectedTime}`;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <AppHeader
-        brand={tc('brand')}
-        title={th('takeawayHome')}
-        description={th('takeawayHomeDesc')}
+        brand={tc("brand")}
+        title={th("takeawayHome")}
+        description={th("takeawayHomeDesc")}
         icon={<Truck className="w-6 h-6" />}
-        onBack={() => setStep('datetime')}
-        backAriaLabel={tc('back')}
+        onBack={() => setStep("datetime")}
+        backAriaLabel={tc("back")}
         rightSlot={<LanguageSelectorCompact />}
         className="bg-orange-500"
         descriptionClassName="text-orange-100"
@@ -503,14 +505,14 @@ export default function OrdinaPage() {
       {/* Show selected payment and pickup time */}
       <div className="bg-orange-500 text-white px-4 pb-3 flex items-center gap-4 text-sm">
         <button
-          onClick={() => setStep('datetime')}
+          onClick={() => setStep("datetime")}
           className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
         >
           <Clock className="w-4 h-4" />
           <span>{pickupTimeDisplay}</span>
         </button>
         <button
-          onClick={() => setStep('payment')}
+          onClick={() => setStep("payment")}
           className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
         >
           {paymentMethod === PaymentMethod.CARD ? (
@@ -533,7 +535,7 @@ export default function OrdinaPage() {
           <section
             key={category.id}
             ref={(el) => {
-              categoryRefs.current[category.id] = el
+              categoryRefs.current[category.id] = el;
             }}
             className="scroll-mt-20"
           >
@@ -584,13 +586,13 @@ export default function OrdinaPage() {
         <div className="fixed top-4 left-4 right-4 z-50 bg-accent-500 text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top">
           <CheckCircle className="w-6 h-6" />
           <div>
-            <p className="font-semibold">{t('orderSent')}</p>
+            <p className="font-semibold">{t("orderSent")}</p>
             <p className="text-sm text-accent-100">
-              {t('pickupConfirmation', { time: pickupTimeDisplay })}
+              {t("pickupConfirmation", { time: pickupTimeDisplay })}
             </p>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
