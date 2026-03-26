@@ -423,4 +423,4 @@ verify_jwt = false
 import_map = "./functions/cleanup-stale/deno.json"
 entrypoint = "./functions/cleanup-stale/index.ts"
 # Esegue ogni ora al minuto 0
-schedule = "0 * * * *"
+# schedule = "0 * * * *"

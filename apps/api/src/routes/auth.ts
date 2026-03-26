@@ -3,7 +3,10 @@ import { generateToken, verifyAdmin } from '../middleware/auth.js'
 
 const router = Router()
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+if (!ADMIN_PASSWORD) {
+  throw new Error('FATAL: ADMIN_PASSWORD environment variable is required but not set')
+}
 
 // Login admin
 router.post('/login', (req, res) => {

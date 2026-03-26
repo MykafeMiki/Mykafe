@@ -5,17 +5,13 @@ import { useLocale } from 'next-intl'
 import { formatPrice, getItemPrice, type PriceContext } from '@/lib/utils'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { MenuItem, UnavailableIngredient } from '@shared/types'
+import { roundUpToTenCents } from '@shared/types'
 
 interface MenuItemCardProps {
   item: MenuItem
   onAdd: (item: MenuItem) => void
   priceMultiplier?: number // es: 1.03 per +3%
   priceContext?: PriceContext // contesto prezzo: dine-in, takeaway-counter, takeaway-remote
-}
-
-// Arrotonda ai 10 centesimi per eccesso
-function roundUpToTenCents(amount: number): number {
-  return Math.ceil(amount / 10) * 10
 }
 
 // Helper per ottenere il nome tradotto di un ingrediente non disponibile

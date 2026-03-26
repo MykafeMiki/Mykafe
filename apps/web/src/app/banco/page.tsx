@@ -1,22 +1,17 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, Store, User, ShoppingBag, UtensilsCrossed, ArrowLeft } from 'lucide-react'
-import { useTranslations, useLocale } from 'next-intl'
-import { CategoryNav } from '@/components/menu/CategoryNav'
-import { MenuItemCard } from '@/components/menu/MenuItemCard'
-import { ItemModal } from '@/components/menu/ItemModal'
-import { MenuSections, categoryToSectionMap, getSectionName, menuSections } from '@/components/menu/MenuSections'
-import { CartButton } from '@/components/cart/CartButton'
-import { BancoCartDrawer } from '@/components/cart/BancoCartDrawer'
-import { LanguageSelectorCompact } from '@/components/LanguageSelector'
+import { useState, useEffect, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import { filterCategoriesByTime } from '@/lib/menuTimers'
-import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
-import { cn } from '@/lib/utils'
+import { NameStep } from '@/components/banco/NameStep'
+import { ServiceChoiceStep } from '@/components/banco/ServiceChoiceStep'
+import { SectionsStep } from '@/components/banco/SectionsStep'
+import { MenuStep } from '@/components/banco/MenuStep'
+import { categoryToSectionMap } from '@/components/menu/MenuSections'
 
 type OrderStep = 'name' | 'choice' | 'sections' | 'menu'
 type ServiceMode = 'takeaway' | 'dine-in'
@@ -24,10 +19,9 @@ type ServiceMode = 'takeaway' | 'dine-in'
 export default function BancoPage() {
   const t = useTranslations('banco')
   const tc = useTranslations('common')
-  const locale = useLocale()
 
   const [step, setStep] = useState<OrderStep>('name')
-  const [customerName, setCustomerNameLocal] = useState('')
+  const [customerName, setCustomerName] = useState('')
   const [serviceMode, setServiceMode] = useState<ServiceMode>('takeaway')
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -38,13 +32,11 @@ export default function BancoPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const categoryRefs = useRef<Record<string, HTMLElement | null>>({})
   const setTableIdInCart = useCart((state) => state.setTableId)
   const setCustomerNameInCart = useCart((state) => state.setCustomerName)
   const setPriceContext = useCart((state) => state.setPriceContext)
   const addToCart = useCart((state) => state.addItem)
 
-  // Filter categories based on time (bar context - hides panini before 11:00, sushi outside window)
   const filteredCategories = useMemo(() => {
     return filterCategoriesByTime(categories, 'bar')
   }, [categories])
@@ -111,15 +103,7 @@ export default function BancoPage() {
     loadData()
   }, [setTableIdInCart, setPriceContext])
 
-  const scrollToCategory = (categoryId: string) => {
-    setActiveCategory(categoryId)
-    categoryRefs.current[categoryId]?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
-  }
-
-  // Get the correct consume mode based on service selection
+  // Consume mode and price context depend on serviceMode
   const currentConsumeMode = serviceMode === 'dine-in' ? ConsumeMode.DINE_IN : ConsumeMode.TAKEAWAY
   const currentPriceContext = serviceMode === 'dine-in' ? 'dine-in' : 'takeaway-counter'
 
@@ -144,25 +128,16 @@ export default function BancoPage() {
 
   const handleOrderSuccess = () => {
     setOrderSuccess(true)
-    // Reset after order
     setTimeout(() => {
       setOrderSuccess(false)
       setStep('name')
-      setCustomerNameLocal('')
+      setCustomerName('')
       setServiceMode('takeaway')
     }, 5000)
   }
 
-  const handleContinueToChoice = () => {
-    if (customerName.trim()) {
-      setCustomerNameInCart(customerName.trim())
-      setStep('choice')
-    }
-  }
-
   const handleSelectServiceMode = (mode: ServiceMode) => {
     setServiceMode(mode)
-    // Update price context based on mode
     if (mode === 'dine-in') {
       setPriceContext('dine-in')
     } else {
@@ -173,7 +148,6 @@ export default function BancoPage() {
 
   const handleSelectSection = (sectionId: string) => {
     setSelectedSection(sectionId)
-    // Set active category to first category in section
     const sectionCats = filteredCategories.filter(cat => {
       const catSectionId = categoryToSectionMap[cat.name]
       return catSectionId === sectionId
@@ -208,288 +182,64 @@ export default function BancoPage() {
     )
   }
 
-  // Step 1: Name Input
   if (step === 'name') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Store className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-primary-100 text-sm mt-1">
-            {t('subtitle')}
-          </p>
-        </header>
-
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-md">
-            <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <User className="w-10 h-10 text-primary-600" />
-            </div>
-
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              {t('nameQuestion')}
-            </h2>
-            <p className="text-gray-500 text-center mb-8">
-              {t('nameDescription')}
-            </p>
-
-            <div className="space-y-4">
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerNameLocal(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleContinueToChoice()
-                }}
-                placeholder={t('namePlaceholder')}
-                autoFocus
-                className="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-primary-500 focus:outline-none transition"
-              />
-
-              <button
-                onClick={handleContinueToChoice}
-                disabled={!customerName.trim()}
-                className={cn(
-                  'w-full py-4 rounded-xl font-semibold text-lg transition',
-                  customerName.trim()
-                    ? 'bg-primary-500 text-white hover:bg-primary-600'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                )}
-              >
-                {tc('continue')}
-              </button>
-            </div>
-          </div>
-        </main>
-      </div>
+      <NameStep
+        customerName={customerName}
+        onCustomerNameChange={setCustomerName}
+        onContinue={() => {
+          if (customerName.trim()) {
+            setCustomerNameInCart(customerName.trim())
+            setStep('choice')
+          }
+        }}
+      />
     )
   }
 
-  // Step 2: Choice - Takeaway or Dine-in
   if (step === 'choice') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('name')}
-                className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2">
-                <Store className="w-6 h-6" />
-                <h1 className="text-xl font-bold">MyKafe</h1>
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-primary-100 text-sm mt-1 ml-10">
-            {t('title')} • {customerName}
-          </p>
-        </header>
-
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-md space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
-              {t('serviceQuestion')}
-            </h2>
-
-            <button
-              onClick={() => handleSelectServiceMode('takeaway')}
-              className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition"
-            >
-              <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center">
-                <ShoppingBag className="w-7 h-7 text-orange-600" />
-              </div>
-              <div className="text-left">
-                <span className="block font-semibold text-lg text-gray-900">
-                  {t('takeaway')}
-                </span>
-                <span className="text-sm text-gray-500">
-                  {t('takeawayDesc')}
-                </span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleSelectServiceMode('dine-in')}
-              className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-primary-500 hover:bg-primary-50 transition"
-            >
-              <div className="w-14 h-14 bg-primary-100 rounded-full flex items-center justify-center">
-                <UtensilsCrossed className="w-7 h-7 text-primary-600" />
-              </div>
-              <div className="text-left">
-                <span className="block font-semibold text-lg text-gray-900">
-                  {t('dineIn')}
-                </span>
-                <span className="text-sm text-gray-500">
-                  {t('dineInDesc')}
-                </span>
-              </div>
-            </button>
-          </div>
-        </main>
-      </div>
+      <ServiceChoiceStep
+        customerName={customerName}
+        onGoBack={() => setStep('name')}
+        onSelectTakeaway={() => handleSelectServiceMode('takeaway')}
+        onSelectDineIn={() => handleSelectServiceMode('dine-in')}
+      />
     )
   }
 
-  // Step 3: Sections
   if (step === 'sections') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-primary-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('choice')}
-                className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2">
-                <Store className="w-6 h-6" />
-                <h1 className="text-xl font-bold">MyKafe</h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
-                <User className="w-4 h-4" />
-                <span className="text-sm font-medium">{customerName}</span>
-              </div>
-              <LanguageSelectorCompact />
-            </div>
-          </div>
-          <p className="text-primary-100 text-sm mt-1 ml-10">
-            {t('title')} • {serviceMode === 'takeaway' ? t('takeaway') : t('dineIn')}
-          </p>
-        </header>
-
-        <main className="flex-1 p-4">
-          <MenuSections
-            onSelectSection={handleSelectSection}
-          />
-        </main>
-
-        <CartButton onClick={() => setIsCartOpen(true)} />
-
-        <BancoCartDrawer
-          isOpen={isCartOpen}
-          onClose={() => setIsCartOpen(false)}
-          onOrderSuccess={handleOrderSuccess}
-          customerName={customerName}
-        />
-      </div>
+      <SectionsStep
+        customerName={customerName}
+        serviceMode={serviceMode}
+        filteredCategories={filteredCategories}
+        isCartOpen={isCartOpen}
+        onGoBack={() => setStep('choice')}
+        onSelectSection={handleSelectSection}
+        onCartOpen={setIsCartOpen}
+        onOrderSuccess={handleOrderSuccess}
+      />
     )
   }
 
-  // Step 4: Menu
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <header className="bg-primary-500 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setStep('sections')}
-              className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <Store className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
-              <User className="w-4 h-4" />
-              <span className="text-sm font-medium">{customerName}</span>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </div>
-        <p className="text-primary-100 text-sm mt-1 ml-10">
-          {selectedSection
-            ? getSectionName(menuSections.find(s => s.id === selectedSection)!, locale)
-            : t('title')}
-        </p>
-      </header>
-
-      <CategoryNav
-        categories={sectionCategories}
-        activeCategory={activeCategory}
-        onSelect={scrollToCategory}
-      />
-
-      <main className="p-4 space-y-8">
-        {sectionCategories.map((category) => (
-          <section
-            key={category.id}
-            ref={(el) => {
-              categoryRefs.current[category.id] = el
-            }}
-            className="scroll-mt-20"
-          >
-            <h2 className="text-xl font-bold text-gray-900 mb-1">
-              {getTranslatedName(category, locale)}
-            </h2>
-            {getTranslatedDescription(category, locale) && (
-              <p className="text-gray-500 text-sm mb-4">
-                {getTranslatedDescription(category, locale)}
-              </p>
-            )}
-
-            <div className="space-y-3">
-              {category.items?.map((item) => (
-                <MenuItemCard
-                  key={item.id}
-                  item={item}
-                  onAdd={handleAddItem}
-                  priceContext={currentPriceContext}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-      </main>
-
-      <CartButton onClick={() => setIsCartOpen(true)} />
-
-      <BancoCartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        onOrderSuccess={handleOrderSuccess}
-        customerName={customerName}
-      />
-
-      {selectedItem && (
-        <ItemModal
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-          onAdd={handleAddWithModifiers}
-          defaultConsumeMode={currentConsumeMode}
-          priceContext={currentPriceContext}
-          hideConsumeModeSelector={true}
-        />
-      )}
-
-      {orderSuccess && (
-        <div className="fixed top-4 left-4 right-4 z-50 bg-accent-500 text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top">
-          <CheckCircle className="w-6 h-6" />
-          <div>
-            <p className="font-semibold">{t('orderSent', { name: customerName })}</p>
-            <p className="text-sm text-accent-100">
-              {t('orderConfirmation')}
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
+    <MenuStep
+      customerName={customerName}
+      sectionCategories={sectionCategories}
+      activeCategory={activeCategory}
+      selectedItem={selectedItem}
+      isCartOpen={isCartOpen}
+      orderSuccess={orderSuccess}
+      currentPriceContext={currentPriceContext}
+      currentConsumeMode={currentConsumeMode}
+      onGoBack={() => setStep('sections')}
+      onCategorySelect={setActiveCategory}
+      onAddItem={handleAddItem}
+      onAddWithModifiers={handleAddWithModifiers}
+      onSelectItemClose={() => setSelectedItem(null)}
+      onCartOpen={setIsCartOpen}
+      onOrderSuccess={handleOrderSuccess}
+    />
   )
 }

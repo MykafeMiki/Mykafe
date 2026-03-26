@@ -39,7 +39,6 @@ export async function GET() {
               )
             ),
             ingredients:MenuItemIngredient(
-              isPrimary,
               ingredient:Ingredient(id, name, nameEn, nameFr, nameEs, nameHe, inStock)
             )
           )
@@ -96,36 +95,16 @@ export async function GET() {
     const menu = categories.map(category => ({
       ...category,
       items: (category.items || [])
-        .filter((item: { available: boolean, ingredients?: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }[] }) => {
-          // Se il MenuItem è disabilitato, controlla se ha un sostituto PRIMA di escluderlo
-          if (!item.available) {
-            // Se disabilitato, controlla se ha un ingrediente PRIMARY out-of-stock con sostituto
-            const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
-              if (!ing.isPrimary || ing.ingredient?.inStock) return false
-              // Ha un sostituto? Allora mostra il MenuItem
-              return Boolean(substituteMap[ing.ingredient.id])
-            })
-            // Se ha un sostituto, mostra il MenuItem; altrimenti escludilo
-            return hasPrimaryOutOfStockWithSubstitute ?? false
-          }
-
-          // Se disponibile, controlla se ha ingrediente PRIMARY out-of-stock SENZA sostituto
-          const primaryOutOfStockWithoutSubstitute = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { id: string, inStock: boolean } }) => {
-            if (!ing.isPrimary || ing.ingredient?.inStock) return false
-            // Se out-of-stock e NO sostituto → escludi
-            return !substituteMap[ing.ingredient.id]
-          })
-          return !primaryOutOfStockWithoutSubstitute
-        })
+        .filter((item: { available: boolean }) => item.available)
         .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
         .map((item: {
           id: string,
           modifierGroups?: { modifiers?: { available: boolean; ingredientId?: string }[] }[],
-          ingredients?: { isPrimary: boolean, ingredient: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, inStock: boolean } }[]
+          ingredients?: { ingredient: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, inStock: boolean } }[]
         }) => {
-          // Ingredienti non disponibili da associazioni esplicite
+          // Tutti gli ingredienti esplicitamente associati che sono esauriti
           const explicitUnavailable = (item.ingredients || [])
-            .filter(assoc => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
+            .filter(assoc => assoc.ingredient && !assoc.ingredient.inStock)
             .map(assoc => ({
               id: assoc.ingredient.id,
               name: assoc.ingredient.name,
@@ -138,7 +117,7 @@ export async function GET() {
           // Ingredienti non disponibili da description matching pre-calcolato
           const descriptionMatches = itemUnavailableMap.get(item.id) || []
 
-          // Merge e deduplica, aggiunge sostituto se disponibile
+          // Merge e deduplica, aggiunge sostituto se configurato
           const seenIds = new Set<string>()
           const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, substitute?: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[] = []
           for (const ing of [...explicitUnavailable, ...descriptionMatches]) {

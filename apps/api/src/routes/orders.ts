@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { Server } from 'socket.io'
 import { emitNewOrder, emitOrderUpdate } from '../services/socket.js'
+import { applyCardSurcharge } from '@shared/types'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -75,11 +76,6 @@ router.get('/active', async (req, res) => {
   }
 })
 
-// Helper: arrotonda ai 10 centesimi per eccesso
-function roundUpToTenCents(amount: number): number {
-  return Math.ceil(amount / 10) * 10
-}
-
 // Create new order
 router.post('/', async (req, res) => {
   try {
@@ -87,7 +83,6 @@ router.post('/', async (req, res) => {
     const io: Server = req.app.get('io')
 
     const isCard = paymentMethod === 'CARD'
-    const CARD_MULTIPLIER = 1.03
 
     // Calculate totals - for card payments, each item is priced +3% rounded to 10 cents
     let subtotal = 0  // Base price without card surcharge
@@ -113,12 +108,8 @@ router.post('/', async (req, res) => {
 
       subtotal += itemBasePrice
 
-      // For card: apply +3% rounded up to 10 cents per item
-      if (isCard) {
-        totalAmount += roundUpToTenCents(Math.round(itemBasePrice * CARD_MULTIPLIER))
-      } else {
-        totalAmount += itemBasePrice
-      }
+      // For card: apply +3% rounded up to 10 cents per item (via shared utility)
+      totalAmount += applyCardSurcharge(itemBasePrice, isCard)
     }
 
     // Surcharge is the difference between total and subtotal
@@ -188,11 +179,20 @@ router.post('/', async (req, res) => {
   }
 })
 
+// Valid order statuses (must match the OrderStatus enum in packages/shared)
+const VALID_ORDER_STATUSES = ['PENDING', 'PREPARING', 'READY', 'SERVED', 'CANCELLED']
+
 // Update order status
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status } = req.body
     const io: Server = req.app.get('io')
+
+    if (!status || !VALID_ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({
+        error: `Status non valido. Valori accettati: ${VALID_ORDER_STATUSES.join(', ')}`
+      })
+    }
 
     const order = await prisma.order.update({
       where: { id: req.params.id },

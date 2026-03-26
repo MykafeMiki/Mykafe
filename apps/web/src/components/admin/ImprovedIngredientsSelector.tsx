@@ -6,8 +6,8 @@ import type { Ingredient } from '@shared/types'
 
 interface ImprovedIngredientsSelectorProps {
   allIngredients: Ingredient[]
-  selectedIngredients: { id: string; isPrimary: boolean }[]
-  onSelectionChange: (ingredients: { id: string; isPrimary: boolean }[]) => void
+  selectedIngredients: { id: string }[]
+  onSelectionChange: (ingredients: { id: string }[]) => void
   onCreateIngredient: (name: string) => Promise<Ingredient>
   loading: boolean
 }
@@ -24,12 +24,10 @@ export function ImprovedIngredientsSelector({
   const [newIngredientName, setNewIngredientName] = useState('')
   const [creating, setCreating] = useState(false)
 
-  // Filtra ingredienti per ricerca
   const filteredIngredients = allIngredients.filter(ing =>
     ing.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  // Separa ingredienti selezionati e non selezionati
   const selected = filteredIngredients.filter(ing =>
     selectedIngredients.some(s => s.id === ing.id)
   )
@@ -42,26 +40,16 @@ export function ImprovedIngredientsSelector({
     if (existing) {
       onSelectionChange(selectedIngredients.filter(i => i.id !== ingredientId))
     } else {
-      onSelectionChange([...selectedIngredients, { id: ingredientId, isPrimary: false }])
+      onSelectionChange([...selectedIngredients, { id: ingredientId }])
     }
-  }
-
-  const handleTogglePrimary = (ingredientId: string) => {
-    onSelectionChange(
-      selectedIngredients.map(i =>
-        i.id === ingredientId ? { ...i, isPrimary: !i.isPrimary } : i
-      )
-    )
   }
 
   const handleQuickAdd = async () => {
     if (!newIngredientName.trim()) return
-
     setCreating(true)
     try {
       const newIng = await onCreateIngredient(newIngredientName.trim())
-      // Aggiungi automaticamente come secondario
-      onSelectionChange([...selectedIngredients, { id: newIng.id, isPrimary: false }])
+      onSelectionChange([...selectedIngredients, { id: newIng.id }])
       setNewIngredientName('')
       setShowQuickAdd(false)
     } catch (err) {
@@ -81,23 +69,9 @@ export function ImprovedIngredientsSelector({
 
   return (
     <div className="space-y-4">
-      {/* Header con spiegazione */}
-      <div className="bg-blue-50 rounded-lg p-3 text-sm">
-        <p className="font-medium text-blue-800 mb-1">Come funzionano gli ingredienti:</p>
-        <ul className="text-blue-700 space-y-1">
-          <li>
-            <span className="inline-flex items-center gap-1">
-              <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">Primario</span>
-              - Se esaurito, il piatto viene <strong>nascosto</strong> dal menu
-            </span>
-          </li>
-          <li>
-            <span className="inline-flex items-center gap-1">
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">Secondario</span>
-              - Se esaurito, viene mostrato <strong>barrato</strong> nella descrizione
-            </span>
-          </li>
-        </ul>
+      {/* Info */}
+      <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-700">
+        Se un ingrediente è esaurito, sparirà dalla descrizione del piatto. Il piatto rimane sempre visibile nel menu.
       </div>
 
       {/* Ricerca */}
@@ -117,53 +91,26 @@ export function ImprovedIngredientsSelector({
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-500 uppercase">Selezionati ({selected.length})</p>
           <div className="space-y-1.5">
-            {selected.map(ing => {
-              const config = selectedIngredients.find(s => s.id === ing.id)
-              const isPrimary = config?.isPrimary || false
-
-              return (
-                <div
-                  key={ing.id}
-                  className={`flex items-center gap-2 p-2.5 rounded-lg border-2 transition ${
-                    isPrimary
-                      ? 'border-red-200 bg-red-50'
-                      : 'border-primary-200 bg-primary-50'
-                  }`}
+            {selected.map(ing => (
+              <div
+                key={ing.id}
+                className="flex items-center gap-2 p-2.5 rounded-lg border-2 border-primary-200 bg-primary-50"
+              >
+                <button
+                  type="button"
+                  onClick={() => handleToggle(ing.id)}
+                  className="w-5 h-5 bg-primary-500 rounded flex items-center justify-center flex-shrink-0"
                 >
-                  {/* Checkbox per rimuovere */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggle(ing.id)}
-                    className="w-5 h-5 bg-primary-500 rounded flex items-center justify-center flex-shrink-0"
-                  >
-                    <Check className="w-3 h-3 text-white" />
-                  </button>
-
-                  {/* Nome ingrediente */}
-                  <span className="text-sm font-medium flex-1">{ing.name}</span>
-
-                  {/* Indicatore stock */}
-                  {!ing.inStock && (
-                    <span className="text-xs px-2 py-0.5 bg-red-500 text-white rounded-full">
-                      Esaurito
-                    </span>
-                  )}
-
-                  {/* Toggle Primario/Secondario */}
-                  <button
-                    type="button"
-                    onClick={() => handleTogglePrimary(ing.id)}
-                    className={`text-xs px-3 py-1 rounded-full font-medium transition ${
-                      isPrimary
-                        ? 'bg-red-500 text-white hover:bg-red-600'
-                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                    }`}
-                  >
-                    {isPrimary ? 'Primario' : 'Secondario'}
-                  </button>
-                </div>
-              )
-            })}
+                  <Check className="w-3 h-3 text-white" />
+                </button>
+                <span className="text-sm font-medium flex-1">{ing.name}</span>
+                {!ing.inStock && (
+                  <span className="text-xs px-2 py-0.5 bg-red-500 text-white rounded-full">
+                    Esaurito
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -201,10 +148,7 @@ export function ImprovedIngredientsSelector({
           </p>
           <button
             type="button"
-            onClick={() => {
-              setNewIngredientName(searchTerm)
-              setShowQuickAdd(true)
-            }}
+            onClick={() => { setNewIngredientName(searchTerm); setShowQuickAdd(true) }}
             className="text-sm text-primary-500 hover:underline"
           >
             + Crea "{searchTerm}" come nuovo ingrediente
@@ -244,10 +188,7 @@ export function ImprovedIngredientsSelector({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setShowQuickAdd(false)
-              setNewIngredientName('')
-            }}
+            onClick={() => { setShowQuickAdd(false); setNewIngredientName('') }}
             className="px-3 py-2 border rounded-lg text-sm hover:bg-gray-50"
           >
             X

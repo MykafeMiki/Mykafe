@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { verifyAdmin } from '../middleware/auth.js'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -59,7 +60,7 @@ router.get('/items/:id', async (req, res) => {
 })
 
 // Admin: Create category
-router.post('/categories', async (req, res) => {
+router.post('/categories', verifyAdmin, async (req, res) => {
   try {
     const { name, description, sortOrder } = req.body
     const category = await prisma.category.create({
@@ -73,7 +74,7 @@ router.post('/categories', async (req, res) => {
 })
 
 // Admin: Create menu item
-router.post('/items', async (req, res) => {
+router.post('/items', verifyAdmin, async (req, res) => {
   try {
     const { name, description, price, categoryId, imageUrl, sortOrder } = req.body
     const item = await prisma.menuItem.create({
@@ -94,7 +95,7 @@ router.post('/items', async (req, res) => {
 })
 
 // Admin: Update item availability
-router.patch('/items/:id/availability', async (req, res) => {
+router.patch('/items/:id/availability', verifyAdmin, async (req, res) => {
   try {
     const { available } = req.body
     const item = await prisma.menuItem.update({
@@ -109,7 +110,7 @@ router.patch('/items/:id/availability', async (req, res) => {
 })
 
 // Admin: Update category
-router.patch('/categories/:id', async (req, res) => {
+router.patch('/categories/:id', verifyAdmin, async (req, res) => {
   try {
     const { name, description, imageUrl, sortOrder, active } = req.body
     const category = await prisma.category.update({
@@ -130,7 +131,7 @@ router.patch('/categories/:id', async (req, res) => {
 })
 
 // Admin: Update menu item
-router.patch('/items/:id', async (req, res) => {
+router.patch('/items/:id', verifyAdmin, async (req, res) => {
   try {
     const { name, description, price, priceTakeaway, priceTakeawayRemote, imageUrl, sortOrder, available } = req.body
     const item = await prisma.menuItem.update({

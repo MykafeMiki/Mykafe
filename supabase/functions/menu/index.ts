@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { verifyAdminToken, unauthorizedResponse } from "../_shared/validation.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,6 +52,13 @@ Deno.serve(async (req) => {
     const menuIndex = pathParts.indexOf('menu')
     const subPath = menuIndex >= 0 ? pathParts.slice(menuIndex + 1) : []
 
+    // Protect all write operations (POST, PATCH, DELETE, PUT) with admin token
+    const isWriteMethod = ['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method)
+    if (isWriteMethod) {
+      const isAdmin = await verifyAdminToken(req)
+      if (!isAdmin) return unauthorizedResponse(corsHeaders)
+    }
+
     // GET /menu - OPTIMIZED: Get full menu with categories and items
     if (req.method === 'GET' && subPath.length === 0) {
       // Quick ETag check first (before any DB queries)
@@ -77,7 +85,6 @@ Deno.serve(async (req) => {
                 modifiers:Modifier(id, name, nameEn, nameFr, nameEs, nameHe, price, available, modifierGroupId, ingredientId)
               ),
               ingredients:MenuItemIngredient(
-                isPrimary,
                 ingredient:Ingredient(id, name, nameEn, nameFr, nameEs, nameHe, inStock)
               )
             )
@@ -134,30 +141,7 @@ Deno.serve(async (req) => {
       const filteredCategories = categories.map(cat => ({
         ...cat,
         items: (cat.items || [])
-          .filter((item: {
-            available: boolean,
-            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string } }[]
-          }) => {
-            // Se il MenuItem è disabilitato, controlla se ha un sostituto PRIMA di escluderlo
-            if (!item.available) {
-              // Se disabilitato, controlla se ha un ingrediente PRIMARY out-of-stock con sostituto
-              const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { inStock: boolean, id: string } }) => {
-                if (!ing.isPrimary || ing.ingredient?.inStock) return false
-                // Ha un sostituto? Allora mostra il MenuItem
-                return Boolean(substituteMap[ing.ingredient.id])
-              })
-              // Se ha un sostituto, mostra il MenuItem; altrimenti escludilo
-              return hasPrimaryOutOfStockWithSubstitute ?? false
-            }
-
-            // Se disponibile, controlla se ha ingrediente PRIMARY out-of-stock SENZA sostituto
-            const primaryOutOfStockWithoutSubstitute = item.ingredients?.some((ing: { isPrimary: boolean, ingredient: { inStock: boolean, id: string } }) => {
-              if (!ing.isPrimary || ing.ingredient?.inStock) return false
-              // Se out-of-stock e NO sostituto → escludi
-              return !substituteMap[ing.ingredient.id]
-            })
-            return !primaryOutOfStockWithoutSubstitute
-          })
+          .filter((item: { available: boolean }) => item.available)
           .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
           .map((item: {
             id: string
@@ -167,12 +151,11 @@ Deno.serve(async (req) => {
                 ingredientId?: string
               }[]
             }[]
-            ingredients?: { isPrimary: boolean, ingredient: { inStock: boolean, id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[]
+            ingredients?: { ingredient: { inStock: boolean, id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[]
           }) => {
-            // Get unavailable ingredients from BOTH:
-            // 1. Explicit associations (MenuItemIngredient where !isPrimary and !inStock)
+            // All explicitly linked ingredients that are out of stock
             const explicitUnavailable = (item.ingredients || [])
-              .filter(assoc => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
+              .filter(assoc => assoc.ingredient && !assoc.ingredient.inStock)
               .map(assoc => ({
                 id: assoc.ingredient.id,
                 name: assoc.ingredient.name,
@@ -182,10 +165,10 @@ Deno.serve(async (req) => {
                 nameHe: assoc.ingredient.nameHe
               }))
 
-            // 2. Pre-calculated description matches (MenuItemUnavailableIngredient)
+            // Pre-calculated description matches (MenuItemUnavailableIngredient)
             const descriptionMatches = itemUnavailableMap.get(item.id) || []
 
-            // Merge and deduplicate by ingredient ID
+            // Merge and deduplicate by ingredient ID, attach substitute if configured
             const seenIds = new Set<string>()
             const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, substitute?: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[] = []
 
@@ -235,7 +218,7 @@ Deno.serve(async (req) => {
 
       const { data: ingredients, error } = await supabase
         .from('MenuItemIngredient')
-        .select('ingredientId, isPrimary')
+        .select('ingredientId')
         .eq('menuItemId', menuItemId)
 
       if (error) throw error
@@ -397,12 +380,12 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Associa ingredienti se forniti (ingredientIds: [{ id, isPrimary }])
+      // Associa ingredienti se forniti (ingredientIds: [{ id }])
       if (ingredientIds && ingredientIds.length > 0) {
-        const ingredientAssociations = ingredientIds.map((ing: { id: string, isPrimary?: boolean }) => ({
+        const ingredientAssociations = ingredientIds.map((ing: { id: string }) => ({
           menuItemId: item.id,
           ingredientId: ing.id,
-          isPrimary: ing.isPrimary || false
+          isPrimary: false
         }))
 
         const { error: ingError } = await supabase
@@ -637,7 +620,7 @@ Deno.serve(async (req) => {
     if (req.method === 'PUT' && subPath[0] === 'items' && subPath[1] && subPath[2] === 'ingredients') {
       const menuItemId = subPath[1]
       const body = await req.json()
-      const { ingredients } = body // array of { id, isPrimary }
+      const { ingredients } = body // array of { id }
 
       // Delete existing associations
       await supabase
@@ -647,10 +630,10 @@ Deno.serve(async (req) => {
 
       // Insert new associations
       if (ingredients && ingredients.length > 0) {
-        const associations = ingredients.map((ing: { id: string; isPrimary: boolean }) => ({
+        const associations = ingredients.map((ing: { id: string }) => ({
           menuItemId,
           ingredientId: ing.id,
-          isPrimary: ing.isPrimary || false
+          isPrimary: false
         }))
 
         const { error } = await supabase

@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
 import { formatPrice, getItemPrice as getContextPrice } from '@/lib/utils'
 import { createOrder } from '@/lib/api'
-import { PaymentMethod, OrderType, ConsumeMode } from '@shared/types'
+import { PaymentMethod, OrderType, ConsumeMode, applyCardSurcharge } from '@shared/types'
 import type { MenuItem } from '@shared/types'
 import {
   getTimerConfig,
@@ -21,20 +21,10 @@ interface TakeawayCartDrawerProps {
   paymentMethod: PaymentMethod
 }
 
-const CARD_MULTIPLIER = 1.03
-
-// Arrotonda ai 10 centesimi per eccesso
-function roundUpToTenCents(amount: number): number {
-  return Math.ceil(amount / 10) * 10
-}
-
-// Calcola il prezzo di un item con eventuale maggiorazione carta
+// Calcola il prezzo di un item con eventuale maggiorazione carta (usa utility condivisa)
 function calculateItemPrice(basePrice: number, modifiersPrice: number, quantity: number, isCard: boolean): number {
   const itemTotal = (basePrice + modifiersPrice) * quantity
-  if (isCard) {
-    return roundUpToTenCents(Math.round(itemTotal * CARD_MULTIPLIER))
-  }
-  return itemTotal
+  return applyCardSurcharge(itemTotal, isCard)
 }
 
 export function TakeawayCartDrawer({ isOpen, onClose, onOrderSuccess, paymentMethod }: TakeawayCartDrawerProps) {

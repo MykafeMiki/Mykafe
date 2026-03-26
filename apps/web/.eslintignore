@@ -1,0 +1,9 @@
+# File generati automaticamente – non lintiamo codice generato
+node_modules/
+.next/
+out/
+dist/
+src/generated/
+*.generated.ts
+*.generated.tsx
+public/

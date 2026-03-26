@@ -7,12 +7,14 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@shared/types'],
 
+  // ESLint e TypeScript errors bloccano il build in produzione
+  // (non usare ignoreDuringBuilds / ignoreBuildErrors: nascondono bug reali)
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
   // Image optimization

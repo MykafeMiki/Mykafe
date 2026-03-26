@@ -1,3 +1,6 @@
+// Pricing utilities (fonte unica di verità)
+export { CARD_MULTIPLIER, roundUpToTenCents, applyCardSurcharge } from './pricing.js'
+
 // Enums
 export enum TableStatus {
   AVAILABLE = 'AVAILABLE',
@@ -50,7 +53,6 @@ export interface MenuItemIngredient {
   menuItemId: string
   ingredientId: string
   ingredient?: Ingredient
-  isPrimary: boolean // Se true, piatto non disponibile quando ingrediente finisce
 }
 
 export interface PartySession {

@@ -1,25 +1,19 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { CheckCircle, ShoppingBag, Banknote, CreditCard, Calendar, Clock, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { CategoryNav } from '@/components/menu/CategoryNav'
-import { MenuItemCard } from '@/components/menu/MenuItemCard'
-import { ItemModal } from '@/components/menu/ItemModal'
-import { CartButton } from '@/components/cart/CartButton'
-import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
-import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig } from '@/lib/menuTimers'
 import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
-import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
-import { cn } from '@/lib/utils'
+import { PaymentStep } from '@/components/ordina/PaymentStep'
+import { DateTimeStep } from '@/components/ordina/DateTimeStep'
+import { MenuStep } from '@/components/ordina/MenuStep'
+import { ClosedScreen } from '@/components/ordina/ClosedScreen'
 
 type OrderStep = 'payment' | 'datetime' | 'menu'
-
 
 function getAvailableTimeSlots(selectedDate: Date, openingHour: number, closingHour: number): string[] {
   const slots: string[] = []
@@ -91,20 +85,6 @@ export default function OrdinaPage() {
   const availableDates = getAvailableDatesFromConfig(7)
   const availableTimeSlots = getAvailableTimeSlots(selectedDate, takeawayConfig.openingHour, takeawayConfig.closingHour)
   const showWarning = selectedTime && isWithin30Minutes(selectedDate, selectedTime)
-
-  const formatDate = (date: Date): string => {
-    const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(today.getDate() + 1)
-
-    if (date.toDateString() === today.toDateString()) {
-      return t('today')
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return t('tomorrow')
-    } else {
-      return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })
-    }
-  }
 
   // Check takeaway availability on mount
   useEffect(() => {
@@ -218,42 +198,12 @@ export default function OrdinaPage() {
     )
   }
 
-  // Show closure message if online ordering is closed
   if (!orderingStatus.isOpen) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-        </header>
-
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="text-center max-w-sm">
-            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Clock className="w-10 h-10 text-orange-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Ordini Online Chiusi
-            </h2>
-            <p className="text-gray-600 mb-4">
-              {orderingStatus.reason || 'Il servizio di ordini online non è attualmente disponibile.'}
-            </p>
-            {orderingStatus.nextOpenTime && (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                <p className="text-sm text-orange-800">
-                  <span className="font-semibold">Prossima apertura:</span>{' '}
-                  {orderingStatus.nextOpenTime}
-                </p>
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
+      <ClosedScreen
+        reason={orderingStatus.reason}
+        nextOpenTime={orderingStatus.nextOpenTime}
+      />
     )
   }
 
@@ -278,317 +228,44 @@ export default function OrdinaPage() {
     )
   }
 
-  // Step 2: Date/Time Selection (after payment choice)
-  if (step === 'datetime') {
-    const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cashAtPickup')
-
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setStep('payment')}
-                className="p-2 -ml-2 rounded-full hover:bg-orange-400 transition"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="w-6 h-6" />
-                <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
-              </div>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-orange-100 text-sm mt-1 ml-10">
-            {t('subtitle')} • {paymentLabel}
-          </p>
-        </header>
-
-        <main className="flex-1 p-6 max-w-lg mx-auto w-full">
-
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {t('pickupQuestion')}
-          </h2>
-          <p className="text-gray-500 mb-6">
-            {t('selectDateTime')}
-          </p>
-
-          {/* Date Selection */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="w-5 h-5 text-gray-500" />
-              <span className="font-medium text-gray-700">{t('day')}</span>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {availableDates.map((date) => (
-                <button
-                  key={date.toISOString()}
-                  onClick={() => {
-                    setSelectedDate(date)
-                    setSelectedTime('')
-                  }}
-                  className={cn(
-                    'flex-shrink-0 px-4 py-3 rounded-xl border-2 transition text-center min-w-[100px]',
-                    selectedDate.toDateString() === date.toDateString()
-                      ? 'border-orange-500 bg-orange-50 text-orange-700'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  )}
-                >
-                  <div className="font-semibold">{formatDate(date)}</div>
-                  <div className="text-xs text-gray-500">
-                    {date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Time Selection */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="w-5 h-5 text-gray-500" />
-              <span className="font-medium text-gray-700">{t('time')}</span>
-            </div>
-            {availableTimeSlots.length === 0 ? (
-              <p className="text-gray-500 text-sm">
-                {t('noTimeSlots')}
-              </p>
-            ) : (
-              <div className="grid grid-cols-4 gap-2">
-                {availableTimeSlots.map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => setSelectedTime(time)}
-                    className={cn(
-                      'py-2 px-3 rounded-lg border-2 transition text-sm font-medium',
-                      selectedTime === time
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    )}
-                  >
-                    {time}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Warning for short notice */}
-          {showWarning && (
-            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3">
-              <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />
-              <div>
-                <p className="font-medium text-amber-800">{t('shortNotice')}</p>
-                <p className="text-sm text-amber-700">
-                  {t('shortNoticeWarning')}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Continue Button */}
-          <button
-            onClick={handleContinueToMenu}
-            disabled={!selectedTime}
-            className={cn(
-              'w-full py-4 rounded-xl font-semibold text-lg transition',
-              selectedTime
-                ? 'bg-orange-500 text-white hover:bg-orange-600'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            )}
-          >
-            {tc('continue')}
-          </button>
-        </main>
-      </div>
-    )
-  }
-
-  // Step 1: Payment Selection (first step)
   if (step === 'payment') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-orange-500 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <h1 className="text-xl font-bold">MyKafe - {t('title')}</h1>
-            </div>
-            <LanguageSelectorCompact />
-          </div>
-          <p className="text-orange-100 text-sm mt-1">
-            {t('subtitle')}
-          </p>
-        </header>
-
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-md">
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              {t('paymentQuestion')}
-            </h2>
-            <p className="text-gray-500 text-center mb-8">
-              {t('selectPayment')}
-            </p>
-
-            <div className="space-y-4">
-              <button
-                onClick={() => handleSelectPayment(PaymentMethod.CASH)}
-                className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition"
-              >
-                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
-                  <Banknote className="w-7 h-7 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <span className="block font-semibold text-lg text-gray-900">
-                    {t('cashAtPickup')}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {t('cashDescription')}
-                  </span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => handleSelectPayment(PaymentMethod.CARD)}
-                className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition"
-              >
-                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center">
-                  <CreditCard className="w-7 h-7 text-blue-600" />
-                </div>
-                <div className="text-left">
-                  <span className="block font-semibold text-lg text-gray-900">
-                    {t('card')}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {t('cardDescription')}
-                  </span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
+    return <PaymentStep onSelectPayment={handleSelectPayment} />
   }
 
-  // Step 3: Menu view (final step)
-  const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cashAtPickup')
-  const pickupTimeDisplay = `${formatDate(selectedDate)} ${selectedTime}`
+  if (step === 'datetime') {
+    return (
+      <DateTimeStep
+        selectedDate={selectedDate}
+        selectedTime={selectedTime}
+        availableDates={availableDates}
+        availableTimeSlots={availableTimeSlots}
+        showWarning={showWarning}
+        paymentMethod={paymentMethod}
+        onDateChange={setSelectedDate}
+        onTimeChange={setSelectedTime}
+        onGoBack={() => setStep('payment')}
+        onContinue={handleContinueToMenu}
+      />
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <header className="bg-orange-500 text-white p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setStep('datetime')}
-              className="p-2 -ml-2 rounded-full hover:bg-orange-400 transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6" />
-              <div>
-                <h1 className="text-xl font-bold">MyKafe</h1>
-                <p className="text-orange-100 text-sm">{t('subtitle')}</p>
-              </div>
-            </div>
-          </div>
-          <LanguageSelectorCompact />
-        </div>
-        {/* Show selected payment and pickup time */}
-        <div className="mt-2 flex items-center gap-4 text-sm">
-          <button
-            onClick={() => setStep('datetime')}
-            className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
-          >
-            <Clock className="w-4 h-4" />
-            <span>{pickupTimeDisplay}</span>
-          </button>
-          <button
-            onClick={() => setStep('payment')}
-            className="flex items-center gap-1 bg-orange-600 px-3 py-1 rounded-full hover:bg-orange-700 transition"
-          >
-            {paymentMethod === PaymentMethod.CARD ? (
-              <CreditCard className="w-4 h-4" />
-            ) : (
-              <Banknote className="w-4 h-4" />
-            )}
-            <span>{paymentLabel}</span>
-          </button>
-        </div>
-      </header>
-
-      <CategoryNav
-        categories={filteredCategories}
-        activeCategory={activeCategory}
-        onSelect={scrollToCategory}
-      />
-
-      <main className="p-4 space-y-8">
-        {filteredCategories.map((category) => (
-          <section
-            key={category.id}
-            ref={(el) => {
-              categoryRefs.current[category.id] = el
-            }}
-            className="scroll-mt-20"
-          >
-            <h2 className="text-xl font-bold text-gray-900 mb-1">
-              {getTranslatedName(category, locale)}
-            </h2>
-            {getTranslatedDescription(category, locale) && (
-              <p className="text-gray-500 text-sm mb-4">
-                {getTranslatedDescription(category, locale)}
-              </p>
-            )}
-
-            <div className="space-y-3">
-              {category.items?.map((item) => (
-                <MenuItemCard
-                  key={item.id}
-                  item={item}
-                  onAdd={handleAddItem}
-                  priceContext="takeaway-remote"
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-      </main>
-
-      <CartButton onClick={handleCheckout} />
-
-      <TakeawayCartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        onOrderSuccess={handleOrderSuccess}
-        paymentMethod={paymentMethod || PaymentMethod.CASH}
-      />
-
-      {selectedItem && (
-        <ItemModal
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-          onAdd={handleAddWithModifiers}
-          defaultConsumeMode={ConsumeMode.TAKEAWAY}
-          priceContext="takeaway-remote"
-          hideConsumeModeSelector={true}
-        />
-      )}
-
-      {orderSuccess && (
-        <div className="fixed top-4 left-4 right-4 z-50 bg-accent-500 text-white p-4 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top">
-          <CheckCircle className="w-6 h-6" />
-          <div>
-            <p className="font-semibold">{t('orderSent')}</p>
-            <p className="text-sm text-accent-100">
-              {t('pickupConfirmation', { time: pickupTimeDisplay })}
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
+    <MenuStep
+      filteredCategories={filteredCategories}
+      activeCategory={activeCategory}
+      selectedItem={selectedItem}
+      isCartOpen={isCartOpen}
+      orderSuccess={orderSuccess}
+      selectedDate={selectedDate}
+      selectedTime={selectedTime}
+      paymentMethod={paymentMethod || PaymentMethod.CASH}
+      onGoBack={() => setStep('datetime')}
+      onCategorySelect={setActiveCategory}
+      onAddItem={handleAddItem}
+      onAddWithModifiers={handleAddWithModifiers}
+      onSelectItemClose={() => setSelectedItem(null)}
+      onCartOpen={setIsCartOpen}
+      onOrderSuccess={handleOrderSuccess}
+    />
   )
 }

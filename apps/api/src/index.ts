@@ -47,8 +47,6 @@ app.get('/', (req, res) => {
   res.json({
     name: 'MyKafe API',
     status: 'ok',
-    message: 'API migrata a Supabase Edge Functions',
-    supabase: 'https://biefwzrprjqusjynqwus.supabase.co/functions/v1'
   })
 })
 

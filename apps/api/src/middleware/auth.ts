@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is required but not set')
+}
 
 export interface AuthRequest extends Request {
   admin?: boolean
@@ -17,7 +20,7 @@ export function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction)
   const token = authHeader.split(' ')[1]
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { admin: boolean }
+    const decoded = jwt.verify(token, JWT_SECRET!) as { admin: boolean }
     if (!decoded.admin) {
       return res.status(403).json({ error: 'Accesso negato' })
     }
@@ -29,5 +32,5 @@ export function verifyAdmin(req: AuthRequest, res: Response, next: NextFunction)
 }
 
 export function generateToken(): string {
-  return jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '24h' })
+  return jwt.sign({ admin: true }, JWT_SECRET!, { expiresIn: '24h' })
 }

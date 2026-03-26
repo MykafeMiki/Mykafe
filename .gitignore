@@ -7,8 +7,9 @@ dist/
 .next/
 out/
 
-# Environment files
+# Environment files – tutti i file .env (mai committare credenziali)
 .env
+.env.*
 .env.local
 .env.*.local
 
@@ -33,6 +34,10 @@ coverage/
 
 # Misc
 *.tsbuildinfo
+
+# File temporanei di sessione (Claude/editor)
+tmpclaude-*
+.~lock.*
 
 # Windows reserved names
 nul

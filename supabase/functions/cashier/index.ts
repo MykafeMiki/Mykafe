@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { PaymentSchema, validateRequest } from "../_shared/validation.ts"
+import { PaymentSchema, validateRequest, verifyAdminToken, unauthorizedResponse } from "../_shared/validation.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,6 +23,13 @@ Deno.serve(async (req) => {
     const pathParts = url.pathname.split('/').filter(Boolean)
     const cashierIndex = pathParts.indexOf('cashier')
     const subPath = cashierIndex >= 0 ? pathParts.slice(cashierIndex + 1) : []
+
+    // Protect all write/payment operations with admin token
+    const isWriteMethod = ['POST', 'PATCH', 'DELETE', 'PUT'].includes(req.method)
+    if (isWriteMethod) {
+      const isAdmin = await verifyAdminToken(req)
+      if (!isAdmin) return unauthorizedResponse(corsHeaders)
+    }
 
     // GET /cashier/unpaid - Get all unpaid orders (SERVED but not paid)
     if (req.method === 'GET' && subPath[0] === 'unpaid') {

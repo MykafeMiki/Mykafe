@@ -1,5 +1,59 @@
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
 
+// ---------------------------------------------------------------------------
+// Admin token verification (shared across all edge functions)
+// ---------------------------------------------------------------------------
+export async function verifyAdminToken(req: Request): Promise<boolean> {
+  const JWT_SECRET = Deno.env.get('JWT_SECRET')
+  if (!JWT_SECRET) return false
+
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return false
+
+  const token = authHeader.substring(7)
+  const parts = token.split('.')
+  if (parts.length !== 3) return false
+
+  try {
+    const [encodedHeader, encodedPayload, encodedSignature] = parts
+    const message = `${encodedHeader}.${encodedPayload}`
+
+    const base64UrlDecode = (str: string): string => {
+      let base64 = str.replace(/-/g, '+').replace(/_/g, '/')
+      while (base64.length % 4) base64 += '='
+      return atob(base64)
+    }
+
+    const encoder = new TextEncoder()
+    const key = await crypto.subtle.importKey(
+      'raw', encoder.encode(JWT_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']
+    )
+    const signatureStr = base64UrlDecode(encodedSignature)
+    const signatureArray = new Uint8Array(signatureStr.length)
+    for (let i = 0; i < signatureStr.length; i++) signatureArray[i] = signatureStr.charCodeAt(i)
+
+    const isValid = await crypto.subtle.verify('HMAC', key, signatureArray, encoder.encode(message))
+    if (!isValid) return false
+
+    const payload = JSON.parse(base64UrlDecode(encodedPayload))
+    const now = Math.floor(Date.now() / 1000)
+    if (payload.exp && payload.exp < now) return false
+    if (payload.role !== 'admin') return false
+
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function unauthorizedResponse(corsHeaders: Record<string, string>): Response {
+  return new Response(
+    JSON.stringify({ error: 'Autenticazione richiesta' }),
+    { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  )
+}
+
 // Order item schema
 export const OrderItemSchema = z.object({
   menuItemId: z.string().min(1, "Menu item ID required"),

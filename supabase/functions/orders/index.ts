@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { CreateOrderSchema, UpdateOrderStatusSchema, validateRequest } from "../_shared/validation.ts"
+import { applyCardSurcharge } from "../_shared/pricing.ts"
 
 // Generate cuid-like ID
 function generateId(): string {
@@ -69,10 +70,6 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
 }
 
-// Helper: arrotonda ai 10 centesimi per eccesso
-function roundUpToTenCents(amount: number): number {
-  return Math.ceil(amount / 10) * 10
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -307,7 +304,7 @@ Deno.serve(async (req) => {
       // === END VALIDATION ===
 
       const isCard = paymentMethod === 'CARD'
-      const CARD_MULTIPLIER = 1.03
+      // CARD_MULTIPLIER rimosso – ora gestito da _shared/pricing.ts
 
       // Calculate totals - OPTIMIZED: Batch fetch instead of N+1 queries
       let subtotal = 0
@@ -354,11 +351,8 @@ Deno.serve(async (req) => {
 
         subtotal += itemBasePrice
 
-        if (isCard) {
-          totalAmount += roundUpToTenCents(Math.round(itemBasePrice * CARD_MULTIPLIER))
-        } else {
-          totalAmount += itemBasePrice
-        }
+        // Usa la utility condivisa per il sovrapprezzo carta
+        totalAmount += applyCardSurcharge(itemBasePrice, isCard)
       }
 
       const surcharge = totalAmount - subtotal
@@ -533,8 +527,9 @@ Deno.serve(async (req) => {
 
       if (updateError) throw updateError
 
-      // If order is completed/paid, check if table should be freed
-      if (currentOrder?.tableId && ['COMPLETED', 'PAID', 'CANCELLED'].includes(status)) {
+      // If order is served or cancelled, check if table should be freed
+      // NOTE: valid statuses are PENDING, PREPARING, READY, SERVED, CANCELLED (no COMPLETED/PAID)
+      if (currentOrder?.tableId && ['SERVED', 'CANCELLED'].includes(status)) {
         // Count remaining active orders for this table
         const { count: activeOrdersCount } = await supabase
           .from('Order')

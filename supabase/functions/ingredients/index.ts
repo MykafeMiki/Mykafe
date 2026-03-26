@@ -149,7 +149,6 @@ Deno.serve(async (req) => {
           *,
           menuItems:MenuItemIngredient(
             id,
-            isPrimary,
             menuItem:MenuItem(id, name)
           ),
           modifiers:Modifier(id, name)
@@ -259,84 +258,18 @@ Deno.serve(async (req) => {
           .eq('key', 'ingredient_substitutes')
           .single()
 
-        const substituteMap = (settingsData?.value as Record<string, unknown>) || {}
-        const hasSubstitute = Boolean(substituteMap[ingredientId])
-
-        // 1. Disabilita tutti i MenuItem dove questo ingrediente è PRIMARY
-        // SOLO SE non ha un sostituto selezionato
-        if (!hasSubstitute) {
-          const { data: primaryItems } = await supabase
-            .from('MenuItemIngredient')
-            .select('menuItemId')
-            .eq('ingredientId', ingredientId)
-            .eq('isPrimary', true)
-
-          if (primaryItems && primaryItems.length > 0) {
-            const menuItemIds = primaryItems.map(item => item.menuItemId)
-            await supabase
-              .from('MenuItem')
-              .update({ available: false })
-              .in('id', menuItemIds)
-          }
-        } else {
-          console.log(`Ingredient ${ingredientName} has a substitute, keeping primary menu items available`)
-        }
-
-        // 2. Disabilita tutti i Modifier collegati a questo ingrediente
+        // Ingrediente esaurito: disabilita solo i Modifier collegati.
+        // I MenuItem rimangono visibili — l'ingrediente sparisce dalla descrizione.
         await supabase
           .from('Modifier')
           .update({ available: false })
           .eq('ingredientId', ingredientId)
-
-        // 3. Rimuovi automaticamente l'ingrediente dai piatti dove NON è primario
-        // (gli ingredienti primari non vengono rimossi automaticamente)
-        const { data: deletedItems, error: deleteError } = await supabase
-          .from('MenuItemIngredient')
-          .delete()
-          .eq('ingredientId', ingredientId)
-          .eq('isPrimary', false)
-          .select()
-
-        console.log('Deleted non-primary ingredient associations:', deletedItems?.length || 0, deleteError)
       } else if (inStock === true) {
-        // Se l'ingrediente torna disponibile, riabilita i modifier collegati
+        // Ingrediente tornato disponibile: riabilita i Modifier collegati.
         await supabase
           .from('Modifier')
           .update({ available: true })
           .eq('ingredientId', ingredientId)
-
-        // Per i MenuItem, dobbiamo verificare che TUTTI gli ingredienti primari siano disponibili
-        // prima di riabilitare il piatto
-        const { data: affectedItems } = await supabase
-          .from('MenuItemIngredient')
-          .select('menuItemId')
-          .eq('ingredientId', ingredientId)
-          .eq('isPrimary', true)
-
-        if (affectedItems) {
-          for (const item of affectedItems) {
-            // Verifica se tutti gli ingredienti primari sono in stock
-            const { data: primaryIngredients } = await supabase
-              .from('MenuItemIngredient')
-              .select(`
-                ingredientId,
-                ingredient:Ingredient(inStock)
-              `)
-              .eq('menuItemId', item.menuItemId)
-              .eq('isPrimary', true)
-
-            const allPrimaryInStock = primaryIngredients?.every(
-              (pi: { ingredient: { inStock: boolean } }) => pi.ingredient?.inStock
-            )
-
-            if (allPrimaryInStock) {
-              await supabase
-                .from('MenuItem')
-                .update({ available: true })
-                .eq('id', item.menuItemId)
-            }
-          }
-        }
       }
 
       return new Response(JSON.stringify(ingredient), {
@@ -348,14 +281,14 @@ Deno.serve(async (req) => {
     if (req.method === 'POST' && subPath[0] && subPath[1] === 'menu-items') {
       const ingredientId = subPath[0]
       const body = await req.json()
-      const { menuItemId, isPrimary } = body
+      const { menuItemId } = body
 
       const { data: association, error } = await supabase
         .from('MenuItemIngredient')
         .insert({
           ingredientId,
           menuItemId,
-          isPrimary: isPrimary || false
+          isPrimary: false
         })
         .select()
         .single()
