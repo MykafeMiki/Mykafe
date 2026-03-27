@@ -5,8 +5,8 @@
  */
 
 import type { Category } from '@shared/types'
-import { getTimerConfig, type MenuContext, type TimerConfig } from './config.js'
-import { DAYS_OF_WEEK } from './config.js'
+import { getTimerConfig, type MenuContext, type TimerConfig } from './config'
+import { DAYS_OF_WEEK } from './config'
 
 /**
  * Check if current time is within sushi availability window

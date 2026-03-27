@@ -7,6 +7,6 @@
  * continue to work if the alias points here, or update them to the specific module.
  */
 
-export * from './config.js'
-export * from './availability.js'
-export * from './closure.js'
+export * from './config'
+export * from './availability'
+export * from './closure'

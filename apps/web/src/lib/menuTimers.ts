@@ -8,4 +8,4 @@
  * esistenti tipo `import { X } from '@/lib/menuTimers'` continuano a funzionare.
  */
 
-export * from './timers/index.js'
+export * from './timers/index'

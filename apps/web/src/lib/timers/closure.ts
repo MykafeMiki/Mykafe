@@ -5,7 +5,7 @@
  * Configuration is stored server-side via /api/settings/closure.
  */
 
-import { DAYS_OF_WEEK } from './config.js'
+import { DAYS_OF_WEEK } from './config'
 
 export interface DaySchedule {
   enabled: boolean    // Se il giorno è abilitato per ordini online
