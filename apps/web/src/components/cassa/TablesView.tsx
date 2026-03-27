@@ -1,6 +1,6 @@
 'use client'
 
-import { Banknote, CardIcon, CreditCard, ShoppingBag } from 'lucide-react'
+import { Banknote, CreditCard, ShoppingBag } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type { TableWithOrders, Order } from '@/lib/api'
 
@@ -89,7 +89,7 @@ export function TablesView({
                       disabled={paymentLoading}
                       className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition disabled:opacity-50"
                     >
-                      <CardIcon className="w-5 h-5" />
+                      <CreditCard className="w-5 h-5" />
                     </button>
                   </div>
                 </div>

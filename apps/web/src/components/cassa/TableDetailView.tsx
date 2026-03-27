@@ -1,6 +1,6 @@
 'use client'
 
-import { Banknote, CardIcon, Loader2, ArrowLeft, User } from 'lucide-react'
+import { Banknote, CreditCard, Loader2, ArrowLeft, User } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type { TableWithOrders } from '@/lib/api'
 
@@ -94,7 +94,7 @@ export function TableDetailView({
                   disabled={paymentLoading}
                   className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <CardIcon className="w-4 h-4" />
+                  <CreditCard className="w-4 h-4" />
                   {t('card')}
                 </button>
               </div>
@@ -123,7 +123,7 @@ export function TableDetailView({
                 disabled={paymentLoading}
                 className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-50 font-medium"
               >
-                {paymentLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CardIcon className="w-5 h-5" />}
+                {paymentLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
                 {t('payAll')} - {t('card')}
               </button>
             </div>

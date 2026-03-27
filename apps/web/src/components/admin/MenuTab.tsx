@@ -5,12 +5,12 @@ import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image a
 import { useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
 import {
-  getAdminCategories, updateCategory, uploadSectionImage, fetchClosureConfig,
-  saveClosureConfigToServer, updateItemAvailability
+  getAdminCategories, updateCategory, uploadSectionImage, updateItemAvailability
 } from '@/lib/api'
 import {
   getSushiStatus, isSushiTimeActive, getTimerConfig, saveTimerConfig,
   DAYS_OF_WEEK, isOnlineOrderingOpen, DEFAULT_CLOSURE_CONFIG,
+  fetchClosureConfig, saveClosureConfigToServer,
   type TimerConfig, type ClosureConfig
 } from '@/lib/menuTimers'
 import { menuSections, categoryToSectionMap, type MenuSection } from '@/components/menu/MenuSections'
