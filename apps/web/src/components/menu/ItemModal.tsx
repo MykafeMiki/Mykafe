@@ -1,80 +1,92 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { X, Minus, Plus, UtensilsCrossed, ShoppingBag } from 'lucide-react'
-import { useLocale, useTranslations } from 'next-intl'
-import { formatPrice, cn, getItemPrice, type PriceContext } from '@/lib/utils'
-import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
-import type { MenuItem, Modifier } from '@shared/types'
-import { ConsumeMode, roundUpToTenCents } from '@shared/types'
+import { useState } from "react";
+import { X, Minus, Plus, UtensilsCrossed, ShoppingBag } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { formatPrice, cn, getItemPrice, type PriceContext } from "@/lib/utils";
+import { getTranslatedName, getTranslatedDescription } from "@/lib/translations";
+import type { MenuItem, Modifier } from "@shared/types";
+import { ConsumeMode } from "@shared/types";
 
 interface ItemModalProps {
-  item: MenuItem
-  onClose: () => void
-  onAdd: (quantity: number, modifiers: Modifier[], notes?: string, consumeMode?: ConsumeMode) => void
-  defaultConsumeMode?: ConsumeMode
-  priceMultiplier?: number
-  priceContext?: PriceContext
-  hideConsumeModeSelector?: boolean
+  item: MenuItem;
+  onClose: () => void;
+  onAdd: (
+    quantity: number,
+    modifiers: Modifier[],
+    notes?: string,
+    consumeMode?: ConsumeMode
+  ) => void;
+  defaultConsumeMode?: ConsumeMode;
+  priceMultiplier?: number;
+  priceContext?: PriceContext;
+  hideConsumeModeSelector?: boolean;
 }
 
+// Arrotonda ai 10 centesimi per eccesso
+function roundUpToTenCents(amount: number): number {
+  return Math.ceil(amount / 10) * 10;
+}
 
-export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMode.DINE_IN, priceMultiplier = 1, priceContext = 'dine-in', hideConsumeModeSelector = false }: ItemModalProps) {
-  const locale = useLocale()
-  const t = useTranslations('menuItem')
-  const [quantity, setQuantity] = useState(1)
-  const [selectedModifiers, setSelectedModifiers] = useState<Record<string, Modifier[]>>({})
-  const [notes, setNotes] = useState('')
-  const [consumeMode, setConsumeMode] = useState<ConsumeMode>(defaultConsumeMode)
+export function ItemModal({
+  item,
+  onClose,
+  onAdd,
+  defaultConsumeMode = ConsumeMode.DINE_IN,
+  priceMultiplier = 1,
+  priceContext = "dine-in",
+  hideConsumeModeSelector = false,
+}: ItemModalProps) {
+  const locale = useLocale();
+  const t = useTranslations("menuItem");
+  const [quantity, setQuantity] = useState(1);
+  const [selectedModifiers, setSelectedModifiers] = useState<Record<string, Modifier[]>>({});
+  const [notes, setNotes] = useState("");
+  const [consumeMode, setConsumeMode] = useState<ConsumeMode>(defaultConsumeMode);
 
-  const translatedName = getTranslatedName(item, locale)
-  const translatedDescription = getTranslatedDescription(item, locale)
-  const baseItemPrice = getItemPrice(item, priceContext)
+  const translatedName = getTranslatedName(item, locale);
+  const translatedDescription = getTranslatedDescription(item, locale);
+  const baseItemPrice = getItemPrice(item, priceContext);
 
   const toggleModifier = (groupId: string, modifier: Modifier, multiSelect: boolean) => {
     setSelectedModifiers((prev) => {
-      const current = prev[groupId] || []
+      const current = prev[groupId] || [];
 
       if (multiSelect) {
-        const exists = current.some((m) => m.id === modifier.id)
+        const exists = current.some((m) => m.id === modifier.id);
         return {
           ...prev,
-          [groupId]: exists
-            ? current.filter((m) => m.id !== modifier.id)
-            : [...current, modifier],
-        }
+          [groupId]: exists ? current.filter((m) => m.id !== modifier.id) : [...current, modifier],
+        };
       } else {
         return {
           ...prev,
           [groupId]: current.some((m) => m.id === modifier.id) ? [] : [modifier],
-        }
+        };
       }
-    })
-  }
+    });
+  };
 
   const isModifierSelected = (groupId: string, modifierId: string) => {
-    return (selectedModifiers[groupId] || []).some((m) => m.id === modifierId)
-  }
+    return (selectedModifiers[groupId] || []).some((m) => m.id === modifierId);
+  };
 
   const getAllSelectedModifiers = () => {
-    return Object.values(selectedModifiers).flat()
-  }
+    return Object.values(selectedModifiers).flat();
+  };
 
   const calculateTotal = () => {
-    const modifiersTotal = getAllSelectedModifiers().reduce(
-      (sum, mod) => sum + mod.price,
-      0
-    )
-    const baseTotal = (baseItemPrice + modifiersTotal) * quantity
+    const modifiersTotal = getAllSelectedModifiers().reduce((sum, mod) => sum + mod.price, 0);
+    const baseTotal = (baseItemPrice + modifiersTotal) * quantity;
     return priceMultiplier > 1
       ? roundUpToTenCents(Math.round(baseTotal * priceMultiplier))
-      : baseTotal
-  }
+      : baseTotal;
+  };
 
   const handleAdd = () => {
-    onAdd(quantity, getAllSelectedModifiers(), notes || undefined, consumeMode)
-    onClose()
-  }
+    onAdd(quantity, getAllSelectedModifiers(), notes || undefined, consumeMode);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -84,10 +96,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-bold text-gray-900">{translatedName}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition"
-          >
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -104,9 +113,7 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
             </div>
           )}
 
-          {translatedDescription && (
-            <p className="text-gray-600">{translatedDescription}</p>
-          )}
+          {translatedDescription && <p className="text-gray-600">{translatedDescription}</p>}
 
           {/* Modifier Groups */}
           {item.modifierGroups?.map((group) => (
@@ -115,13 +122,11 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
                 <h3 className="font-semibold text-gray-900">{getTranslatedName(group, locale)}</h3>
                 {group.required && (
                   <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
-                    {t('required')}
+                    {t("required")}
                   </span>
                 )}
                 {group.multiSelect && (
-                  <span className="text-xs text-gray-500">
-                    (max {group.maxSelect})
-                  </span>
+                  <span className="text-xs text-gray-500">(max {group.maxSelect})</span>
                 )}
               </div>
 
@@ -129,20 +134,23 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
                 {group.modifiers.map((modifier) => (
                   <button
                     key={modifier.id}
-                    onClick={() =>
-                      toggleModifier(group.id, modifier, group.multiSelect)
-                    }
+                    onClick={() => toggleModifier(group.id, modifier, group.multiSelect)}
                     className={cn(
-                      'w-full flex items-center justify-between p-3 rounded-lg border transition',
+                      "w-full flex items-center justify-between p-3 rounded-lg border transition",
                       isModifierSelected(group.id, modifier.id)
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-gray-200 hover:border-gray-300"
                     )}
                   >
                     <span className="font-medium">{getTranslatedName(modifier, locale)}</span>
                     {modifier.price > 0 && (
                       <span className="text-gray-500">
-                        +{formatPrice(priceMultiplier > 1 ? roundUpToTenCents(Math.round(modifier.price * priceMultiplier)) : modifier.price)}
+                        +
+                        {formatPrice(
+                          priceMultiplier > 1
+                            ? roundUpToTenCents(Math.round(modifier.price * priceMultiplier))
+                            : modifier.price
+                        )}
                       </span>
                     )}
                   </button>
@@ -154,31 +162,31 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
           {/* Consume Mode */}
           {!hideConsumeModeSelector && (
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3">{t('selectOptions')}</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">{t("selectOptions")}</h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setConsumeMode(ConsumeMode.DINE_IN)}
                   className={cn(
-                    'flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition',
+                    "flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition",
                     consumeMode === ConsumeMode.DINE_IN
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? "border-primary-500 bg-primary-50 text-primary-700"
+                      : "border-gray-200 hover:border-gray-300"
                   )}
                 >
                   <UtensilsCrossed className="w-5 h-5" />
-                  <span className="font-medium">{t('eatHere')}</span>
+                  <span className="font-medium">{t("eatHere")}</span>
                 </button>
                 <button
                   onClick={() => setConsumeMode(ConsumeMode.TAKEAWAY)}
                   className={cn(
-                    'flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition',
+                    "flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition",
                     consumeMode === ConsumeMode.TAKEAWAY
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? "border-primary-500 bg-primary-50 text-primary-700"
+                      : "border-gray-200 hover:border-gray-300"
                   )}
                 >
                   <ShoppingBag className="w-5 h-5" />
-                  <span className="font-medium">{t('takeaway')}</span>
+                  <span className="font-medium">{t("takeaway")}</span>
                 </button>
               </div>
             </div>
@@ -186,11 +194,11 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
 
           {/* Notes */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-2">{t('addNotes')}</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">{t("addNotes")}</h3>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder={t('notesPlaceholder')}
+              placeholder={t("notesPlaceholder")}
               className="w-full p-3 border border-gray-200 rounded-lg resize-none h-20 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -219,11 +227,11 @@ export function ItemModal({ item, onClose, onAdd, defaultConsumeMode = ConsumeMo
               onClick={handleAdd}
               className="flex-1 py-3 px-6 bg-primary-500 text-white rounded-lg font-semibold hover:bg-primary-600 transition"
             >
-              {t('addToCart')} {formatPrice(calculateTotal())}
+              {t("addToCart")} {formatPrice(calculateTotal())}
             </button>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

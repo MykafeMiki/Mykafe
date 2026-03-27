@@ -5,6 +5,7 @@ node_modules/
 # Build outputs
 dist/
 .next/
+.next-webpack/
 out/
 
 # Environment files – tutti i file .env (mai committare credenziali)

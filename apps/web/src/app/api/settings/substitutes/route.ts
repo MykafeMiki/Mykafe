@@ -1,58 +1,89 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 function getSupabase() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  )
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://biefwzrprjqusjynqwus.supabase.co",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+  );
 }
 
 export async function GET() {
   try {
-    const supabase = getSupabase()
+    const supabase = getSupabase();
     const { data, error } = await supabase
-      .from('AppSettings')
-      .select('value')
-      .eq('key', 'ingredient_substitutes')
-      .single()
+      .from("AppSettings")
+      .select("value")
+      .eq("key", "ingredient_substitutes")
+      .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return NextResponse.json({})
-      throw error
+      if (error.code === "PGRST116") return NextResponse.json({});
+      throw error;
     }
 
-    return NextResponse.json(data?.value || {})
+    return NextResponse.json(data?.value || {});
   } catch (error) {
-    console.error('Error fetching substitutes:', error)
-    return NextResponse.json({ error: 'Failed to fetch substitutes' }, { status: 500 })
+    console.error("Error fetching substitutes:", error);
+    return NextResponse.json({ error: "Failed to fetch substitutes" }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = getSupabase()
-    const body = await request.json()
+    const supabase = getSupabase();
+    const body = await request.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Invalid substitutes payload" }, { status: 400 });
+    }
 
-    const { error } = await supabase
-      .from('AppSettings')
-      .upsert({
-        key: 'ingredient_substitutes',
-        value: body,
-        updatedAt: new Date().toISOString()
-      })
+    const { error } = await supabase.from("AppSettings").upsert({
+      key: "ingredient_substitutes",
+      value: body,
+      updatedAt: new Date().toISOString(),
+    });
 
-    if (error) throw error
+    if (error) throw error;
 
-    // I sostituti vengono usati solo per la descrizione (testo nel menu).
-    // La visibilità dei MenuItem dipende esclusivamente dal campo `available`,
-    // gestito manualmente dall'admin — nessuna auto-disabilitazione per ingredienti.
+    for (const [ingredientId, substituteData] of Object.entries(body)) {
+      if (substituteData) {
+        const { data: primaryItems, error: queryError } = await supabase
+          .from("MenuItemIngredient")
+          .select("menuItemId")
+          .eq("ingredientId", ingredientId)
+          .eq("isPrimary", true);
 
-    return NextResponse.json({ success: true })
+        if (queryError) {
+          console.error(
+            `[SUBSTITUTE] Error querying primary items for ${ingredientId}:`,
+            queryError
+          );
+          continue;
+        }
+
+        if (primaryItems && primaryItems.length > 0) {
+          const menuItemIds = primaryItems.map((item: { menuItemId: string }) => item.menuItemId);
+          const { error: updateError } = await supabase
+            .from("MenuItem")
+            .update({ available: true })
+            .in("id", menuItemIds)
+            .select();
+
+          if (updateError) {
+            console.error(
+              `[SUBSTITUTE] Error re-enabling menu items for ingredient ${ingredientId}:`,
+              updateError
+            );
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error saving substitutes:', error)
-    return NextResponse.json({ error: 'Failed to save substitutes' }, { status: 500 })
+    console.error("Error saving substitutes:", error);
+    return NextResponse.json({ error: "Failed to save substitutes" }, { status: 500 });
   }
 }

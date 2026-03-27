@@ -1,38 +1,43 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { X, Minus, Plus, Trash2, Loader2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
-import { useCart } from '@/lib/cart'
-import { formatPrice, getItemPrice } from '@/lib/utils'
-import { createOrder } from '@/lib/api'
-import { PaymentMethod, OrderType, ConsumeMode } from '@shared/types'
+import { useState } from "react";
+import { X, Minus, Plus, Trash2, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useCart } from "@/lib/cart";
+import { formatPrice, getItemPrice } from "@/lib/utils";
+import { createOrder } from "@/lib/api";
+import { PaymentMethod, OrderType, ConsumeMode } from "@shared/types";
 
 interface BancoCartDrawerProps {
-  isOpen: boolean
-  onClose: () => void
-  onOrderSuccess: () => void
-  customerName: string
+  isOpen: boolean;
+  onClose: () => void;
+  onOrderSuccess: () => void;
+  customerName: string;
 }
 
-export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName }: BancoCartDrawerProps) {
-  const t = useTranslations('cart')
-  const tb = useTranslations('banco')
-  const { items, tableId, priceContext, updateQuantity, removeItem, clearCart } = useCart()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function BancoCartDrawer({
+  isOpen,
+  onClose,
+  onOrderSuccess,
+  customerName,
+}: BancoCartDrawerProps) {
+  const t = useTranslations("cart");
+  const tb = useTranslations("banco");
+  const { items, tableId, priceContext, updateQuantity, removeItem, clearCart } = useCart();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const total = items.reduce((sum, item) => {
-    const basePrice = getItemPrice(item.menuItem, priceContext)
-    const modifiersPrice = item.selectedModifiers.reduce((s, m) => s + m.price, 0)
-    return sum + (basePrice + modifiersPrice) * item.quantity
-  }, 0)
+    const basePrice = getItemPrice(item.menuItem, priceContext);
+    const modifiersPrice = item.selectedModifiers.reduce((s, m) => s + m.price, 0);
+    return sum + (basePrice + modifiersPrice) * item.quantity;
+  }, 0);
 
   const handleSubmitOrder = async () => {
-    if (!tableId || items.length === 0) return
+    if (!tableId || items.length === 0) return;
 
-    setIsSubmitting(true)
-    setError(null)
+    setIsSubmitting(true);
+    setError(null);
 
     try {
       await createOrder({
@@ -47,20 +52,20 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
         orderType: OrderType.COUNTER,
         paymentMethod: PaymentMethod.CASH, // Always cash at counter
         customerName: customerName,
-      })
+      });
 
-      clearCart()
-      onOrderSuccess()
-      onClose()
+      clearCart();
+      onOrderSuccess();
+      onClose();
     } catch (err) {
-      setError(t('orderError'))
-      console.error(err)
+      setError(t("orderError"));
+      console.error(err);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -70,13 +75,12 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-primary-50">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">{t('title')}</h2>
-            <p className="text-sm text-gray-500">{tb('orderFor')}: {customerName}</p>
+            <h2 className="text-lg font-bold text-gray-900">{t("title")}</h2>
+            <p className="text-sm text-gray-500">
+              {tb("orderFor")}: {customerName}
+            </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 transition"
-          >
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -84,29 +88,20 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {items.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">
-              {t('empty')}
-            </p>
+            <p className="text-center text-gray-500 py-8">{t("empty")}</p>
           ) : (
             <div className="space-y-3">
               {items.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex gap-3 p-3 bg-gray-50 rounded-lg"
-                >
+                <div key={index} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900">
-                      {item.menuItem.name}
-                    </h3>
+                    <h3 className="font-semibold text-gray-900">{item.menuItem.name}</h3>
                     {item.selectedModifiers.length > 0 && (
                       <p className="text-sm text-gray-500">
-                        {item.selectedModifiers.map((m) => m.name).join(', ')}
+                        {item.selectedModifiers.map((m) => m.name).join(", ")}
                       </p>
                     )}
                     {item.notes && (
-                      <p className="text-sm text-gray-400 italic">
-                        "{item.notes}"
-                      </p>
+                      <p className="text-sm text-gray-400 italic">&quot;{item.notes}&quot;</p>
                     )}
                     <p className="font-semibold text-primary-600 mt-1">
                       {formatPrice(
@@ -132,9 +127,7 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className="w-6 text-center font-semibold">
-                        {item.quantity}
-                      </span>
+                      <span className="w-6 text-center font-semibold">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(index, item.quantity + 1)}
                         className="p-2 hover:bg-gray-100 transition"
@@ -152,12 +145,10 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
         {/* Footer */}
         {items.length > 0 && (
           <div className="p-4 border-t bg-gray-50">
-            {error && (
-              <p className="text-red-500 text-sm mb-3 text-center">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-sm mb-3 text-center">{error}</p>}
 
             <div className="flex items-center justify-between text-lg font-bold mb-4">
-              <span>{t('total')}</span>
+              <span>{t("total")}</span>
               <span>{formatPrice(total)}</span>
             </div>
 
@@ -169,19 +160,17 @@ export function BancoCartDrawer({ isOpen, onClose, onOrderSuccess, customerName 
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  {t('sending')}
+                  {t("sending")}
                 </>
               ) : (
-                `${t('orderButton')} - ${formatPrice(total)}`
+                `${t("orderButton")} - ${formatPrice(total)}`
               )}
             </button>
 
-            <p className="text-center text-gray-500 text-sm mt-3">
-              {tb('payAtCounter')}
-            </p>
+            <p className="text-center text-gray-500 text-sm mt-3">{tb("payAtCounter")}</p>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
