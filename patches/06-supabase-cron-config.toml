@@ -1,0 +1,15 @@
+# PATCH: Aggiungere al file supabase/config.toml
+# 
+# Configura il cron job per il cleanup automatico
+
+# Aggiungi questa sezione alla fine del config.toml:
+
+[functions.cleanup-stale]
+# Esegue ogni ora al minuto 0
+schedule = "0 * * * *"
+
+# Oppure per eseguire ogni 30 minuti:
+# schedule = "*/30 * * * *"
+
+# Per eseguire solo di notte (es. 3:00 AM):
+# schedule = "0 3 * * *"
