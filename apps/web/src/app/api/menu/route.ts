@@ -180,12 +180,13 @@ export async function GET() {
             substitute: substituteMap[ing.id] ?? undefined,
           }));
 
+          // Note: Return all modifiers regardless of ingredient stock.
+          // Modifiers with unavailable ingredients should be shown to the frontend,
+          // which can mark them as disabled/unavailable. The backend never hides menu items
+          // or modifiers based on ingredient availability — substitutes handle that instead.
           const normalizedModifierGroups = item.modifierGroups?.map((group) => ({
             ...group,
-            modifiers: group.modifiers?.filter(
-              (mod: { available: boolean; ingredientId?: string }) =>
-                mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
-            ),
+            modifiers: group.modifiers,
           }));
 
           return {
@@ -194,13 +195,7 @@ export async function GET() {
             ingredients: undefined, // Rimuovi raw ingredients
             modifierGroups: normalizedModifierGroups,
           };
-        })
-        .filter(
-          (item) =>
-            !(item.modifierGroups || []).some(
-              (group) => group.required && (!group.modifiers || group.modifiers.length === 0)
-            )
-        ),
+        }),
     }));
 
     return NextResponse.json(menu, {
