@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 
 // Force dynamic: evita pre-rendering a build time (env vars non disponibili)
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 function getSupabase() {
   return createClient(
@@ -40,7 +39,6 @@ export async function GET() {
               )
             ),
             ingredients:MenuItemIngredient(
-              isPrimary,
               ingredient:Ingredient(id, name, nameEn, nameFr, nameEs, nameHe, inStock)
             )
           )
@@ -154,43 +152,14 @@ export async function GET() {
     const menu = categories.map((category) => ({
       ...category,
       items: (category.items || [])
-        .filter((item) => {
-          if (!item.available) {
-            return false;
-          }
-          const primaryOutOfStockWithoutSubstitute = item.ingredients?.some((ing) => {
-            const ingredient = getIngredientFromAssoc(ing);
-            if (!ing.isPrimary || !ingredient || ingredient.inStock) return false;
-            return !substituteMap[ingredient.id];
-          });
-          return !primaryOutOfStockWithoutSubstitute;
-        })
+        .filter((item) => item.available)
         .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
         .map((item) => {
-          // Ingredienti non disponibili da associazioni esplicite
-          const explicitUnavailable = (item.ingredients || [])
-            .map((assoc) => ({
-              isPrimary: assoc.isPrimary,
-              ingredient: getIngredientFromAssoc(assoc),
-            }))
-            .filter((assoc) => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock)
-            .map((assoc) => {
-              const ingredient = assoc.ingredient!;
-              return {
-                id: ingredient.id,
-                name: ingredient.name,
-                nameEn: ingredient.nameEn,
-                nameFr: ingredient.nameFr,
-                nameEs: ingredient.nameEs,
-                nameHe: ingredient.nameHe,
-              };
-            });
-
           // Ingredienti non disponibili da description matching pre-calcolato
+          // Questi sono ingredienti citati nella descrizione che sono out-of-stock
           const descriptionMatches = itemUnavailableMap.get(item.id) || [];
 
-          // Merge e deduplica, aggiunge sostituto se disponibile
-          const seenIds = new Set<string>();
+          // Aggiungi sostituto se disponibile
           const unavailableIngredients: {
             id: string;
             name: string;
@@ -206,16 +175,10 @@ export async function GET() {
               nameEs?: string;
               nameHe?: string;
             };
-          }[] = [];
-          for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
-            if (!seenIds.has(ing.id)) {
-              seenIds.add(ing.id);
-              unavailableIngredients.push({
-                ...ing,
-                substitute: substituteMap[ing.id] ?? undefined,
-              });
-            }
-          }
+          }[] = descriptionMatches.map((ing) => ({
+            ...ing,
+            substitute: substituteMap[ing.id] ?? undefined,
+          }));
 
           const normalizedModifierGroups = item.modifierGroups?.map((group) => ({
             ...group,

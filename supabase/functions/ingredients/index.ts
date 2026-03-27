@@ -254,20 +254,9 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Side effects when ingredient stock changes
-      if (inStock === false) {
-        // Disabilita tutti i Modifier collegati a questo ingrediente
-        await supabase
-          .from("Modifier")
-          .update({ available: false })
-          .eq("ingredientId", ingredientId);
-      } else if (inStock === true) {
-        // Riabilita i modifier collegati
-        await supabase
-          .from("Modifier")
-          .update({ available: true })
-          .eq("ingredientId", ingredientId);
-      }
+      // Note: Do NOT modify Modifier.available based on ingredient stock.
+      // Modifiers are filtered in the menu API based on outOfStockIds.
+      // MenuItem should always remain available if available: true.
 
       return new Response(JSON.stringify(ingredient), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

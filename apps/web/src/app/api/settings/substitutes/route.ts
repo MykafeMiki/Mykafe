@@ -47,39 +47,8 @@ export async function PUT(request: NextRequest) {
 
     if (error) throw error;
 
-    for (const [ingredientId, substituteData] of Object.entries(body)) {
-      if (substituteData) {
-        const { data: primaryItems, error: queryError } = await supabase
-          .from("MenuItemIngredient")
-          .select("menuItemId")
-          .eq("ingredientId", ingredientId)
-          .eq("isPrimary", true);
-
-        if (queryError) {
-          console.error(
-            `[SUBSTITUTE] Error querying primary items for ${ingredientId}:`,
-            queryError
-          );
-          continue;
-        }
-
-        if (primaryItems && primaryItems.length > 0) {
-          const menuItemIds = primaryItems.map((item: { menuItemId: string }) => item.menuItemId);
-          const { error: updateError } = await supabase
-            .from("MenuItem")
-            .update({ available: true })
-            .in("id", menuItemIds)
-            .select();
-
-          if (updateError) {
-            console.error(
-              `[SUBSTITUTE] Error re-enabling menu items for ingredient ${ingredientId}:`,
-              updateError
-            );
-          }
-        }
-      }
-    }
+    // Note: Substitutes are only used for description display.
+    // MenuItem availability is never affected by ingredient stock changes.
 
     return NextResponse.json({ success: true });
   } catch (error) {
