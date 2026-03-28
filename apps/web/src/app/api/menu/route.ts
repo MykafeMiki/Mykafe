@@ -157,16 +157,28 @@ export async function GET() {
         .map((item) => {
           // Ingredienti non disponibili da due fonti:
           // 1. Associazioni dirette (MenuItemIngredient dove ingredient.inStock = false)
-          const explicitUnavailable = (item.ingredients || [])
-            .filter((assoc: any) => assoc.ingredient && !assoc.ingredient.inStock)
-            .map((assoc: any) => ({
-              id: assoc.ingredient.id,
-              name: assoc.ingredient.name,
-              nameEn: assoc.ingredient.nameEn,
-              nameFr: assoc.ingredient.nameFr,
-              nameEs: assoc.ingredient.nameEs,
-              nameHe: assoc.ingredient.nameHe,
-            }));
+          const explicitUnavailable: Array<{
+            id: string;
+            name: string;
+            nameEn?: string;
+            nameFr?: string;
+            nameEs?: string;
+            nameHe?: string;
+          }> = [];
+
+          for (const assoc of item.ingredients || []) {
+            const ingredient = getIngredientFromAssoc(assoc);
+            if (ingredient && !ingredient.inStock) {
+              explicitUnavailable.push({
+                id: ingredient.id,
+                name: ingredient.name,
+                nameEn: ingredient.nameEn,
+                nameFr: ingredient.nameFr,
+                nameEs: ingredient.nameEs,
+                nameHe: ingredient.nameHe,
+              });
+            }
+          }
 
           // 2. Description matching pre-calcolato (ingredienti citati nella descrizione)
           const descriptionMatches = itemUnavailableMap.get(item.id) || [];
