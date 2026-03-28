@@ -49,8 +49,8 @@ const DEFAULT_CONFIG: TimerConfig = {
     endHour: 17, // 17:00
   },
   panini: {
-    enabled: true,
-    startHour: 11, // 11:00
+    enabled: false, // Timer disabilitato - panini sempre visibili
+    startHour: 11,
   },
   takeaway: {
     enabled: true,
