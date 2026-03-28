@@ -149,36 +149,7 @@ Deno.serve(async (req) => {
       const filteredCategories = categories.map((cat) => ({
         ...cat,
         items: (cat.items || [])
-          .filter(
-            (item: {
-              available: boolean;
-              ingredients?: { isPrimary: boolean; ingredient: { inStock: boolean; id: string } }[];
-            }) => {
-              // Se il MenuItem è disabilitato, controlla se ha un sostituto PRIMA di escluderlo
-              if (!item.available) {
-                // Se disabilitato, controlla se ha un ingrediente PRIMARY out-of-stock con sostituto
-                const hasPrimaryOutOfStockWithSubstitute = item.ingredients?.some(
-                  (ing: { isPrimary: boolean; ingredient: { inStock: boolean; id: string } }) => {
-                    if (!ing.isPrimary || ing.ingredient?.inStock) return false;
-                    // Ha un sostituto? Allora mostra il MenuItem
-                    return Boolean(substituteMap[ing.ingredient.id]);
-                  }
-                );
-                // Se ha un sostituto, mostra il MenuItem; altrimenti escludilo
-                return hasPrimaryOutOfStockWithSubstitute ?? false;
-              }
-
-              // Se disponibile, controlla se ha ingrediente PRIMARY out-of-stock SENZA sostituto
-              const primaryOutOfStockWithoutSubstitute = item.ingredients?.some(
-                (ing: { isPrimary: boolean; ingredient: { inStock: boolean; id: string } }) => {
-                  if (!ing.isPrimary || ing.ingredient?.inStock) return false;
-                  // Se out-of-stock e NO sostituto → escludi
-                  return !substituteMap[ing.ingredient.id];
-                }
-              );
-              return !primaryOutOfStockWithoutSubstitute;
-            }
-          )
+          .filter((item: { available: boolean }) => item.available)
           .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
           .map(
             (item: {
@@ -203,10 +174,10 @@ Deno.serve(async (req) => {
               }[];
             }) => {
               // Get unavailable ingredients from BOTH:
-              // 1. Explicit associations (MenuItemIngredient where !isPrimary and !inStock)
+              // 1. Explicit associations (MenuItemIngredient where !inStock)
               const explicitUnavailable = (item.ingredients || [])
                 .filter(
-                  (assoc) => !assoc.isPrimary && assoc.ingredient && !assoc.ingredient.inStock
+                  (assoc) => assoc.ingredient && !assoc.ingredient.inStock
                 )
                 .map((assoc) => ({
                   id: assoc.ingredient.id,
