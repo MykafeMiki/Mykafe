@@ -50,7 +50,7 @@ const DEFAULT_CONFIG: TimerConfig = {
   },
   panini: {
     enabled: true,
-    startHour: 11, // 11:00
+    startHour: 0, // 00:00 (Mezzanotte) - panini visibili da mezzanotte in poi
   },
   takeaway: {
     enabled: true,
