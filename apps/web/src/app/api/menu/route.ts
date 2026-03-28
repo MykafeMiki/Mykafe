@@ -155,11 +155,24 @@ export async function GET() {
         .filter((item) => item.available)
         .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
         .map((item) => {
-          // Ingredienti non disponibili da description matching pre-calcolato
-          // Questi sono ingredienti citati nella descrizione che sono out-of-stock
+          // Ingredienti non disponibili da due fonti:
+          // 1. Associazioni dirette (MenuItemIngredient dove ingredient.inStock = false)
+          const explicitUnavailable = (item.ingredients || [])
+            .filter((assoc: any) => assoc.ingredient && !assoc.ingredient.inStock)
+            .map((assoc: any) => ({
+              id: assoc.ingredient.id,
+              name: assoc.ingredient.name,
+              nameEn: assoc.ingredient.nameEn,
+              nameFr: assoc.ingredient.nameFr,
+              nameEs: assoc.ingredient.nameEs,
+              nameHe: assoc.ingredient.nameHe,
+            }));
+
+          // 2. Description matching pre-calcolato (ingredienti citati nella descrizione)
           const descriptionMatches = itemUnavailableMap.get(item.id) || [];
 
-          // Aggiungi sostituto se disponibile
+          // Merge e deduplica per ingredientId
+          const seenIds = new Set<string>();
           const unavailableIngredients: {
             id: string;
             name: string;
@@ -175,10 +188,17 @@ export async function GET() {
               nameEs?: string;
               nameHe?: string;
             };
-          }[] = descriptionMatches.map((ing) => ({
-            ...ing,
-            substitute: substituteMap[ing.id] ?? undefined,
-          }));
+          }[] = [];
+
+          for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
+            if (!seenIds.has(ing.id)) {
+              seenIds.add(ing.id);
+              unavailableIngredients.push({
+                ...ing,
+                substitute: substituteMap[ing.id] ?? undefined,
+              });
+            }
+          }
 
           // Note: Return all modifiers regardless of ingredient stock.
           // Modifiers with unavailable ingredients should be shown to the frontend,
