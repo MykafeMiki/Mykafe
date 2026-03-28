@@ -3,7 +3,8 @@ import type { Category, MenuItem, ModifierGroup, Modifier } from '@shared/types'
 
 // ============ MENU BASIC ============
 
-export const getMenu = () => fetchApi<Category[]>('/menu')
+// Bypass Edge Function (deployed version has outdated filter logic) — query Supabase directly
+export const getMenu = () => fetchMenuDirect()
 export const getMenuItem = (id: string) => fetchApi<MenuItem>(`/menu/items/${id}`)
 
 // ============ MENU CACHING (Query Diretta Supabase) ============
