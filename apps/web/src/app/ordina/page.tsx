@@ -84,7 +84,7 @@ export default function OrdinaPage() {
 
   const availableDates = getAvailableDatesFromConfig(7)
   const availableTimeSlots = getAvailableTimeSlots(selectedDate, takeawayConfig.openingHour, takeawayConfig.closingHour)
-  const showWarning = selectedTime && isWithin30Minutes(selectedDate, selectedTime)
+  const showWarning = !!(selectedTime && isWithin30Minutes(selectedDate, selectedTime))
 
   // Check takeaway availability on mount
   useEffect(() => {
