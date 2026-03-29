@@ -2,7 +2,8 @@
 
 import { Banknote, CreditCard, ShoppingBag } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import type { TableWithOrders, Order } from '@/lib/api'
+import type { TableWithOrders } from '@/lib/api'
+import type { Order } from '@shared/types'
 
 export interface TablesViewProps {
   tables: TableWithOrders[]
@@ -69,7 +70,7 @@ export function TablesView({
                     {order.customerName || `#${order.id.slice(-6)}`}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {order.items?.reduce((sum, item) => sum + item.quantity, 0)} {t('items')}
+                    {order.items?.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0)} {t('items')}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
