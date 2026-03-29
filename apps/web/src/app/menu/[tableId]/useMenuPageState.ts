@@ -180,11 +180,7 @@ export function useMenuPageState() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleAddItem = (item: MenuItem) => {
-    if (item.modifierGroups && item.modifierGroups.length > 0) {
-      setSelectedItem(item)
-    } else {
-      addToCart(item, 1, [])
-    }
+    setSelectedItem(item)
   }
 
   const handleAddWithModifiers = (
@@ -242,7 +238,7 @@ export function useMenuPageState() {
       setTableSession(session)
       setTableSessionInCart(session.id)
       setSelectedSection(null)
-      setStep('menu')
+      setStep('sections')
     } catch (err) {
       console.error('Failed to create session:', err)
       setMergeError(tc('error'))
@@ -254,7 +250,7 @@ export function useMenuPageState() {
   const handleJoinGroup = () => {
     if (tableSession) setTableSessionInCart(tableSession.id)
     setSelectedSection(null)
-    setStep('menu')
+    setStep('sections')
   }
 
   const handleSelectSection = (sectionId: string) => {

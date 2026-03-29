@@ -108,11 +108,7 @@ export default function BancoPage() {
   const currentPriceContext = serviceMode === 'dine-in' ? 'dine-in' : 'takeaway-counter'
 
   const handleAddItem = (item: MenuItem) => {
-    if (item.modifierGroups && item.modifierGroups.length > 0) {
-      setSelectedItem(item)
-    } else {
-      addToCart(item, 1, [], undefined, currentConsumeMode)
-    }
+    setSelectedItem(item)
   }
 
   const handleAddWithModifiers = (

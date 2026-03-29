@@ -151,11 +151,7 @@ export default function OrdinaPage() {
   }
 
   const handleAddItem = (item: MenuItem) => {
-    if (item.modifierGroups && item.modifierGroups.length > 0) {
-      setSelectedItem(item)
-    } else {
-      addToCart(item, 1, [], undefined, ConsumeMode.TAKEAWAY)
-    }
+    setSelectedItem(item)
   }
 
   const handleAddWithModifiers = (
