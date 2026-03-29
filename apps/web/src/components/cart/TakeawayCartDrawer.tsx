@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart";
 import { formatPrice, getItemPrice as getContextPrice } from "@/lib/utils";
 import { createOrder } from "@/lib/api";
-import { PaymentMethod, OrderType, ConsumeMode } from "@shared/types";
+import { PaymentMethod, OrderType, ConsumeMode, CARD_MULTIPLIER, roundUpToTenCents } from "@shared/types";
 import {
   getTimerConfig,
   getAvailableDates as getDates,
@@ -18,13 +18,6 @@ interface TakeawayCartDrawerProps {
   onClose: () => void;
   onOrderSuccess: () => void;
   paymentMethod: PaymentMethod;
-}
-
-const CARD_MULTIPLIER = 1.03;
-
-// Arrotonda ai 10 centesimi per eccesso
-function roundUpToTenCents(amount: number): number {
-  return Math.ceil(amount / 10) * 10;
 }
 
 // Calcola il prezzo di un item con eventuale maggiorazione carta

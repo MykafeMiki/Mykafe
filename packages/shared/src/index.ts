@@ -1,3 +1,5 @@
+export * from './pricing';
+
 // Enums
 export enum TableStatus {
   AVAILABLE = "AVAILABLE",

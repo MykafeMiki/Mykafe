@@ -6,8 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-const JWT_SECRET = Deno.env.get("JWT_SECRET") || "mykafe-secret-key-change-in-production";
-const ADMIN_PASSWORD = Deno.env.get("ADMIN_PASSWORD") || "Mykafe2010!";
+const JWT_SECRET = Deno.env.get("JWT_SECRET");
+if (!JWT_SECRET) throw new Error("Missing required environment variable: JWT_SECRET");
+const ADMIN_PASSWORD = Deno.env.get("ADMIN_PASSWORD");
+if (!ADMIN_PASSWORD) throw new Error("Missing required environment variable: ADMIN_PASSWORD");
 
 // Base64URL encode
 function base64UrlEncode(str: string): string {

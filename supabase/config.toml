@@ -369,7 +369,7 @@ entrypoint = "./functions/menu/index.ts"
 
 [functions.orders]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/orders/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -380,7 +380,7 @@ entrypoint = "./functions/orders/index.ts"
 
 [functions.tables]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/tables/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -402,7 +402,7 @@ entrypoint = "./functions/auth/index.ts"
 
 [functions.upload]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/upload/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -413,13 +413,13 @@ entrypoint = "./functions/upload/index.ts"
 
 [functions.table-sessions]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/table-sessions/deno.json"
 entrypoint = "./functions/table-sessions/index.ts"
 
 [functions.cleanup-stale]
 enabled = true
-verify_jwt = false
+verify_jwt = true
 import_map = "./functions/cleanup-stale/deno.json"
 entrypoint = "./functions/cleanup-stale/index.ts"
 # Esegue ogni ora al minuto 0

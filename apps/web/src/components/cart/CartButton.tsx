@@ -4,18 +4,11 @@ import { ShoppingBag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/utils";
-import { PaymentMethod } from "@shared/types";
+import { PaymentMethod, CARD_MULTIPLIER, roundUpToTenCents } from "@shared/types";
 
 interface CartButtonProps {
   onClick: () => void;
   paymentMethod?: PaymentMethod | null;
-}
-
-const CARD_MULTIPLIER = 1.03;
-
-// Arrotonda ai 10 centesimi per eccesso
-function roundUpToTenCents(amount: number): number {
-  return Math.ceil(amount / 10) * 10;
 }
 
 export function CartButton({ onClick, paymentMethod }: CartButtonProps) {

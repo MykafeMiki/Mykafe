@@ -605,7 +605,7 @@ Deno.serve(async (req) => {
       if (updateError) throw updateError;
 
       // If order is completed/paid, check if table should be freed
-      if (currentOrder?.tableId && ["COMPLETED", "PAID", "CANCELLED"].includes(status)) {
+      if (currentOrder?.tableId && ["SERVED", "CANCELLED"].includes(status)) {
         // Count remaining active orders for this table
         const { count: activeOrdersCount } = await supabase
           .from("Order")

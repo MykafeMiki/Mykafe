@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, cn, getItemPrice, type PriceContext } from "@/lib/utils";
 import { getTranslatedName, getTranslatedDescription } from "@/lib/translations";
 import type { MenuItem, Modifier } from "@shared/types";
-import { ConsumeMode } from "@shared/types";
+import { ConsumeMode, roundUpToTenCents } from "@shared/types";
 
 interface ItemModalProps {
   item: MenuItem;
@@ -21,11 +21,6 @@ interface ItemModalProps {
   priceMultiplier?: number;
   priceContext?: PriceContext;
   hideConsumeModeSelector?: boolean;
-}
-
-// Arrotonda ai 10 centesimi per eccesso
-function roundUpToTenCents(amount: number): number {
-  return Math.ceil(amount / 10) * 10;
 }
 
 export function ItemModal({
