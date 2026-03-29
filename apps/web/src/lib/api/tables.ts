@@ -1,5 +1,6 @@
 import { fetchApi, fetchApiAuth } from './core'
 import type { Table } from '@shared/types'
+import { getTableSessionByTable, closeTableSession } from './table-sessions'
 
 // ============ TABLE BASICS ============
 
@@ -55,8 +56,13 @@ export const updateTableStatus = (tableId: string, status: 'AVAILABLE' | 'OCCUPI
     body: JSON.stringify({ status }),
   })
 
-// Reset table (clear customers and set to AVAILABLE)
+// Reset table (clear customers, close active session, set to AVAILABLE)
 export const resetTable = async (tableId: string): Promise<void> => {
-  await clearTableCustomers(tableId)
+  const table = await getTable(tableId)
+  const session = await getTableSessionByTable(table.number).catch(() => null)
+  await Promise.all([
+    clearTableCustomers(tableId),
+    session?.isActive ? closeTableSession(session.code) : Promise.resolve(),
+  ])
   await updateTableStatus(tableId, 'AVAILABLE')
 }
