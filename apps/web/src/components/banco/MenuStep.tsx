@@ -1,8 +1,8 @@
 'use client'
 
 import { CheckCircle, ArrowLeft, Store, User } from 'lucide-react'
-import { useRef, useLocale } from 'react'
-import { useTranslations } from 'next-intl'
+import { useRef } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { LanguageSelectorCompact } from '@/components/LanguageSelector'
 import { CategoryNav } from '@/components/menu/CategoryNav'
 import { MenuItemCard } from '@/components/menu/MenuItemCard'
