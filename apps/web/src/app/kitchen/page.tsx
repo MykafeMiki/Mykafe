@@ -102,7 +102,6 @@ export default function KitchenPage() {
     try {
       const data = await getActiveOrders();
       setOrders(data);
-      setLastUpdate(new Date());
     } catch (err) {
       console.error("Failed to fetch orders:", err);
     } finally {
