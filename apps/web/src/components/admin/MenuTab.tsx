@@ -20,7 +20,7 @@ import { ClosureConfigModal } from './ClosureConfigModal'
 import { AdminItemModal } from './AdminItemModal'
 import type { Category, MenuItem } from '@shared/types'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co'
+const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co').replace('supabase.con', 'supabase.co')
 
 export interface MenuTabProps {
   categories: Category[]
