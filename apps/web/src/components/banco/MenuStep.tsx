@@ -12,6 +12,7 @@ import { BancoCartDrawer } from '@/components/cart/BancoCartDrawer'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
+import type { PriceContext } from '@/lib/utils'
 
 export interface MenuStepProps {
   customerName: string
@@ -20,7 +21,7 @@ export interface MenuStepProps {
   selectedItem: MenuItem | null
   isCartOpen: boolean
   orderSuccess: boolean
-  currentPriceContext: string
+  currentPriceContext: PriceContext
   currentConsumeMode: ConsumeMode
   onGoBack: () => void
   onCategorySelect: (categoryId: string) => void
