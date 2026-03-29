@@ -22,6 +22,14 @@ declare module "escpos" {
     cut(): this;
     close(callback?: () => void): this;
   }
+
+  // Supports both named and default import patterns
+  const _default: {
+    USB: typeof USB;
+    Network: typeof Network;
+    Printer: typeof Printer;
+  };
+  export default _default;
 }
 
 declare module "escpos-usb" {

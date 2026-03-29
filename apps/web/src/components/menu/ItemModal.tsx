@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, cn, getItemPrice, type PriceContext } from "@/lib/utils";
 import { getTranslatedName, getTranslatedDescription } from "@/lib/translations";
 import type { MenuItem, Modifier } from "@shared/types";
-import { ConsumeMode, roundUpToTenCents } from "@shared/types";
+import { ConsumeMode, applyPriceMultiplier } from "@shared/types";
 
 interface ItemModalProps {
   item: MenuItem;
@@ -73,9 +73,7 @@ export function ItemModal({
   const calculateTotal = () => {
     const modifiersTotal = getAllSelectedModifiers().reduce((sum, mod) => sum + mod.price, 0);
     const baseTotal = (baseItemPrice + modifiersTotal) * quantity;
-    return priceMultiplier > 1
-      ? roundUpToTenCents(Math.round(baseTotal * priceMultiplier))
-      : baseTotal;
+    return applyPriceMultiplier(baseTotal, priceMultiplier);
   };
 
   const handleAdd = () => {
@@ -142,9 +140,7 @@ export function ItemModal({
                       <span className="text-gray-500">
                         +
                         {formatPrice(
-                          priceMultiplier > 1
-                            ? roundUpToTenCents(Math.round(modifier.price * priceMultiplier))
-                            : modifier.price
+                          applyPriceMultiplier(modifier.price, priceMultiplier)
                         )}
                       </span>
                     )}

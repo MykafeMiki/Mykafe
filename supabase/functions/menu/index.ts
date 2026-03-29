@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyAdminToken, unauthorizedResponse } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -337,6 +338,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify(sortedCategories), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // All mutation endpoints require admin authentication
+    if (["POST", "PATCH", "DELETE", "PUT"].includes(req.method)) {
+      const isAdmin = await verifyAdminToken(req);
+      if (!isAdmin) return unauthorizedResponse(corsHeaders);
     }
 
     // POST /menu/categories - Create category

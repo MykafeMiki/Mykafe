@@ -13,12 +13,14 @@ Sistema di ordinazione digitale per ristoranti con:
 ```
 MyKafe/
 ├── apps/
-│   └── web/          # Frontend Next.js (porta 3000)
+│   ├── web/          # Frontend Next.js (porta 3000)
+│   ├── api/          # Backend Express (porta 3001)
+│   └── print-server/ # Server di stampa termica (opzionale)
 ├── packages/
-│   ├── db/           # Prisma schema, seed, e gestione database
-│   └── shared/       # Tipi TypeScript condivisi
+│   └── shared/       # Tipi TypeScript e utility condivisi (pricing, enums)
 ├── supabase/
-│   └── functions/    # Supabase Edge Functions (backend API)
+│   ├── functions/    # Supabase Edge Functions (backend API principale)
+│   └── migrations/   # Migrazioni database
 └── menu-ita.pdf      # Menu originale MyKafe
 ```
 
@@ -27,8 +29,7 @@ MyKafe/
 ### Avviare l'app in locale
 
 ```bash
-cd C:\Users\dario\OneDrive\Desktop\MyKafe
-pnpm dev
+pnpm dev          # Avvia web + api in parallelo
 ```
 
 ### Avviare solo frontend
@@ -37,18 +38,13 @@ pnpm dev
 pnpm dev:web
 ```
 
-### Gestione Database
+### Gestione Database (Supabase)
+
+Le migrazioni si applicano tramite Supabase CLI:
 
 ```bash
-pnpm db:push      # Applica schema al database
-pnpm db:studio    # Apre interfaccia grafica database
-```
-
-### Seed database (popola con menu)
-
-```bash
-cd packages/db
-npx tsx prisma/seed.ts
+supabase db push          # Applica migrazioni al DB remoto
+supabase functions deploy  # Deploy di tutte le edge functions
 ```
 
 ## URL Locali
@@ -108,14 +104,27 @@ Dopo aver creato Supabase, fornire:
 - SUPABASE_URL
 - SUPABASE_ANON_KEY
 
+## Variabili d'Ambiente Richieste
+
+Crea `.env.local` in `apps/web/` con:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+NEXT_PUBLIC_API_URL=https://<ref>.supabase.co/functions/v1
+```
+
+**⚠️ Non aggiungere mai chiavi hardcoded nel codice.**
+
 ## Stack Tecnologico
 
-- **Frontend**: Next.js 14, React 18, Tailwind CSS
-- **Backend**: Supabase Edge Functions (Deno)
-- **Database**: PostgreSQL/Supabase
-- **ORM**: Prisma
+- **Frontend**: Next.js 15, React 18, Tailwind CSS, next-intl (i18n)
+- **Backend**: Supabase Edge Functions (Deno), Express API (apps/api)
+- **Database**: PostgreSQL via Supabase
+- **Realtime**: Supabase Realtime (postgres_changes)
 - **State Management**: Zustand
-- **Linguaggio**: TypeScript
+- **Package Manager**: pnpm (workspace monorepo)
+- **Linguaggio**: TypeScript strict
 
 ## Configurazione Tavoli
 

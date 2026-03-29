@@ -4,7 +4,7 @@ import { ShoppingBag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/utils";
-import { PaymentMethod, CARD_MULTIPLIER, roundUpToTenCents } from "@shared/types";
+import { PaymentMethod, applyCardSurcharge } from "@shared/types";
 
 interface CartButtonProps {
   onClick: () => void;
@@ -23,7 +23,7 @@ export function CartButton({ onClick, paymentMethod }: CartButtonProps) {
     ? items.reduce((sum, item) => {
         const modifiersPrice = item.selectedModifiers.reduce((s, m) => s + m.price, 0);
         const itemTotal = (item.menuItem.price + modifiersPrice) * item.quantity;
-        return sum + roundUpToTenCents(Math.round(itemTotal * CARD_MULTIPLIER));
+        return sum + applyCardSurcharge(itemTotal, true);
       }, 0)
     : baseTotal;
 

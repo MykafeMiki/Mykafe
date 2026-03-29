@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { Plus, Users, RefreshCw, Loader2, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { getTableCustomers, resetTable } from '@/lib/api'
-import type { Table, TableCustomer } from '@shared/types'
+import { getTableCustomers, resetTable, type TableCustomer } from '@/lib/api'
+import type { Table } from '@shared/types'
 
 export interface TablesTabProps {
   tables: Table[]

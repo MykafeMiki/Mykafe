@@ -5,7 +5,7 @@ import { useLocale } from "next-intl";
 import { formatPrice, getItemPrice, type PriceContext } from "@/lib/utils";
 import { getTranslatedName, getTranslatedDescription } from "@/lib/translations";
 import type { MenuItem, UnavailableIngredient } from "@shared/types";
-import { roundUpToTenCents } from "@shared/types";
+import { applyPriceMultiplier } from "@shared/types";
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -106,13 +106,17 @@ export function MenuItemCard({
   const locale = useLocale();
   const basePrice = getItemPrice(item, priceContext);
   const displayPrice =
-    priceMultiplier > 1 ? roundUpToTenCents(Math.round(basePrice * priceMultiplier)) : basePrice;
+    applyPriceMultiplier(basePrice, priceMultiplier);
 
   const translatedName = getTranslatedName(item, locale);
   const translatedDescription = getTranslatedDescription(item, locale);
 
   return (
-    <div className="flex gap-3 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+    <button
+      onClick={() => onAdd(item)}
+      className="w-full text-left flex gap-3 p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-primary-300 active:scale-[0.98] transition-transform"
+      aria-label={`Aggiungi ${translatedName}`}
+    >
       {item.imageUrl && (
         <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
           <img src={item.imageUrl} alt={translatedName} className="w-full h-full object-cover" />
@@ -132,15 +136,14 @@ export function MenuItemCard({
         )}
         <div className="flex items-center justify-between mt-2">
           <span className="font-bold text-primary-600">{formatPrice(displayPrice)}</span>
-          <button
-            onClick={() => onAdd(item)}
-            className="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center hover:bg-primary-600 transition"
-            aria-label={`Aggiungi ${translatedName}`}
+          <div
+            className="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0"
+            aria-hidden="true"
           >
             <Plus className="w-5 h-5" />
-          </button>
+          </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

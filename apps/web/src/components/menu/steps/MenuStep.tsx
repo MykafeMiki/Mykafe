@@ -11,8 +11,9 @@ import { ItemModal } from '@/components/menu/ItemModal'
 import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { getTranslatedName, getTranslatedDescription } from '@/lib/translations'
-import type { Category, MenuItem, Modifier, TableSession } from '@shared/types'
+import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
+import type { TableSession } from '@/lib/api'
 
 export interface MenuStepProps {
   tableNumber: number | null
@@ -121,7 +122,7 @@ export function MenuStep({
               </p>
             )}
 
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {category.items?.map((item) => (
                 <MenuItemCard
                   key={item.id}

@@ -27,3 +27,15 @@ export function applyCardSurcharge(basePriceCents: number, isCardPayment: boolea
   if (!isCardPayment) return basePriceCents
   return roundUpToTenCents(Math.round(basePriceCents * CARD_MULTIPLIER))
 }
+
+/**
+ * Applica un moltiplicatore di prezzo generico con arrotondamento ai 10 centesimi superiori.
+ * Usato da componenti che ricevono priceMultiplier come prop (es. ItemModal, MenuItemCard).
+ * @param priceCents  Prezzo base in centesimi
+ * @param multiplier  Moltiplicatore (es. 1.03 per +3%). Se ≤ 1 restituisce priceCents invariato.
+ * @returns Prezzo finale in centesimi
+ */
+export function applyPriceMultiplier(priceCents: number, multiplier: number): number {
+  if (multiplier <= 1) return priceCents
+  return roundUpToTenCents(Math.round(priceCents * multiplier))
+}

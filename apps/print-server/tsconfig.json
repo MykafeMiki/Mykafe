@@ -13,9 +13,6 @@
   "include": ["src/**/*"],
   "exclude": [
     "node_modules",
-    "dist",
-    "src/printer.ts",
-    "src/receipt.ts",
-    "src/types.ts"
+    "dist"
   ]
 }

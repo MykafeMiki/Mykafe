@@ -8,7 +8,7 @@ const nextConfig = {
   transpilePackages: ["@shared/types"],
 
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
   // Image optimization

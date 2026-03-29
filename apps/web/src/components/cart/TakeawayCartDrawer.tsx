@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart";
 import { formatPrice, getItemPrice as getContextPrice } from "@/lib/utils";
 import { createOrder } from "@/lib/api";
-import { PaymentMethod, OrderType, ConsumeMode, CARD_MULTIPLIER, roundUpToTenCents } from "@shared/types";
+import { PaymentMethod, OrderType, ConsumeMode, applyCardSurcharge } from "@shared/types";
 import {
   getTimerConfig,
   getAvailableDates as getDates,
@@ -28,10 +28,7 @@ function calculateItemPrice(
   isCard: boolean
 ): number {
   const itemTotal = (basePrice + modifiersPrice) * quantity;
-  if (isCard) {
-    return roundUpToTenCents(Math.round(itemTotal * CARD_MULTIPLIER));
-  }
-  return itemTotal;
+  return applyCardSurcharge(itemTotal, isCard);
 }
 
 export function TakeawayCartDrawer({
