@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://biefwzrprjqusjynqwus.supabase.co/functions/v1'
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co'
+// Normalize known env var typo: supabase.con → supabase.co
+function fixSupabaseUrl(url: string): string {
+  return url.replace('supabase.con', 'supabase.co')
+}
+
+export const API_URL = fixSupabaseUrl(process.env.NEXT_PUBLIC_API_URL || 'https://biefwzrprjqusjynqwus.supabase.co/functions/v1')
+const SUPABASE_URL = fixSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://biefwzrprjqusjynqwus.supabase.co')
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZWZ3enJwcmpxdXNqeW5xd3VzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMDgzMTgsImV4cCI6MjA3OTY4NDMxOH0.CfLbUJa3znC9zNYXdYa0zrFzZM4ASvgw9Ousq27ZqCw'
 
 // Client Supabase per query dirette (bypassa Edge Functions = ~100ms invece di ~400ms)
