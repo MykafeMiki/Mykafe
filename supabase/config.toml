@@ -419,7 +419,7 @@ entrypoint = "./functions/table-sessions/index.ts"
 
 [functions.cleanup-stale]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/cleanup-stale/deno.json"
 entrypoint = "./functions/cleanup-stale/index.ts"
 # schedule = "0 * * * *"  # Not supported in this CLI version
