@@ -422,5 +422,4 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/cleanup-stale/deno.json"
 entrypoint = "./functions/cleanup-stale/index.ts"
-# Esegue ogni ora al minuto 0
-schedule = "0 * * * *"
+# schedule = "0 * * * *"  # Not supported in this CLI version
