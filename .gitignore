@@ -49,3 +49,10 @@ NUL
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+
+# Impostazioni locali Claude (contengono path/permessi locali)
+.claude/settings.local.json
+.claude/worktrees/
+
+# Cache Turborepo
+.turbo/
