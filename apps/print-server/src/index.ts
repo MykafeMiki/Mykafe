@@ -1,18 +1,24 @@
 /**
  * MyKafe Print Server
  *
- * Listens for new orders via WebSocket and prints to thermal printers.
- * Supports dual printer setup: one for CLASSIC menu, one for SUSHI menu.
+ * Listens for new orders via Supabase Realtime and prints to thermal printers.
+ * Splits each order into 3 receipts: SUSHI / PANINI / CAFFETTERIA.
  */
 
-import { io, Socket } from "socket.io-client";
+import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 // Configuration
-const API_URL = process.env.API_URL || "http://localhost:3001";
-const RESTAURANT_NAME = process.env.RESTAURANT_NAME || "MyKafe";
+// The service role key is required: RLS on Order blocks anon reads and realtime events
+const SUPABASE_URL = process.env.SUPABASE_URL || "";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || "";
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env");
+  process.exit(1);
+}
 
 // Category patterns for each printer section
 const SUSHI_CATEGORIES = (process.env.SUSHI_CATEGORIES || "Sushi,Sashimi,Roll,Nigiri")
@@ -31,19 +37,16 @@ const CAFFETTERIA_CATEGORIES = (
 
 // Printer configuration - 3 printers
 const PRINTER_SUSHI = {
-  type: process.env.PRINTER_SUSHI_TYPE || "network",
   ip: process.env.PRINTER_SUSHI_IP || "192.168.1.100",
   port: parseInt(process.env.PRINTER_SUSHI_PORT || "9100"),
 };
 
 const PRINTER_PANINI = {
-  type: process.env.PRINTER_PANINI_TYPE || "network",
   ip: process.env.PRINTER_PANINI_IP || "192.168.1.101",
   port: parseInt(process.env.PRINTER_PANINI_PORT || "9100"),
 };
 
 const PRINTER_CAFFETTERIA = {
-  type: process.env.PRINTER_CAFFETTERIA_TYPE || "network",
   ip: process.env.PRINTER_CAFFETTERIA_IP || "192.168.1.102",
   port: parseInt(process.env.PRINTER_CAFFETTERIA_PORT || "9100"),
 };
@@ -60,7 +63,7 @@ interface OrderItem {
     price: number;
     category?: {
       name: string;
-    };
+    } | null;
   };
   modifiers?: Array<{
     modifier: {
@@ -82,7 +85,7 @@ interface Order {
   table?: {
     number: number;
     isCounter: boolean;
-  };
+  } | null;
   items: OrderItem[];
 }
 
@@ -103,11 +106,6 @@ const COMMANDS = {
   PARTIAL_CUT: GS + "V" + "\x01",
   FEED_LINES: (n: number) => ESC + "d" + String.fromCharCode(n),
 };
-
-// Format price in euros
-function formatPrice(cents: number): string {
-  return `${(cents / 100).toFixed(2)}`;
-}
 
 // Format date/time
 function formatDateTime(isoString: string): string {
@@ -321,15 +319,113 @@ async function processOrder(order: Order): Promise<void> {
   }
 }
 
+// Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ORDER_SELECT = `
+  *,
+  table:Table(number, isCounter),
+  items:OrderItem(
+    *,
+    menuItem:MenuItem(id, name, price, category:Category(name)),
+    modifiers:OrderItemModifier(
+      *,
+      modifier:Modifier(name, price)
+    )
+  )
+`;
+
+// Orders already printed (or present before startup) - avoids double printing
+const printedOrderIds = new Set<string>();
+
+// The Order row is inserted before its OrderItems, so retry until items appear
+async function fetchFullOrder(orderId: string): Promise<Order | null> {
+  const MAX_ATTEMPTS = 6;
+  const RETRY_DELAY_MS = 1000;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const { data, error } = await supabase
+      .from("Order")
+      .select(ORDER_SELECT)
+      .eq("id", orderId)
+      .single();
+
+    if (error) {
+      console.error(`  Fetch error (attempt ${attempt}):`, error.message);
+    } else if (data && Array.isArray(data.items) && data.items.length > 0) {
+      return data as unknown as Order;
+    }
+
+    await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+  }
+
+  return null;
+}
+
+async function handleNewOrder(orderId: string): Promise<void> {
+  if (printedOrderIds.has(orderId)) return;
+  printedOrderIds.add(orderId);
+
+  console.log("");
+  console.log("========== NEW ORDER ==========");
+
+  const order = await fetchFullOrder(orderId);
+  if (!order) {
+    console.error(`  Could not load order ${orderId} with items - NOT printed`);
+    printedOrderIds.delete(orderId); // allow the polling fallback to retry it
+    return;
+  }
+
+  await processOrder(order);
+  console.log("===============================");
+}
+
+// Mark orders that already exist at startup as printed (avoids reprinting after restart)
+async function seedExistingOrders(): Promise<void> {
+  const { data, error } = await supabase
+    .from("Order")
+    .select("id")
+    .in("status", ["PENDING", "PREPARING"]);
+
+  if (error) {
+    console.error("Could not load existing orders:", error.message);
+    return;
+  }
+
+  for (const row of data || []) {
+    printedOrderIds.add(row.id);
+  }
+  console.log(`Skipping ${data?.length || 0} pre-existing active orders`);
+}
+
+// Polling fallback in case a realtime event is missed
+async function pollNewOrders(): Promise<void> {
+  const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("Order")
+    .select("id")
+    .eq("status", "PENDING")
+    .gte("createdAt", since);
+
+  if (error || !data) return;
+
+  for (const row of data) {
+    if (!printedOrderIds.has(row.id)) {
+      console.log(`(polling) Found unprinted order ${row.id}`);
+      await handleNewOrder(row.id);
+    }
+  }
+}
+
 // Main
-function main(): void {
+async function main(): Promise<void> {
   console.log("========================================");
-  console.log("       MyKafe Print Server v2.0");
-  console.log("    (3-Receipt Split: Sushi/Panini/Bar)");
+  console.log("       MyKafe Print Server v3.0");
+  console.log("  (Supabase Realtime + 3-Receipt Split)");
   console.log("========================================");
   console.log("");
   console.log("Configuration:");
-  console.log(`  API URL: ${API_URL}`);
+  console.log(`  Supabase: ${SUPABASE_URL}`);
   console.log("");
   console.log("Printers:");
   console.log(`  SUSHI:       ${PRINTER_SUSHI.ip}:${PRINTER_SUSHI.port}`);
@@ -342,39 +438,34 @@ function main(): void {
   console.log(`  Caffetteria: ${CAFFETTERIA_CATEGORIES.join(", ")} (+ everything else)`);
   console.log("");
 
-  // Connect to API
-  console.log("Connecting to API...");
-  const socket: Socket = io(API_URL, {
-    transports: ["websocket"],
-    reconnection: true,
-    reconnectionAttempts: Infinity,
-    reconnectionDelay: 1000,
-  });
+  await seedExistingOrders();
 
-  socket.on("connect", () => {
-    console.log("Connected to API!");
-    console.log("Joining kitchen room...");
-    socket.emit("join:kitchen");
-    console.log("");
-    console.log("Waiting for orders...");
-    console.log("");
-  });
+  console.log("Connecting to Supabase Realtime...");
+  supabase
+    .channel("print-server-orders")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "Order" },
+      (payload) => {
+        const orderId = (payload.new as { id?: string })?.id;
+        if (orderId) {
+          void handleNewOrder(orderId);
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log(`Realtime status: ${status}`);
+      if (status === "SUBSCRIBED") {
+        console.log("");
+        console.log("Waiting for orders...");
+        console.log("");
+      }
+    });
 
-  socket.on("disconnect", () => {
-    console.log("Disconnected from API. Reconnecting...");
-  });
-
-  socket.on("connect_error", (err) => {
-    console.error("Connection error:", err.message);
-  });
-
-  // Listen for new orders
-  socket.on("order:new", async (order: Order) => {
-    console.log("");
-    console.log("========== NEW ORDER ==========");
-    await processOrder(order);
-    console.log("===============================");
-  });
+  // Polling fallback every 30s
+  setInterval(() => {
+    void pollNewOrders();
+  }, 30000);
 }
 
-main();
+void main();
