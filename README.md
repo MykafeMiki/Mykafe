@@ -1,206 +1,88 @@
-# MyKafe - Patch per le 4 funzionalità richieste
+# MyKafe
 
-## Panoramica delle modifiche
+Sistema di ordinazione digitale per ristoranti: menu via QR code, ordini in tempo reale, display cucina, cassa e stampa comande.
 
-Questo pacchetto contiene le patch per implementare:
+## Architettura
 
-1. **Toggle Takeaway ON/OFF** + **Giorni di chiusura**
-2. **Upload foto da dispositivo** (fix mobile)
-3. **Gestione ingredienti migliorata** (primari/secondari)
-
----
-
-## 1. Toggle Takeaway ON/OFF + Giorni di chiusura
-
-### File da modificare: `apps/web/src/lib/menuTimers.ts`
-
-**Sostituire l'intero file** con `menuTimers.ts` incluso in questa patch.
-
-### Modifiche principali:
-- Aggiunto `enabled: boolean` alla config takeaway
-- Aggiunto `closedDays: number[]` per i giorni di chiusura
-- Nuove funzioni: `isTakeawayAvailable()`, `getTakeawayStatus()`, `getAvailableDates()`
-
-### File da modificare: `apps/web/src/app/admin/page.tsx`
-
-Nel componente `TimerModal`, **dopo** la sezione "Orari Ritiro Takeaway", **sostituire** con il codice in `TakeawayConfigSection.tsx`:
-
-```tsx
-// Trova questa sezione:
-{/* Takeaway Pickup Hours Configuration */}
-<div className="space-y-4 border-t pt-6">
-  ...
-</div>
-
-// Sostituiscila con il contenuto di TakeawayConfigSection.tsx
+```
+MyKafe/
+├── apps/
+│   ├── web/            # Frontend Next.js (Vercel) — porta 3000 in locale
+│   └── print-server/   # Server di stampa termica (Supabase Realtime → ESC/POS via rete)
+├── packages/
+│   ├── shared/         # Tipi TypeScript e utility condivise (@shared/types)
+│   └── db/             # Schema Prisma (riferimento modello dati, seed, Studio)
+├── supabase/
+│   ├── functions/      # Edge Functions (backend API: menu, orders, tables, cassa, ...)
+│   └── migrations/     # Migrazioni SQL del database
+└── docs/
+    ├── assets/         # PDF dei menu, immagini di lavoro
+    └── archive/        # Patch già applicate e SQL una-tantum già eseguiti
 ```
 
-### File da modificare: `apps/web/src/app/ordina/page.tsx`
+- **Backend**: Supabase Edge Functions (Deno) + PostgreSQL con RLS.
+- **Realtime**: Supabase Realtime (`postgres_changes` sulla tabella `Order`) per kitchen display e print server.
+- **Frontend**: Next.js, Tailwind CSS, Zustand, next-intl (it, en, es, fr, he).
 
-All'inizio del componente, **aggiungere**:
+## Pagine principali
 
-```tsx
-import { getTakeawayStatus, DAYS_OF_WEEK } from '@/lib/menuTimers'
+| Pagina | URL | Uso |
+| --- | --- | --- |
+| Menu tavolo | `/menu/tavolo-{1..15}` | Cliente al tavolo (QR code) |
+| Takeaway | `/ordina` | Ordini online per ritiro |
+| Kitchen display | `/kitchen` | Cucina: stati ordine |
+| Banco | `/banco` | Ordini al banco |
+| Cassa | `/cassa` | Pagamenti e chiusura tavoli |
+| Admin | `/admin` | Gestione menu, ingredienti, orari, tavoli, QR |
 
-// Nel componente:
-const takeawayStatus = getTakeawayStatus()
+## Setup locale
+
+```bash
+pnpm install
+cp apps/web/.env.example apps/web/.env.local   # compila con i valori del progetto Supabase
+pnpm dev                                        # avvia il frontend su :3000
 ```
 
-Nel render, **aggiungere questo check** prima del contenuto esistente:
+Variabili richieste in `apps/web/.env.local`:
 
-```tsx
-if (!takeawayStatus.isAvailable) {
-  return <TakeawayUnavailableMessage status={takeawayStatus} />
-}
+```
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+NEXT_PUBLIC_API_URL=https://<project-ref>.supabase.co/functions/v1
 ```
 
-Vedi `TakeawayUnavailableMessage.tsx` per il componente da aggiungere.
+**Non committare mai chiavi o password**: tutti i file `.env*` sono in `.gitignore`.
 
----
+## Print server (comande in cucina)
 
-## 2. Upload foto da dispositivo (fix mobile)
+Ascolta gli ordini via Supabase Realtime e stampa 3 scontrini separati (SUSHI / PANINI / CAFFETTERIA) su stampanti termiche di rete (porta 9100).
 
-### Problema
-Su iOS/Safari, l'input file con `accept="image/*"` non funziona correttamente per alcuni utenti.
-
-### Soluzione
-Sostituire **tutti** gli input file per immagini con questa versione:
-
-```tsx
-<input
-  ref={fileInputRef}
-  type="file"
-  accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif"
-  onChange={handleFileChange}
-  className="hidden"
-/>
+```bash
+cd apps/print-server
+cp .env.example .env      # SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, IP stampanti
+pnpm dev                  # oppure: pnpm build && pnpm start
+node test-print.mjs <IP>  # test rapido di una stampante
 ```
 
-### File da modificare:
+## Database e backend
 
-1. `apps/web/src/app/admin/page.tsx` - Ci sono **4** input file:
-   - Nel `CategoryModal`
-   - Nel `ItemModal`
-   - Nella lista piatti (inline upload)
-   - Nella griglia sezioni
-
-2. **Per ognuno**, aggiornare:
-   - L'attributo `accept` come sopra
-   - La funzione `handleFileChange` per validare anche HEIC/HEIF
-
-Vedi `ImageUploadInput.tsx` per il codice completo della validazione.
-
----
-
-## 3. Gestione ingredienti migliorata
-
-### Problema attuale
-- L'UI per selezionare primario/secondario non è intuitiva
-- Non è chiaro cosa succede quando si toglie la disponibilità
-- Difficile creare ingredienti rapidamente
-
-### Soluzione
-
-#### File da modificare: `apps/web/src/app/admin/page.tsx`
-
-**Nel modal ItemModal**, sostituire la sezione ingredienti con `ImprovedIngredientsSelector` da `ImprovedIngredientsComponents.tsx`.
-
-**Nel tab Ingredients**, sostituire `IngredientsTab` con `ImprovedIngredientsTab`.
-
-### Codice da aggiungere
-
-1. Importa i nuovi componenti:
-```tsx
-import { ImprovedIngredientsSelector, ImprovedIngredientsTab } from './components/ImprovedIngredientsComponents'
+```bash
+supabase db push           # applica le migrazioni al DB remoto
+supabase functions deploy  # deploy di tutte le Edge Functions
 ```
 
-2. Nel `ItemModal`, trova:
-```tsx
-{/* Ingredients */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    {t('ingredients')}
-  </label>
-  ...
-</div>
-```
+Lo schema Prisma in `packages/db` è il riferimento del modello dati (`pnpm db:studio` per esplorare il DB); le modifiche allo schema vanno fatte con migrazioni SQL in `supabase/migrations`.
 
-3. Sostituisci con:
-```tsx
-{/* Ingredients */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    {t('ingredients')}
-  </label>
-  <ImprovedIngredientsSelector
-    allIngredients={allIngredients}
-    selectedIngredients={selectedIngredients}
-    onSelectionChange={setSelectedIngredients}
-    onCreateIngredient={async (name) => {
-      const newIng = await createIngredient({ name })
-      setAllIngredients(prev => [...prev, newIng])
-      return newIng
-    }}
-    loading={loadingIngredients}
-    t={t}
-    tc={tc}
-  />
-</div>
-```
+## Deploy frontend
 
----
+Il deploy su Vercel parte dalla root del repo (vedi `vercel.json`): build `pnpm --filter web build`, output `apps/web/.next`, dominio `mykafe-app.vercel.app`.
 
-## Dipendenze da aggiungere ai file di traduzione
+## Comandi utili
 
-### `apps/web/messages/it.json` e altri
-
-Aggiungi queste chiavi nella sezione `admin`:
-
-```json
-{
-  "admin": {
-    ...
-    "takeawayService": "Servizio Takeaway",
-    "takeawayEnabled": "I clienti possono ordinare online per il ritiro",
-    "takeawayDisabled": "Servizio temporaneamente sospeso",
-    "closedDays": "Giorni di chiusura",
-    "closedDaysDesc": "Seleziona i giorni in cui il ristorante è chiuso. Il takeaway non sarà disponibile in questi giorni.",
-    "takeawayDisabledWarning": "I clienti che visitano /ordina vedranno un messaggio che indica che il servizio è temporaneamente sospeso.",
-    "primaryIngredient": "Primario",
-    "secondaryIngredient": "Secondario",
-    "ingredientPrimaryDesc": "Se esaurito, nasconde il piatto",
-    "ingredientSecondaryDesc": "Se esaurito, mostra barrato"
-  }
-}
-```
-
----
-
-## Ordine di applicazione consigliato
-
-1. **Prima** applica le modifiche a `menuTimers.ts` (backend logic)
-2. **Poi** applica le modifiche all'admin page (UI configurazione)
-3. **Poi** applica le modifiche alla pagina /ordina (check disponibilità)
-4. **Infine** applica le modifiche agli input file (fix upload mobile)
-
----
-
-## Test consigliati
-
-1. **Toggle Takeaway:**
-   - Disabilita takeaway → verifica che /ordina mostri messaggio
-   - Riabilita → verifica che funzioni normalmente
-
-2. **Giorni di chiusura:**
-   - Seleziona oggi come chiuso → verifica messaggio
-   - Rimuovi → verifica che funzioni
-
-3. **Upload mobile:**
-   - Testa su iPhone Safari
-   - Testa su Android Chrome
-   - Verifica che fotocamera e galleria siano entrambe accessibili
-
-4. **Ingredienti:**
-   - Crea nuovo ingrediente dal selector
-   - Assegna come primario → metti esaurito → verifica che piatto sparisca
-   - Assegna come secondario → metti esaurito → verifica che appaia barrato
+| Comando | Descrizione |
+| --- | --- |
+| `pnpm dev` | Frontend in sviluppo |
+| `pnpm build` | Build di produzione del frontend |
+| `pnpm dev:print` / `pnpm build:print` | Print server |
+| `pnpm lint` / `pnpm format` | Lint e formattazione |
+| `pnpm db:studio` | Prisma Studio sul DB |

@@ -14,14 +14,16 @@ Sistema di ordinazione digitale per ristoranti con:
 MyKafe/
 ├── apps/
 │   ├── web/          # Frontend Next.js (porta 3000)
-│   ├── api/          # Backend Express (porta 3001)
-│   └── print-server/ # Server di stampa termica (opzionale)
+│   └── print-server/ # Server di stampa termica (Supabase Realtime)
 ├── packages/
-│   └── shared/       # Tipi TypeScript e utility condivisi (pricing, enums)
+│   ├── shared/       # Tipi TypeScript e utility condivisi (pricing, enums)
+│   └── db/           # Schema Prisma (riferimento modello dati, seed, Studio)
 ├── supabase/
 │   ├── functions/    # Supabase Edge Functions (backend API principale)
 │   └── migrations/   # Migrazioni database
-└── menu-ita.pdf      # Menu originale MyKafe
+└── docs/
+    ├── assets/       # PDF dei menu originali, immagini
+    └── archive/      # Patch e SQL una-tantum già applicati
 ```
 
 ## Comandi Utili
@@ -29,13 +31,13 @@ MyKafe/
 ### Avviare l'app in locale
 
 ```bash
-pnpm dev          # Avvia web + api in parallelo
+pnpm dev          # Avvia il frontend (il backend è su Supabase, sempre attivo)
 ```
 
-### Avviare solo frontend
+### Avviare il print server
 
 ```bash
-pnpm dev:web
+pnpm dev:print
 ```
 
 ### Gestione Database (Supabase)
@@ -118,8 +120,8 @@ NEXT_PUBLIC_API_URL=https://<ref>.supabase.co/functions/v1
 
 ## Stack Tecnologico
 
-- **Frontend**: Next.js 15, React 18, Tailwind CSS, next-intl (i18n)
-- **Backend**: Supabase Edge Functions (Deno), Express API (apps/api)
+- **Frontend**: Next.js 16, React 18, Tailwind CSS, next-intl (i18n)
+- **Backend**: Supabase Edge Functions (Deno)
 - **Database**: PostgreSQL via Supabase
 - **Realtime**: Supabase Realtime (postgres_changes)
 - **State Management**: Zustand

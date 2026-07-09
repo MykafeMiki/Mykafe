@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "description": "Sistema di ordinazione digitale per ristoranti",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "pnpm --filter web dev",
     "dev:web": "pnpm --filter web dev",
@@ -19,7 +15,6 @@
     "db:generate": "pnpm --filter db db:generate",
     "db:seed": "pnpm --filter db db:seed",
     "db:studio": "pnpm --filter db db:studio",
-    "postinstall": "pnpm --filter db db:generate",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
   },
@@ -38,8 +33,5 @@
   "devDependencies": {
     "next": "16.2.0",
     "prettier": "^3.8.1"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.88.0"
   }
 }
