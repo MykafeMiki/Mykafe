@@ -402,7 +402,8 @@ entrypoint = "./functions/auth/index.ts"
 
 [functions.upload]
 enabled = true
-verify_jwt = true
+# verify_jwt=false: la funzione autentica con il token admin custom (verifyAdminToken).
+verify_jwt = false
 import_map = "./functions/upload/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -423,3 +424,28 @@ verify_jwt = false
 import_map = "./functions/cleanup-stale/deno.json"
 entrypoint = "./functions/cleanup-stale/index.ts"
 # schedule = "0 * * * *"  # Not supported in this CLI version
+
+# Le funzioni seguenti autenticano lo staff con il token admin custom
+# (verifyAdminToken in _shared/validation.ts), quindi il gateway JWT è disattivato
+# come per la funzione `menu`. Senza questo, il gateway rifiuterebbe il token admin.
+[functions.cashier]
+enabled = true
+verify_jwt = false
+import_map = "./functions/cashier/deno.json"
+entrypoint = "./functions/cashier/index.ts"
+
+[functions.reports]
+enabled = true
+verify_jwt = false
+import_map = "./functions/reports/deno.json"
+entrypoint = "./functions/reports/index.ts"
+
+[functions.ingredients]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ingredients/index.ts"
+
+[functions.apply-translations]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/apply-translations/index.ts"

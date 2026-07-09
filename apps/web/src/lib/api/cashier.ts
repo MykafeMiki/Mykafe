@@ -1,4 +1,4 @@
-import { fetchApi } from './core'
+import { fetchApiAuth } from './core'
 import type { Table, Order } from '@shared/types'
 
 // ============ CASHIER ============
@@ -36,21 +36,21 @@ export interface CashierHistoryResponse {
   }
 }
 
-export const getCashierTables = () => fetchApi<CashierTablesResponse>('/cashier/tables')
+export const getCashierTables = () => fetchApiAuth<CashierTablesResponse>('/cashier/tables')
 
 export const getTableOrders = (tableId: string) =>
-  fetchApi<TableOrdersResponse>(`/cashier/table/${tableId}`)
+  fetchApiAuth<TableOrdersResponse>(`/cashier/table/${tableId}`)
 
 export const payOrder = (orderId: string, paymentMethod: 'CASH' | 'CARD') =>
-  fetchApi<Order>(`/cashier/pay/${orderId}`, {
+  fetchApiAuth<Order>(`/cashier/pay/${orderId}`, {
     method: 'PATCH',
     body: JSON.stringify({ paymentMethod }),
   })
 
 export const payTable = (tableId: string, paymentMethod: 'CASH' | 'CARD') =>
-  fetchApi<PayTableResponse>(`/cashier/pay-table/${tableId}`, {
+  fetchApiAuth<PayTableResponse>(`/cashier/pay-table/${tableId}`, {
     method: 'POST',
     body: JSON.stringify({ paymentMethod }),
   })
 
-export const getCashierHistory = () => fetchApi<CashierHistoryResponse>('/cashier/history')
+export const getCashierHistory = () => fetchApiAuth<CashierHistoryResponse>('/cashier/history')

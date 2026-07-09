@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyAdminToken, unauthorizedResponse } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -134,6 +135,11 @@ Deno.serve(async (req) => {
     // Path: /functions/v1/ingredients/... -> find 'ingredients' and take everything after
     const ingIndex = pathParts.indexOf("ingredients");
     const subPath = ingIndex >= 0 ? pathParts.slice(ingIndex + 1) : [];
+
+    // Le letture sono pubbliche (menu); ogni modifica richiede l'admin.
+    if (["POST", "PATCH", "DELETE", "PUT"].includes(req.method)) {
+      if (!(await verifyAdminToken(req))) return unauthorizedResponse(corsHeaders);
+    }
 
     // GET /ingredients - Get all ingredients (opzionale ?menuType=CLASSIC|SUSHI)
     if (req.method === "GET" && subPath.length === 0) {

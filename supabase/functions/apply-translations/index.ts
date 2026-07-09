@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyAdminToken, unauthorizedResponse } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -672,6 +673,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Scrittura massiva delle traduzioni: solo admin.
+    if (!(await verifyAdminToken(req))) return unauthorizedResponse(corsHeaders);
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyAdminToken, unauthorizedResponse } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Upload e cancellazione immagini sono operazioni admin.
+    if (!(await verifyAdminToken(req))) return unauthorizedResponse(corsHeaders);
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -147,28 +151,12 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    // Log completo lato server, messaggio generico al client (niente info disclosure).
     console.error("Upload Error:", error);
 
-    // Return detailed error for debugging
-    let errorMessage = "Internal server error";
-    let errorDetails = null;
-
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === "object" && error !== null) {
-      errorMessage = JSON.stringify(error);
-      errorDetails = error;
-    }
-
-    return new Response(
-      JSON.stringify({
-        error: errorMessage,
-        details: errorDetails,
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

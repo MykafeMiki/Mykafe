@@ -1,4 +1,4 @@
-import { fetchApi } from './core'
+import { fetchApiAuth } from './core'
 
 // ============ REPORTS ============
 
@@ -49,13 +49,13 @@ export interface SummaryReport {
 }
 
 export const getTopProducts = async (period: 'week' | 'month' = 'week'): Promise<TopProductsReport> => {
-  return fetchApi<TopProductsReport>(`/reports/top-products?period=${period}`)
+  return fetchApiAuth<TopProductsReport>(`/reports/top-products?period=${period}`)
 }
 
 export const getPeakHours = async (period: 'week' | 'month' = 'week'): Promise<PeakHoursReport> => {
-  return fetchApi<PeakHoursReport>(`/reports/peak-hours?period=${period}`)
+  return fetchApiAuth<PeakHoursReport>(`/reports/peak-hours?period=${period}`)
 }
 
 export const getSummaryReport = async (period: 'week' | 'month' = 'week'): Promise<SummaryReport> => {
-  return fetchApi<SummaryReport>(`/reports/summary?period=${period}`)
+  return fetchApiAuth<SummaryReport>(`/reports/summary?period=${period}`)
 }
