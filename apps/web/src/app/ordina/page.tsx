@@ -8,12 +8,25 @@ import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClos
 import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
+import { IdentityStep } from '@/components/ordina/IdentityStep'
 import { PaymentStep } from '@/components/ordina/PaymentStep'
 import { DateTimeStep } from '@/components/ordina/DateTimeStep'
 import { MenuStep } from '@/components/ordina/MenuStep'
 import { ClosedScreen } from '@/components/ordina/ClosedScreen'
+import { emptyPhoneInput, type PhoneInputState } from '@/lib/phone'
 
-type OrderStep = 'payment' | 'datetime' | 'menu'
+type OrderStep = 'identity' | 'payment' | 'datetime' | 'menu'
+
+/**
+ * Data locale in formato YYYY-MM-DD.
+ * Non si usa toISOString(): converte in UTC e in fuso italiano una data a
+ * mezzanotte tornerebbe indietro di un giorno.
+ */
+function toLocalDateString(d: Date): string {
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${month}-${day}`
+}
 
 function getAvailableTimeSlots(selectedDate: Date, openingHour: number, closingHour: number): string[] {
   const slots: string[] = []
@@ -56,7 +69,10 @@ export default function OrdinaPage() {
 
   const [takeawayStatus, setTakeawayStatus] = useState<ReturnType<typeof getTakeawayStatus> | null>(null)
   const [orderingStatus, setOrderingStatus] = useState<{ isOpen: boolean; reason?: string; nextOpenTime?: string }>({ isOpen: true })
-  const [step, setStep] = useState<OrderStep>('payment')
+  const [step, setStep] = useState<OrderStep>('identity')
+  const [customerName, setCustomerName] = useState('')
+  const [phoneInput, setPhoneInput] = useState<PhoneInputState>(() => emptyPhoneInput(locale))
+  const [resolvedPhone, setResolvedPhone] = useState('')
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [selectedTime, setSelectedTime] = useState<string>('')
   const [categories, setCategories] = useState<Category[]>([])
@@ -73,6 +89,7 @@ export default function OrdinaPage() {
   const setPickupTime = useCart((state) => state.setPickupTime)
   const setPriceContext = useCart((state) => state.setPriceContext)
   const addToCart = useCart((state) => state.addItem)
+  const clearCart = useCart((state) => state.clearCart)
 
   // Filter categories - takeaway context shows panini always, but still respects sushi timer
   const filteredCategories = useMemo(() => {
@@ -91,6 +108,13 @@ export default function OrdinaPage() {
     const status = getTakeawayStatus()
     setTakeawayStatus(status)
   }, [])
+
+  // Il carrello e' persistito in localStorage: su un dispositivo condiviso il
+  // cliente successivo si ritroverebbe gli articoli del precedente. Ogni volta
+  // che si entra nel flusso si riparte da zero.
+  useEffect(() => {
+    clearCart()
+  }, [clearCart])
 
   useEffect(() => {
     async function loadData() {
@@ -168,6 +192,21 @@ export default function OrdinaPage() {
   const handleOrderSuccess = () => {
     setOrderSuccess(true)
     setTimeout(() => setOrderSuccess(false), 5000)
+
+    // Ordine inviato: si riparte da zero per il cliente successivo, altrimenti
+    // il prossimo si ritroverebbe nome e telefono di chi lo precede.
+    setCustomerName('')
+    setPhoneInput(emptyPhoneInput(locale))
+    setResolvedPhone('')
+    setSelectedTime('')
+    setSelectedDate(new Date())
+    setPaymentMethod(null)
+    setStep('identity')
+  }
+
+  const handleIdentityContinue = (phone: string) => {
+    setResolvedPhone(phone)
+    setStep('payment')
   }
 
   const handleContinueToMenu = () => {
@@ -224,6 +263,18 @@ export default function OrdinaPage() {
     )
   }
 
+  if (step === 'identity') {
+    return (
+      <IdentityStep
+        customerName={customerName}
+        phone={phoneInput}
+        onNameChange={setCustomerName}
+        onPhoneChange={setPhoneInput}
+        onContinue={handleIdentityContinue}
+      />
+    )
+  }
+
   if (step === 'payment') {
     return <PaymentStep onSelectPayment={handleSelectPayment} />
   }
@@ -255,6 +306,10 @@ export default function OrdinaPage() {
       selectedDate={selectedDate}
       selectedTime={selectedTime}
       paymentMethod={paymentMethod || PaymentMethod.CASH}
+      customerName={customerName}
+      customerPhone={resolvedPhone}
+      scheduledDate={toLocalDateString(selectedDate)}
+      scheduledTime={selectedTime}
       onGoBack={() => setStep('datetime')}
       onCategorySelect={setActiveCategory}
       onAddItem={handleAddItem}

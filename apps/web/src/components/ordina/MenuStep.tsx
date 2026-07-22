@@ -22,6 +22,11 @@ export interface MenuStepProps {
   selectedDate: Date
   selectedTime: string
   paymentMethod: PaymentMethod
+  /** Raccolti nel primo passo, passati al carrello per l'invio dell'ordine */
+  customerName: string
+  customerPhone: string
+  scheduledDate: string
+  scheduledTime: string
   onGoBack: () => void
   onCategorySelect: (categoryId: string) => void
   onAddItem: (item: MenuItem) => void
@@ -40,6 +45,10 @@ export function MenuStep({
   selectedDate,
   selectedTime,
   paymentMethod,
+  customerName,
+  customerPhone,
+  scheduledDate,
+  scheduledTime,
   onGoBack,
   onCategorySelect,
   onAddItem,
@@ -166,6 +175,10 @@ export function MenuStep({
         onClose={() => onCartOpen(false)}
         onOrderSuccess={onOrderSuccess}
         paymentMethod={paymentMethod}
+        customerName={customerName}
+        customerPhone={customerPhone}
+        scheduledDate={scheduledDate}
+        scheduledTime={scheduledTime}
       />
 
       {selectedItem && (

@@ -36,6 +36,7 @@ export default function BancoPage() {
   const setCustomerNameInCart = useCart((state) => state.setCustomerName)
   const setPriceContext = useCart((state) => state.setPriceContext)
   const addToCart = useCart((state) => state.addItem)
+  const clearCart = useCart((state) => state.clearCart)
 
   const filteredCategories = useMemo(() => {
     return filterCategoriesByTime(categories, 'bar')
@@ -102,6 +103,13 @@ export default function BancoPage() {
 
     loadData()
   }, [setTableIdInCart, setPriceContext])
+
+  // Il carrello e' persistito in localStorage e il banco e' un dispositivo
+  // condiviso: senza questo, il cliente successivo eredita gli articoli del
+  // precedente. Si riparte da zero a ogni ingresso nel flusso.
+  useEffect(() => {
+    clearCart()
+  }, [clearCart])
 
   // Consume mode and price context depend on serviceMode
   const currentConsumeMode = serviceMode === 'dine-in' ? ConsumeMode.DINE_IN : ConsumeMode.TAKEAWAY
