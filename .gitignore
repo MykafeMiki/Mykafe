@@ -29,6 +29,9 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+# Output runtime del print-server (contiene dati degli ordini)
+apps/print-server/logs/
+apps/print-server/logs-manuale.txt
 
 # Testing
 coverage/
