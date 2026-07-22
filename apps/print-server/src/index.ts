@@ -134,90 +134,82 @@ function getSectionLabel(section: ReceiptSection): string {
 }
 
 // Generate receipt content
+//
+// I comandi ESC/POS si concatenano al testo, non vanno su righe proprie:
+// finendo dentro un join("\n") stampavano una riga vuota di carta ciascuno.
 function generateReceipt(order: Order, items: OrderItem[], section: ReceiptSection): string {
-  const lines: string[] = [];
+  let out = "";
+  const cmd = (c: string) => {
+    out += c;
+  };
+  const line = (text = "") => {
+    out += text + "\n";
+  };
 
   // Header
-  lines.push(COMMANDS.INIT);
-  lines.push(COMMANDS.ALIGN_CENTER);
-  lines.push(COMMANDS.DOUBLE_SIZE);
-  lines.push(COMMANDS.BOLD_ON);
-  lines.push(getSectionLabel(section));
-  lines.push(COMMANDS.NORMAL_SIZE);
-  lines.push(COMMANDS.BOLD_OFF);
-  lines.push("");
+  cmd(COMMANDS.INIT + COMMANDS.ALIGN_CENTER + COMMANDS.DOUBLE_SIZE + COMMANDS.BOLD_ON);
+  line(getSectionLabel(section));
+  cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
 
   // Order info
-  lines.push(COMMANDS.DOUBLE_HEIGHT);
+  cmd(COMMANDS.DOUBLE_HEIGHT);
   if (order.table?.isCounter || order.orderType === "TAKEAWAY") {
-    lines.push(`ASPORTO: ${order.customerName || "N/A"}`);
-    lines.push(COMMANDS.NORMAL_SIZE);
+    line(`ASPORTO: ${order.customerName || "N/A"}`);
+    cmd(COMMANDS.NORMAL_SIZE);
     // Telefono: serve per richiamare il cliente se l'ordine tarda o manca qualcosa
     if (order.customerPhone) {
-      lines.push(COMMANDS.BOLD_ON);
-      lines.push(`Tel. ${order.customerPhone}`);
-      lines.push(COMMANDS.BOLD_OFF);
+      cmd(COMMANDS.BOLD_ON);
+      line(`Tel. ${order.customerPhone}`);
+      cmd(COMMANDS.BOLD_OFF);
     }
   } else {
-    lines.push(`TAVOLO ${order.table?.number || "?"}`);
-    lines.push(COMMANDS.NORMAL_SIZE);
+    line(`TAVOLO ${order.table?.number || "?"}`);
+    cmd(COMMANDS.NORMAL_SIZE);
   }
-  lines.push("");
 
-  // Time
-  lines.push(formatDateTime(order.createdAt));
-  lines.push("");
-  lines.push("--------------------------------");
-  lines.push("");
+  line(formatDateTime(order.createdAt));
+  line("--------------------------------");
 
-  // Items
-  lines.push(COMMANDS.ALIGN_LEFT);
+  // Items: niente riga vuota tra uno e l'altro, il nome a doppia altezza
+  // in grassetto separa gia' gli articoli a colpo d'occhio
+  cmd(COMMANDS.ALIGN_LEFT);
   for (const item of items) {
-    lines.push(COMMANDS.BOLD_ON);
-    lines.push(COMMANDS.DOUBLE_HEIGHT);
-    lines.push(`${item.quantity}x ${item.menuItem.name}`);
-    lines.push(COMMANDS.NORMAL_SIZE);
-    lines.push(COMMANDS.BOLD_OFF);
+    cmd(COMMANDS.BOLD_ON + COMMANDS.DOUBLE_HEIGHT);
+    line(`${item.quantity}x ${item.menuItem.name}`);
+    cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
 
-    // Modifiers
     if (item.modifiers && item.modifiers.length > 0) {
       for (const mod of item.modifiers) {
-        lines.push(`   + ${mod.modifier.name}`);
+        line(`   + ${mod.modifier.name}`);
       }
     }
 
-    // Notes
     if (item.notes) {
-      lines.push(`   >> ${item.notes}`);
+      line(`   >> ${item.notes}`);
     }
 
-    // Consume mode
     if (item.consumeMode === "TAKEAWAY") {
-      lines.push("   [DA ASPORTO]");
+      line("   [DA ASPORTO]");
     }
-
-    lines.push("");
   }
 
   // Order notes
   if (order.notes) {
-    lines.push("--------------------------------");
-    lines.push(COMMANDS.BOLD_ON);
-    lines.push("NOTE:");
-    lines.push(COMMANDS.BOLD_OFF);
-    lines.push(order.notes);
-    lines.push("");
+    line("--------------------------------");
+    cmd(COMMANDS.BOLD_ON);
+    line("NOTE:");
+    cmd(COMMANDS.BOLD_OFF);
+    line(order.notes);
   }
 
   // Footer
-  lines.push("--------------------------------");
-  lines.push(COMMANDS.ALIGN_CENTER);
-  lines.push(`#${order.id.slice(-6).toUpperCase()}`);
-  lines.push("");
-  lines.push(COMMANDS.FEED_LINES(3));
-  lines.push(COMMANDS.PARTIAL_CUT);
+  line("--------------------------------");
+  cmd(COMMANDS.ALIGN_CENTER);
+  line(`#${order.id.slice(-6).toUpperCase()}`);
+  // Avanzamento minimo perche' il taglio non tronchi l'ultima riga
+  cmd(COMMANDS.FEED_LINES(2) + COMMANDS.PARTIAL_CUT);
 
-  return lines.join("\n");
+  return out;
 }
 
 // Print to network printer
