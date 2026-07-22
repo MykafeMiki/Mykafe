@@ -20,6 +20,88 @@ interface TakeawayCartDrawerProps {
   paymentMethod: PaymentMethod;
 }
 
+// Prefissi internazionali selezionabili nel form asporto.
+// Sigle ISO invece dei nomi dei paesi: l'app e' multilingua e i nomi tradotti
+// andrebbero mantenuti in cinque file, mentre "PL +48" si legge uguale ovunque.
+// Italia in cima perche' e' il caso normale, poi ordine alfabetico di sigla.
+const EUROPE_PREFIXES = [
+  { code: "+39", label: "IT +39" },
+  { code: "+376", label: "AD +376" },
+  { code: "+355", label: "AL +355" },
+  { code: "+43", label: "AT +43" },
+  { code: "+32", label: "BE +32" },
+  { code: "+359", label: "BG +359" },
+  { code: "+387", label: "BA +387" },
+  { code: "+375", label: "BY +375" },
+  { code: "+41", label: "CH +41" },
+  { code: "+357", label: "CY +357" },
+  { code: "+420", label: "CZ +420" },
+  { code: "+49", label: "DE +49" },
+  { code: "+45", label: "DK +45" },
+  { code: "+372", label: "EE +372" },
+  { code: "+34", label: "ES +34" },
+  { code: "+358", label: "FI +358" },
+  { code: "+33", label: "FR +33" },
+  { code: "+44", label: "GB +44" },
+  { code: "+30", label: "GR +30" },
+  { code: "+385", label: "HR +385" },
+  { code: "+36", label: "HU +36" },
+  { code: "+353", label: "IE +353" },
+  { code: "+354", label: "IS +354" },
+  { code: "+423", label: "LI +423" },
+  { code: "+370", label: "LT +370" },
+  { code: "+352", label: "LU +352" },
+  { code: "+371", label: "LV +371" },
+  { code: "+377", label: "MC +377" },
+  { code: "+373", label: "MD +373" },
+  { code: "+382", label: "ME +382" },
+  { code: "+389", label: "MK +389" },
+  { code: "+356", label: "MT +356" },
+  { code: "+31", label: "NL +31" },
+  { code: "+47", label: "NO +47" },
+  { code: "+48", label: "PL +48" },
+  { code: "+351", label: "PT +351" },
+  { code: "+40", label: "RO +40" },
+  { code: "+381", label: "RS +381" },
+  { code: "+7", label: "RU +7" },
+  { code: "+46", label: "SE +46" },
+  { code: "+386", label: "SI +386" },
+  { code: "+421", label: "SK +421" },
+  { code: "+378", label: "SM +378" },
+  { code: "+90", label: "TR +90" },
+  { code: "+380", label: "UA +380" },
+  { code: "+383", label: "XK +383" },
+];
+
+// Paesi extra-europei gia' presenti prima: tenuti per non perdere clienti abituali
+const OTHER_PREFIXES = [
+  { code: "+1", label: "US/CA +1" },
+  { code: "+20", label: "EG +20" },
+  { code: "+86", label: "CN +86" },
+  { code: "+212", label: "MA +212" },
+  { code: "+972", label: "IL +972" },
+];
+
+// Valore sentinella della voce "Altro": non e' un prefisso, attiva il campo libero
+const CUSTOM_PREFIX = "custom";
+
+// Normalizza un prefisso digitato a mano: via tutto tranne le cifre, poi "+".
+// I prefissi internazionali esistenti vanno da 1 a 4 cifre (es. +1, +39, +1876).
+function normalizeCustomPrefix(raw: string): string | null {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 1 || digits.length > 4) return null;
+  return `+${digits}`;
+}
+
+// Prefisso preselezionato in base alla lingua scelta dal cliente
+const PREFIX_BY_LOCALE: Record<string, string> = {
+  it: "+39",
+  en: "+44",
+  fr: "+33",
+  es: "+34",
+  he: "+972",
+};
+
 // Calcola il prezzo di un item con eventuale maggiorazione carta
 function calculateItemPrice(
   basePrice: number,
@@ -43,6 +125,8 @@ export function TakeawayCartDrawer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
+  const [phonePrefix, setPhonePrefix] = useState(PREFIX_BY_LOCALE[locale] ?? "+39");
+  const [customPrefix, setCustomPrefix] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [phoneConfirm, setPhoneConfirm] = useState("");
 
@@ -103,9 +187,37 @@ export function TakeawayCartDrawer({
       return;
     }
 
-    // Verifica che il prefisso inserito corrisponda all'inizio del numero
-    const cleanPhone = customerPhone.replace(/\s+/g, "");
-    const cleanConfirm = phoneConfirm.replace(/\s+/g, "");
+    // Con "Altro" il prefisso arriva dal campo libero e va validato
+    const effectivePrefix =
+      phonePrefix === CUSTOM_PREFIX ? normalizeCustomPrefix(customPrefix) : phonePrefix;
+
+    if (!effectivePrefix) {
+      setError(t("enterPhonePrefix"));
+      return;
+    }
+
+    // La conferma si verifica sulla sola parte locale del numero: il prefisso
+    // internazionale arriva dal menu a tendina, il cliente non lo ridigita.
+    const typedPhone = customerPhone.trim();
+    let cleanPhone = typedPhone.replace(/\D/g, "");
+
+    // Se il cliente ha riscritto il prefisso nel campo numero, va tolto per non
+    // duplicarlo. Ci si fida solo del "+" esplicito: un cellulare italiano puo'
+    // iniziare per 39 (es. 3931234567) e toglierlo alla cieca lo mutilerebbe.
+    const prefixDigits = effectivePrefix.replace(/\D/g, "");
+    if (typedPhone.startsWith("+") && cleanPhone.startsWith(prefixDigits)) {
+      cleanPhone = cleanPhone.slice(prefixDigits.length);
+    }
+
+    // Zero iniziale scritto per abitudine (es. 0333...): non fa parte del numero
+    cleanPhone = cleanPhone.replace(/^0+/, "");
+
+    const cleanConfirm = phoneConfirm.replace(/\D/g, "");
+
+    if (!cleanPhone) {
+      setError(t("enterPhone"));
+      return;
+    }
 
     if (!cleanConfirm || cleanConfirm.length < 3) {
       setError(t("enterPhoneConfirm"));
@@ -138,7 +250,7 @@ export function TakeawayCartDrawer({
         orderType: OrderType.TAKEAWAY,
         paymentMethod,
         customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
+        customerPhone: `${effectivePrefix} ${cleanPhone}`,
         notes: t("pickupNote", { date: scheduledDate, time: scheduledTime }), // Store in notes for now if backend doesn't support it directly
       });
 
@@ -146,6 +258,8 @@ export function TakeawayCartDrawer({
       setCustomerName("");
       setCustomerPhone("");
       setPhoneConfirm("");
+      setPhonePrefix(PREFIX_BY_LOCALE[locale] ?? "+39");
+      setCustomPrefix("");
       setScheduledDate("");
       setScheduledTime("");
       onOrderSuccess();
@@ -257,17 +371,54 @@ export function TakeawayCartDrawer({
                       />
                     </div>
                     <div>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <div className="flex gap-2">
+                        <select
+                          value={phonePrefix}
+                          onChange={(e) => setPhonePrefix(e.target.value)}
+                          aria-label={t("phonePrefixLabel")}
+                          className="shrink-0 px-3 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+                        >
+                          <optgroup label={t("phonePrefixGroupEurope")}>
+                            {EUROPE_PREFIXES.map((p) => (
+                              <option key={p.code} value={p.code}>
+                                {p.label}
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label={t("phonePrefixGroupOther")}>
+                            {OTHER_PREFIXES.map((p) => (
+                              <option key={p.code} value={p.code}>
+                                {p.label}
+                              </option>
+                            ))}
+                            <option value={CUSTOM_PREFIX}>{t("phonePrefixOther")}</option>
+                          </optgroup>
+                        </select>
+                        <div className="relative flex-1">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <input
+                            type="tel"
+                            inputMode="numeric"
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            onKeyDown={handleEnterSubmit}
+                            placeholder={t("phonePlaceholder")}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                      {phonePrefix === CUSTOM_PREFIX && (
                         <input
                           type="tel"
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          inputMode="numeric"
+                          value={customPrefix}
+                          onChange={(e) => setCustomPrefix(e.target.value)}
                           onKeyDown={handleEnterSubmit}
-                          placeholder={t("phonePlaceholder")}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          aria-label={t("phonePrefixLabel")}
+                          placeholder={t("phonePrefixCustomPlaceholder")}
+                          className="mt-2 w-32 px-3 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         />
-                      </div>
+                      )}
                       <p className="text-xs text-gray-500 mt-1 ml-1">{t("phoneHelper")}</p>
                     </div>
                     <div>

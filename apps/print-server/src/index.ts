@@ -151,10 +151,17 @@ function generateReceipt(order: Order, items: OrderItem[], section: ReceiptSecti
   lines.push(COMMANDS.DOUBLE_HEIGHT);
   if (order.table?.isCounter || order.orderType === "TAKEAWAY") {
     lines.push(`ASPORTO: ${order.customerName || "N/A"}`);
+    lines.push(COMMANDS.NORMAL_SIZE);
+    // Telefono: serve per richiamare il cliente se l'ordine tarda o manca qualcosa
+    if (order.customerPhone) {
+      lines.push(COMMANDS.BOLD_ON);
+      lines.push(`Tel. ${order.customerPhone}`);
+      lines.push(COMMANDS.BOLD_OFF);
+    }
   } else {
     lines.push(`TAVOLO ${order.table?.number || "?"}`);
+    lines.push(COMMANDS.NORMAL_SIZE);
   }
-  lines.push(COMMANDS.NORMAL_SIZE);
   lines.push("");
 
   // Time
