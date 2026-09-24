@@ -71,7 +71,7 @@ export function IdentityStep({
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-orange-500 text-white p-4">
+      <header className="bg-primary-500 text-white p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-6 h-6" />
@@ -79,7 +79,7 @@ export function IdentityStep({
           </div>
           <LanguageSelectorCompact />
         </div>
-        <p className="text-orange-100 text-sm mt-1">{t('subtitle')}</p>
+        <p className="text-primary-100 text-sm mt-1">{t('subtitle')}</p>
       </header>
 
       <main className="flex-1 flex items-center justify-center p-6">
@@ -99,7 +99,7 @@ export function IdentityStep({
                 onKeyDown={handleEnter}
                 placeholder={tc('namePlaceholder')}
                 autoFocus
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -113,7 +113,7 @@ export function IdentityStep({
 
             <button
               onClick={handleContinue}
-              className="w-full flex items-center justify-center gap-2 py-4 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition"
+              className="w-full flex items-center justify-center gap-2 py-4 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition"
             >
               {t('continue')}
               <ArrowRight className="w-5 h-5" />

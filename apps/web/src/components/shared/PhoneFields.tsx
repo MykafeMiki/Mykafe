@@ -27,7 +27,7 @@ export function PhoneFields({ value, onChange, onEnter }: PhoneFieldsProps) {
   const set = (patch: Partial<PhoneInputState>) => onChange({ ...value, ...patch });
 
   const inputClass =
-    "w-full px-3 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent";
+    "w-full px-3 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent";
 
   return (
     <div className="space-y-2">
@@ -37,7 +37,7 @@ export function PhoneFields({ value, onChange, onEnter }: PhoneFieldsProps) {
             value={value.prefix}
             onChange={(e) => set({ prefix: e.target.value })}
             aria-label={t("phonePrefixLabel")}
-            className="shrink-0 px-3 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+            className="shrink-0 px-3 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
           >
             <optgroup label={t("phonePrefixGroupEurope")}>
               {EUROPE_PREFIXES.map((p) => (

@@ -51,8 +51,8 @@ export function MergeInputStep({
 
       <main className="flex-1 p-6 max-w-md mx-auto w-full">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-            <Link2 className="w-6 h-6 text-orange-600" />
+          <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+            <Link2 className="w-6 h-6 text-primary-600" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900">

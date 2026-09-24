@@ -4,7 +4,8 @@ import { useState } from "react";
 import { X, Minus, Plus, UtensilsCrossed, ShoppingBag } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, cn, getItemPrice, type PriceContext } from "@/lib/utils";
-import { getTranslatedName, getTranslatedDescription } from "@/lib/translations";
+import { getTranslatedName } from "@/lib/translations";
+import { getDisplayDescription } from "@/lib/menuDescription";
 import type { MenuItem, Modifier } from "@shared/types";
 import { ConsumeMode, applyPriceMultiplier } from "@shared/types";
 
@@ -40,7 +41,7 @@ export function ItemModal({
   const [consumeMode, setConsumeMode] = useState<ConsumeMode>(defaultConsumeMode);
 
   const translatedName = getTranslatedName(item, locale);
-  const translatedDescription = getTranslatedDescription(item, locale);
+  const displayDescription = getDisplayDescription(item, locale);
   const baseItemPrice = getItemPrice(item, priceContext);
 
   const toggleModifier = (groupId: string, modifier: Modifier, multiSelect: boolean) => {
@@ -106,7 +107,7 @@ export function ItemModal({
             </div>
           )}
 
-          {translatedDescription && <p className="text-gray-600">{translatedDescription}</p>}
+          {displayDescription && <p className="text-gray-600">{displayDescription}</p>}
 
           {/* Modifier Groups */}
           {item.modifierGroups?.map((group) => (

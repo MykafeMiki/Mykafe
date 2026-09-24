@@ -72,8 +72,10 @@ export const CreateOrderSchema = z.object({
   paymentMethod: z.enum(["CASH", "CARD"]).optional(),
   customerName: z.string().max(100).optional(),
   customerPhone: z.string().max(20).optional(),
-  partyCode: z.string().max(10).optional(),
   tableSessionId: z.string().optional(),
+  // Listino usato dal carrello. Assente = ordine da un client vecchio: si
+  // ricade sul prezzo base, che e' il comportamento storico.
+  priceContext: z.enum(["dine-in", "takeaway-counter", "takeaway-remote"]).optional(),
 });
 
 // Update order status schema
@@ -84,31 +86,6 @@ export const UpdateOrderStatusSchema = z.object({
 // Payment schema
 export const PaymentSchema = z.object({
   paymentMethod: z.enum(["CASH", "CARD"]).optional(),
-});
-
-// Table status schema
-export const TableStatusSchema = z.object({
-  status: z.enum(["AVAILABLE", "OCCUPIED", "RESERVED"]),
-});
-
-// Menu item schema
-export const MenuItemSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().max(1000).optional(),
-  price: z.number().nonnegative(),
-  categoryId: z.string().min(1),
-  available: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
-  imageUrl: z.string().url().optional().nullable(),
-});
-
-// Category schema
-export const CategorySchema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
-  active: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
-  imageUrl: z.string().url().optional().nullable(),
 });
 
 // Helper to validate and return errors

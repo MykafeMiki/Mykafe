@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Loader2, ToggleLeft, ToggleRight, Check } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { getIngredients, createIngredient, setIngredientStock } from '@/lib/api'
-import { getIngredientSubstitutes } from '@/lib/ingredientSubstitutes'
+import { fetchIngredientSubstitutes, saveIngredientSubstitutes } from '@/lib/ingredientSubstitutes'
 import type { Ingredient } from '@shared/types'
 
 export interface IngredientsTabProps {
@@ -37,10 +37,10 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
     try {
       const [data, subsRes] = await Promise.all([
         getIngredients(),
-        fetch('/api/settings/substitutes').then(r => r.json()).catch(() => ({}))
+        fetchIngredientSubstitutes()
       ])
       setIngredients(data)
-      setSubstitutes(subsRes || {})
+      setSubstitutes(subsRes)
     } catch (err) {
       console.error('Failed to load ingredients:', err)
     } finally {
@@ -117,11 +117,9 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
       } else {
         delete updated[substitutePickerFor.id]
       }
-      await fetch('/api/settings/substitutes', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated)
-      })
+      // Solo se il server conferma: prima un 401 passava inosservato e il
+      // modale si chiudeva come se il sostituto fosse stato salvato.
+      await saveIngredientSubstitutes(updated)
       setSubstitutes(updated)
       setSubstitutePickerFor(null)
     } catch (err) {

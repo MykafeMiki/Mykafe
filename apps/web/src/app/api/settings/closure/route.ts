@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isAdminRequest } from "@/lib/server/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -36,17 +37,7 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const token = authHeader.slice(7);
-    const anonClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://biefwzrprjqusjynqwus.supabase.co",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-    );
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
-    if (authError || !user) {
+    if (!(await isAdminRequest(request))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

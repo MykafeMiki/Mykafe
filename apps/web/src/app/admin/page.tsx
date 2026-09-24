@@ -9,13 +9,14 @@ import { LoginScreen } from '@/components/admin/LoginScreen'
 import { MenuTab } from '@/components/admin/MenuTab'
 import { IngredientsTab } from '@/components/admin/IngredientsTab'
 import { TablesTab } from '@/components/admin/TablesTab'
+import { KioskTab } from '@/components/admin/KioskTab'
 import { QRTab } from '@/components/admin/QRTab'
 import { ReportsTab } from '@/components/admin/ReportsTab'
 import { PricesTab } from '@/components/admin/PricesTab'
 import { ClosureConfigModal } from '@/components/admin/ClosureConfigModal'
 import type { Category, Table } from '@shared/types'
 
-type Tab = 'menu' | 'ingredients' | 'tables' | 'qr' | 'reports' | 'prices'
+type Tab = 'menu' | 'ingredients' | 'tables' | 'kiosk' | 'qr' | 'reports' | 'prices'
 
 export default function AdminPage() {
   const t = useTranslations('admin')
@@ -29,11 +30,28 @@ export default function AdminPage() {
   const [closureBannerConfig, setClosureBannerConfig] = useState<ClosureConfig>(DEFAULT_CLOSURE_CONFIG)
   const [showClosureBannerModal, setShowClosureBannerModal] = useState(false)
 
-  // Check auth on mount
+  // Check auth on mount.
+  // Il gate era stato disattivato con un TODO: oltre a lasciare il pannello
+  // aperto a chiunque, senza login non esiste il token admin, quindi ogni
+  // salvataggio (menu, prezzi, chiusure, sostituti) tornava 401.
   useEffect(() => {
-    // TODO: Re-enable auth once Supabase Edge Functions password is configured
-    setIsAuthenticated(true)
-    setLoading(false)
+    const checkAuth = async () => {
+      const token = getAuthToken()
+      if (!token) {
+        setIsAuthenticated(false)
+        setLoading(false)
+        return
+      }
+      try {
+        await verifyToken()
+        setIsAuthenticated(true)
+      } catch {
+        setAuthToken(null)
+        setIsAuthenticated(false)
+      }
+      setLoading(false)
+    }
+    checkAuth()
   }, [])
 
   useEffect(() => {
@@ -84,17 +102,27 @@ export default function AdminPage() {
     )
   }
 
+  // Aggiorna la UI subito, ma se il server rifiuta torna indietro: prima il
+  // banner restava sullo stato nuovo mentre il server non aveva salvato nulla.
+  const applyClosureConfig = (newConfig: ClosureConfig) => {
+    const previous = closureBannerConfig
+    setClosureBannerConfig(newConfig)
+    saveClosureConfigToServer(newConfig).catch(e => {
+      console.error('Failed to save closure config:', e)
+      setClosureBannerConfig(previous)
+      alert(t('saveError'))
+    })
+  }
+
   const handleBannerToggle = () => {
-    const newConfig: ClosureConfig = {
+    applyClosureConfig({
       ...closureBannerConfig,
       temporaryClosure: {
         active: !closureBannerConfig.temporaryClosure.active,
         message: closureBannerConfig.temporaryClosure.active ? undefined : 'Locale temporaneamente chiuso',
         until: undefined,
       }
-    }
-    setClosureBannerConfig(newConfig)
-    saveClosureConfigToServer(newConfig).catch(e => console.error('Failed to save closure config:', e))
+    })
   }
 
   const isClosed = closureBannerConfig.temporaryClosure.active
@@ -155,8 +183,7 @@ export default function AdminPage() {
           config={closureBannerConfig}
           onClose={() => setShowClosureBannerModal(false)}
           onSave={(newConfig) => {
-            setClosureBannerConfig(newConfig)
-            saveClosureConfigToServer(newConfig).catch(e => console.error('Failed to save closure config:', e))
+            applyClosureConfig(newConfig)
             setShowClosureBannerModal(false)
           }}
         />
@@ -191,6 +218,15 @@ export default function AdminPage() {
               }`}
           >
             {t('tablesTab')}
+          </button>
+          <button
+            onClick={() => setActiveTab('kiosk')}
+            className={`flex-1 py-4 px-6 font-medium transition ${activeTab === 'kiosk'
+                ? 'text-primary-600 border-b-2 border-primary-500'
+                : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            {t('kioskTab')}
           </button>
           <button
             onClick={() => setActiveTab('qr')}
@@ -232,6 +268,9 @@ export default function AdminPage() {
         )}
         {activeTab === 'tables' && (
           <TablesTab tables={tables} t={t} onUpdate={loadData} />
+        )}
+        {activeTab === 'kiosk' && (
+          <KioskTab tables={tables} t={t} />
         )}
         {activeTab === 'qr' && (
           <QRTab tables={tables} t={t} tc={tc} />

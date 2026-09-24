@@ -6,6 +6,7 @@ import {
   UpdateOrderStatusSchema,
   validateRequest,
 } from "../_shared/validation.ts";
+import { applyCardSurcharge, getItemPrice } from "../_shared/pricing.ts";
 
 // Generate cuid-like ID
 function generateId(): string {
@@ -104,11 +105,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
 };
-
-// Helper: arrotonda ai 10 centesimi per eccesso
-function roundUpToTenCents(amount: number): number {
-  return Math.ceil(amount / 10) * 10;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -215,8 +211,8 @@ Deno.serve(async (req) => {
         paymentMethod,
         customerName,
         customerPhone,
-        partyCode,
         tableSessionId,
+        priceContext,
       } = validation.data;
 
       // Verifica se il tavolo è un banco (richiede customerName)
@@ -234,25 +230,6 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );
-      }
-
-      // Verifica partyCode se fornito (deprecato)
-      let partySessionId: string | null = null;
-      if (partyCode) {
-        const { data: party } = await supabase
-          .from("PartySession")
-          .select("id")
-          .eq("code", partyCode.toUpperCase())
-          .eq("isActive", true)
-          .single();
-
-        if (!party) {
-          return new Response(JSON.stringify({ error: "Invalid party code" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        partySessionId = party.id;
       }
 
       // Verifica tableSessionId se fornito (tavoli uniti)
@@ -370,7 +347,10 @@ Deno.serve(async (req) => {
       // === END VALIDATION ===
 
       const isCard = paymentMethod === "CARD";
-      const CARD_MULTIPLIER = 1.03;
+      // Il carrello dichiara su quale listino ha calcolato il totale mostrato al
+      // cliente; qui si ricalcola sullo stesso, altrimenti l'importo registrato
+      // sull'ordine (e quindi cassa, storico e report) non e' quello pagato.
+      const activePriceContext = priceContext ?? "dine-in";
 
       // Calculate totals - OPTIMIZED: Batch fetch instead of N+1 queries
       let subtotal = 0;
@@ -382,7 +362,7 @@ Deno.serve(async (req) => {
       ];
       const { data: menuItems } = await supabase
         .from("MenuItem")
-        .select("id, price")
+        .select("id, price, priceTakeaway, priceTakeawayRemote")
         .in("id", menuItemIds);
 
       const menuItemMap = new Map(menuItems?.map((mi) => [mi.id, mi]) || []);
@@ -407,7 +387,7 @@ Deno.serve(async (req) => {
         const menuItem = menuItemMap.get(item.menuItemId);
         if (!menuItem) continue;
 
-        let itemBasePrice = menuItem.price * item.quantity;
+        let itemBasePrice = getItemPrice(menuItem, activePriceContext) * item.quantity;
 
         // Add modifier prices from cache
         if (item.modifierIds && item.modifierIds.length > 0) {
@@ -420,12 +400,7 @@ Deno.serve(async (req) => {
         }
 
         subtotal += itemBasePrice;
-
-        if (isCard) {
-          totalAmount += roundUpToTenCents(Math.round(itemBasePrice * CARD_MULTIPLIER));
-        } else {
-          totalAmount += itemBasePrice;
-        }
+        totalAmount += applyCardSurcharge(itemBasePrice, isCard);
       }
 
       const surcharge = totalAmount - subtotal;
@@ -459,7 +434,6 @@ Deno.serve(async (req) => {
       };
 
       // Only add optional foreign keys if they have values
-      if (partySessionId) orderData.partySessionId = partySessionId;
       if (validTableSessionId) orderData.tableSessionId = validTableSessionId;
 
       console.log("Creating order with data:", orderData);

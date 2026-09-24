@@ -26,12 +26,6 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 2000;
 
-export interface OrderEvent {
-  eventType: "INSERT" | "UPDATE" | "DELETE";
-  new: Record<string, unknown>;
-  old: Record<string, unknown>;
-}
-
 export function subscribeToOrders(
   onNewOrder: (order: unknown) => void,
   onOrderUpdate: (order: unknown) => void,
@@ -115,17 +109,4 @@ export function unsubscribeFromOrders() {
     ordersChannel = null;
   }
   reconnectAttempts = 0;
-}
-
-// Legacy compatibility functions (no-op for now)
-export function getSocket() {
-  return null;
-}
-
-export function connectSocket() {
-  return null;
-}
-
-export function disconnectSocket() {
-  unsubscribeFromOrders();
 }

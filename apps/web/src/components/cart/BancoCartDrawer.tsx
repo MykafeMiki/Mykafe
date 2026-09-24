@@ -50,6 +50,7 @@ export function BancoCartDrawer({
           consumeMode: ConsumeMode.TAKEAWAY,
         })),
         orderType: OrderType.COUNTER,
+        priceContext,
         paymentMethod: PaymentMethod.CASH, // Always cash at counter
         customerName: customerName,
       });

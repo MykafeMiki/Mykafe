@@ -394,7 +394,24 @@
     "onlineReasonClosedToday": "Closed today.",
     "onlineReasonNotOpenYet": "Not open yet.",
     "onlineReasonClosedForToday": "Closed for today.",
-    "onlineReasonClosed": "Closed."
+    "onlineReasonClosed": "Closed.",
+    "kioskTab": "iPads",
+    "kioskManagement": "iPad Management",
+    "kioskNoDevices": "No iPads registered yet. Open /kiosk on an iPad to register it.",
+    "kioskDeviceLabel": "iPad",
+    "kioskUnassigned": "No table assigned",
+    "kioskUpdatedAt": "Updated",
+    "kioskForget": "Remove",
+    "kioskConfirmForget": "Remove this iPad? It will need to register again.",
+    "kioskSaveError": "Error saving assignment",
+    "kioskForgetError": "Error removing the iPad"
+  },
+  "kiosk": {
+    "registering": "Registering this iPad...",
+    "waitingTitle": "Waiting for assignment",
+    "waitingBody": "Ask a staff member to assign this iPad to a table from Admin > iPads.",
+    "deviceId": "Device ID",
+    "error": "Couldn't register this iPad. Check the connection and reload."
   },
   "cassa": {
     "title": "Cashier",

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { X, Upload, Loader2, Image as ImageIcon, Plus } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { uploadItemImage, updateMenuItem, createMenuItem, getIngredients, createIngredient, setMenuItemIngredients, getMenuItemIngredients } from '@/lib/api'
-import { getIngredientSubstitutes, setIngredientSubstitute } from '@/lib/ingredientSubstitutes'
+import { fetchIngredientSubstitutes, setIngredientSubstitute } from '@/lib/ingredientSubstitutes'
 import type { Category, MenuItem, Ingredient } from '@shared/types'
 
 export interface AdminItemModalProps {
@@ -51,7 +51,7 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
         if (item) {
           try {
             const itemIngredients = await getMenuItemIngredients(item.id)
-            const subsMap = getIngredientSubstitutes()
+            const subsMap = await fetchIngredientSubstitutes()
             setSelectedIngredients(itemIngredients.map(i => ({
               id: i.ingredientId,
               substituteId: subsMap[i.ingredientId]?.id
@@ -314,14 +314,20 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
                                 onChange={(e) => {
                                   const subId = e.target.value
                                   const subIng = allIngredients.find(i => i.id === subId)
+                                  const previous = selectedIngredients
                                   setSelectedIngredients(prev => prev.map(i =>
                                     i.id === ing.id ? { ...i, substituteId: subId || undefined } : i
                                   ))
-                                  if (subIng) {
-                                    setIngredientSubstitute(ing.id, { id: subIng.id, name: subIng.name, nameEn: subIng.nameEn, nameFr: subIng.nameFr, nameEs: subIng.nameEs, nameHe: subIng.nameHe })
-                                  } else {
-                                    setIngredientSubstitute(ing.id, null)
-                                  }
+                                  setIngredientSubstitute(
+                                    ing.id,
+                                    subIng
+                                      ? { id: subIng.id, name: subIng.name, nameEn: subIng.nameEn, nameFr: subIng.nameFr, nameEs: subIng.nameEs, nameHe: subIng.nameHe }
+                                      : null
+                                  ).catch(err => {
+                                    console.error('Failed to save ingredient substitute:', err)
+                                    setSelectedIngredients(previous)
+                                    alert(t('saveError'))
+                                  })
                                 }}
                                 className="text-xs border rounded px-1 py-0.5 bg-white text-gray-600 max-w-[110px]"
                               >

@@ -1,4 +1,5 @@
 export * from './pricing';
+import type { PriceContext } from './pricing';
 
 // Enums
 export enum TableStatus {
@@ -53,17 +54,6 @@ export interface MenuItemIngredient {
   ingredientId: string;
   ingredient?: Ingredient;
   isPrimary: boolean; // Se true, piatto non disponibile quando ingrediente finisce
-}
-
-export interface PartySession {
-  id: string;
-  code: string; // Codice 6 caratteri per unirsi
-  name?: string;
-  hostTableId?: string;
-  isActive: boolean;
-  orders?: Order[];
-  createdAt: Date;
-  closedAt?: Date;
 }
 
 export interface Table {
@@ -180,8 +170,9 @@ export interface Order {
   customerName?: string;
   customerPhone?: string;
   notes?: string;
-  partySessionId?: string; // Sessione festa (conto condiviso)
-  partySession?: PartySession;
+  // Colonna legacy: PartySession e' deprecata (vedi migration 20260113) ma la
+  // tabella resta per gli ordini storici che la referenziano.
+  partySessionId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -220,26 +211,11 @@ export interface CreateOrderRequest {
   paymentMethod?: PaymentMethod;
   customerName?: string;
   customerPhone?: string;
-  partyCode?: string; // Codice per unirsi a una sessione festa
-}
-
-// Party Session API types
-export interface CreatePartyRequest {
-  tableId: string;
-  name?: string;
-}
-
-export interface JoinPartyRequest {
-  code: string;
-  tableId: string;
-}
-
-export interface PartyBillResponse {
-  partySession: PartySession;
-  orders: Order[];
-  totalAmount: number;
-  subtotal: number;
-  surcharge: number;
+  /**
+   * Listino usato dal carrello. Senza questo il server ricalcolerebbe tutto
+   * sul prezzo base e registrerebbe un totale diverso da quello mostrato.
+   */
+  priceContext?: PriceContext;
 }
 
 export interface CartItem {

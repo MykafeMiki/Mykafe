@@ -95,6 +95,7 @@ export function TakeawayCartDrawer({
           consumeMode: ConsumeMode.TAKEAWAY,
         })),
         orderType: OrderType.TAKEAWAY,
+        priceContext,
         paymentMethod,
         customerName: customerName.trim(),
         customerPhone,
@@ -120,7 +121,7 @@ export function TakeawayCartDrawer({
 
       <div className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-orange-50">
+        <div className="flex items-center justify-between p-4 border-b bg-primary-50">
           <h2 className="text-lg font-bold text-gray-900">{t("takeawayOrder")}</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition">
             <X className="w-5 h-5" />
@@ -224,7 +225,7 @@ export function TakeawayCartDrawer({
             <button
               onClick={handleSubmitOrder}
               disabled={isSubmitting}
-              className="w-full py-4 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-4 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>

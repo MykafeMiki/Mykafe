@@ -4,7 +4,7 @@ import { useState } from "react";
 import { X, Minus, Plus, Trash2, Loader2, UtensilsCrossed, ShoppingBag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart";
-import { formatPrice, cn } from "@/lib/utils";
+import { formatPrice, getItemPrice, cn } from "@/lib/utils";
 import { createOrder } from "@/lib/api";
 import { ConsumeMode } from "@shared/types";
 
@@ -22,6 +22,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
     tableId,
     tableSessionId,
     customerName,
+    priceContext,
     updateQuantity,
     updateConsumeMode,
     removeItem,
@@ -49,6 +50,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
           modifierIds: item.selectedModifiers.map((m) => m.id),
           consumeMode: item.consumeMode,
         })),
+        priceContext,
       });
 
       clearCart();
@@ -98,7 +100,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
                       )}
                       <p className="font-semibold text-primary-600 mt-1">
                         {formatPrice(
-                          (item.menuItem.price +
+                          (getItemPrice(item.menuItem, priceContext) +
                             item.selectedModifiers.reduce((s, m) => s + m.price, 0)) *
                             item.quantity
                         )}

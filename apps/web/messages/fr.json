@@ -367,7 +367,24 @@
     "onlineReasonClosedToday": "Closed today.",
     "onlineReasonNotOpenYet": "Not open yet.",
     "onlineReasonClosedForToday": "Closed for today.",
-    "onlineReasonClosed": "Closed."
+    "onlineReasonClosed": "Closed.",
+    "kioskTab": "iPad",
+    "kioskManagement": "Gestion des iPad",
+    "kioskNoDevices": "Aucun iPad enregistre. Ouvrez /kiosk sur un iPad pour l'enregistrer.",
+    "kioskDeviceLabel": "iPad",
+    "kioskUnassigned": "Aucune table assignee",
+    "kioskUpdatedAt": "Mis a jour",
+    "kioskForget": "Supprimer",
+    "kioskConfirmForget": "Supprimer cet iPad ? Il devra s'enregistrer a nouveau.",
+    "kioskSaveError": "Erreur lors de l'enregistrement",
+    "kioskForgetError": "Erreur lors de la suppression de l'iPad"
+  },
+  "kiosk": {
+    "registering": "Enregistrement de l'iPad...",
+    "waitingTitle": "En attente d'assignation",
+    "waitingBody": "Demandez a un membre du personnel d'assigner cet iPad a une table depuis Admin > iPad.",
+    "deviceId": "ID de l'appareil",
+    "error": "Impossible d'enregistrer cet iPad. Verifiez la connexion et rechargez."
   },
   "cassa": {
     "title": "Caisse",

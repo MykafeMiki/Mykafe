@@ -10,6 +10,17 @@
 export const CARD_MULTIPLIER = 1.03
 
 /**
+ * Listino da applicare a un articolo.
+ * - dine-in:          prezzo base (`price`)
+ * - takeaway-counter: asporto ordinato al banco (`priceTakeaway`)
+ * - takeaway-remote:  asporto prenotato da remoto (`priceTakeawayRemote`)
+ *
+ * Viaggia dentro CreateOrderRequest: il totale registrato sull'ordine deve
+ * uscire dallo stesso listino che il cliente ha visto nel carrello.
+ */
+export type PriceContext = "dine-in" | "takeaway-counter" | "takeaway-remote"
+
+/**
  * Arrotonda un importo (in centesimi) ai 10 centesimi superiori.
  * Es: 153 → 160, 150 → 150, 101 → 110
  */

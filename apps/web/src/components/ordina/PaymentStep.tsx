@@ -14,7 +14,7 @@ export function PaymentStep({ onSelectPayment }: PaymentStepProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-orange-500 text-white p-4">
+      <header className="bg-primary-500 text-white p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-6 h-6" />
@@ -22,7 +22,7 @@ export function PaymentStep({ onSelectPayment }: PaymentStepProps) {
           </div>
           <LanguageSelectorCompact />
         </div>
-        <p className="text-orange-100 text-sm mt-1">
+        <p className="text-primary-100 text-sm mt-1">
           {t('subtitle')}
         </p>
       </header>

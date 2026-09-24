@@ -117,52 +117,10 @@ export function getSushiStatus(): {
 }
 
 /**
- * Get panini availability status
- */
-export function getPaniniStatus(): {
-  isAvailable: boolean
-  statusText: string
-  config: TimerConfig['panini']
-} {
-  const config = getTimerConfig()
-  const isActive = isPaniniTimeActive()
-  const now = new Date()
-
-  let statusText: string
-  if (!config.panini.enabled) {
-    statusText = 'Timer disabilitato - sempre visibili'
-  } else if (isActive) {
-    statusText = 'Panini disponibili'
-  } else {
-    const hoursLeft = config.panini.startHour - now.getHours()
-    statusText = `Disponibili dalle ${config.panini.startHour}:00 (tra ${hoursLeft} ore)`
-  }
-
-  return { isAvailable: isActive, statusText, config: config.panini }
-}
-
-/**
  * Get takeaway config shorthand
  */
 export function getTakeawayConfig(): TimerConfig['takeaway'] {
   return getTimerConfig().takeaway
-}
-
-/**
- * Check if takeaway service is currently available
- */
-export function isTakeawayAvailable(): boolean {
-  const config = getTimerConfig()
-  if (!config.takeaway.enabled) return false
-
-  const now = new Date()
-  const currentDay = now.getDay()
-  const currentHour = now.getHours()
-
-  if (config.takeaway.closedDays.includes(currentDay)) return false
-  if (currentHour < config.takeaway.openingHour || currentHour >= config.takeaway.closingHour) return false
-
-  return true
 }
 
 /**
@@ -232,16 +190,4 @@ export function getAvailableTimeSlots(date: Date, openingHour: number, closingHo
   }
 
   return slots
-}
-
-/**
- * Check if pickup time is within 30 minutes
- */
-export function isPickupWithin30Minutes(date: Date, time: string): boolean {
-  const [hours, minutes] = time.split(':').map(Number)
-  const pickupTime = new Date(date)
-  pickupTime.setHours(hours, minutes, 0, 0)
-
-  const diffMinutes = (pickupTime.getTime() - Date.now()) / (1000 * 60)
-  return diffMinutes <= 30 && diffMinutes > 0
 }

@@ -26,8 +26,8 @@ Set-Location $AppDir
 Write-Log '=== launcher avviato ==='
 
 # La rete puo' non essere pronta subito dopo il boot: attendi la stampante.
-# NB: la Custom KUBE non risponde all'ICMP, quindi si testa la porta di stampa.
-$printerIp   = '10.0.50.151'
+# NB: la Munbyn ITPP047 non risponde all'ICMP, quindi si testa la porta di stampa.
+$printerIp   = '10.0.50.152'
 $printerPort = 9100
 for ($i = 1; $i -le 30; $i++) {
     $sock = New-Object System.Net.Sockets.TcpClient
