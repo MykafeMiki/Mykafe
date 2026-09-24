@@ -22,6 +22,58 @@ interface HourlyData {
   revenue: number;
 }
 
+// Ordini del periodo: quelli ancora in "Order" piu' quelli finiti in
+// "OrderArchive" (reset manuale o pulizia dopo 24h), altrimenti i report
+// perderebbero tutto cio' che e' stato azzerato. Un id compare una volta sola
+// anche se un'archiviazione fosse andata a meta'.
+// deno-lint-ignore no-explicit-any
+async function fetchOrdersInPeriod(supabase: any, startDate: Date): Promise<any[]> {
+  const startIso = startDate.toISOString();
+
+  const [live, archives] = await Promise.all([
+    supabase
+      .from("Order")
+      .select(
+        `id, createdAt, totalAmount, status, orderType,
+         items:OrderItem(quantity, menuItem:MenuItem(id, name))`
+      )
+      .gte("createdAt", startIso),
+    supabase.from("OrderArchive").select("orders").gte("periodEnd", startIso),
+  ]);
+
+  if (live.error) throw live.error;
+  if (archives.error) throw archives.error;
+
+  // deno-lint-ignore no-explicit-any
+  const byId = new Map<string, any>();
+
+  for (const snapshot of archives.data || []) {
+    // deno-lint-ignore no-explicit-any
+    for (const o of (snapshot.orders || []) as any[]) {
+      if (new Date(o.createdAt) < startDate) continue;
+      byId.set(o.id, {
+        id: o.id,
+        createdAt: o.createdAt,
+        totalAmount: o.totalAmount,
+        status: o.status,
+        orderType: o.orderType,
+        // Nello snapshot il MenuItem ha solo nome e prezzo: l'id sta sulla riga.
+        // deno-lint-ignore no-explicit-any
+        items: (o.items || []).map((i: any) => ({
+          quantity: i.quantity,
+          menuItem: i.menuItem?.name
+            ? { id: i.menuItemId, name: i.menuItem.name }
+            : null,
+        })),
+      });
+    }
+  }
+
+  for (const o of live.data || []) byId.set(o.id, o);
+
+  return Array.from(byId.values());
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -41,6 +93,31 @@ Deno.serve(async (req) => {
     const reportsIndex = pathParts.indexOf("reports");
     const subPath = reportsIndex >= 0 ? pathParts.slice(reportsIndex + 1) : [];
 
+    // GET /reports/archives - elenco degli snapshot di cassa (senza gli ordini)
+    // GET /reports/archives/:id - snapshot completo con gli ordini
+    if (req.method === "GET" && subPath[0] === "archives") {
+      const headers = { ...corsHeaders, "Content-Type": "application/json" };
+
+      if (subPath[1]) {
+        const { data, error } = await supabase
+          .from("OrderArchive")
+          .select("*")
+          .eq("id", subPath[1])
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers });
+        return new Response(JSON.stringify(data), { headers });
+      }
+
+      const { data, error } = await supabase
+        .from("OrderArchive")
+        .select('id, archivedAt, reason, orderCount, totalCash, totalCard, totalUnpaid, periodStart, periodEnd')
+        .order("archivedAt", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return new Response(JSON.stringify(data), { headers });
+    }
+
     // GET /reports/top-products?period=week|month
     if (req.method === "GET" && subPath[0] === "top-products") {
       const period = url.searchParams.get("period") || "week";
@@ -57,27 +134,10 @@ Deno.serve(async (req) => {
         startDate.setDate(startDate.getDate() - 7);
       }
 
-      // Get orders with items in the period
-      const { data: orders, error } = await supabase
-        .from("Order")
-        .select(
-          `
-          id,
-          createdAt,
-          totalAmount,
-          items:OrderItem(
-            quantity,
-            menuItem:MenuItem(
-              id,
-              name
-            )
-          )
-        `
-        )
-        .gte("createdAt", startDate.toISOString())
-        .eq("status", "SERVED"); // Only count completed orders
-
-      if (error) throw error;
+      // Solo ordini completati
+      const orders = (await fetchOrdersInPeriod(supabase, startDate)).filter(
+        (o) => o.status === "SERVED"
+      );
 
       // Aggregate products
       const productMap = new Map<string, TopProduct>();
@@ -133,14 +193,9 @@ Deno.serve(async (req) => {
         startDate.setDate(startDate.getDate() - 7);
       }
 
-      // Get orders in the period
-      const { data: orders, error } = await supabase
-        .from("Order")
-        .select("createdAt, totalAmount")
-        .gte("createdAt", startDate.toISOString())
-        .in("status", ["SERVED", "READY", "PREPARING", "PENDING"]);
-
-      if (error) throw error;
+      const orders = (await fetchOrdersInPeriod(supabase, startDate)).filter((o) =>
+        ["SERVED", "READY", "PREPARING", "PENDING"].includes(o.status)
+      );
 
       // Aggregate by hour
       const hourlyMap = new Map<number, HourlyData>();
@@ -196,26 +251,15 @@ Deno.serve(async (req) => {
         startDate.setDate(startDate.getDate() - 7);
       }
 
-      // Get orders in the period
-      const { data: orders, error } = await supabase
-        .from("Order")
-        .select(
-          `
-          id,
-          createdAt,
-          totalAmount,
-          status,
-          orderType,
-          items:OrderItem(quantity)
-        `
-        )
-        .gte("createdAt", startDate.toISOString());
-
-      if (error) throw error;
+      const orders = await fetchOrdersInPeriod(supabase, startDate);
 
       const completedOrders = orders?.filter((o) => o.status === "SERVED") || [];
       const totalItems =
-        orders?.reduce((sum, o) => sum + (o.items?.reduce((s, i) => s + i.quantity, 0) || 0), 0) ||
+        orders.reduce(
+          // deno-lint-ignore no-explicit-any
+          (sum, o) => sum + (o.items?.reduce((s: number, i: any) => s + i.quantity, 0) || 0),
+          0
+        ) ||
         0;
 
       // Orders by type

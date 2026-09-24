@@ -190,6 +190,10 @@
     "takeaway": "Takeaway"
   },
   "kitchen": {
+    "resetAll": "Clear all orders",
+    "resetConfirm": "Delete ALL orders? They will be archived in Admin and tables will be freed. This cannot be undone.",
+    "resetDone": "Orders cleared",
+    "resetFailed": "Could not clear orders",
     "title": "Kitchen Display",
     "lastUpdate": "Last update",
     "noActiveOrders": "No active orders",
@@ -217,6 +221,21 @@
     "orderNotes": "Order notes"
   },
   "admin": {
+    "archiveTab": "Cash archive",
+    "archiveTitle": "Cash archive",
+    "archiveNote": "Orders and takings are saved here before being deleted (manual reset or automatic after 24 hours), in case of disputes.",
+    "archiveEmpty": "No archives",
+    "archiveManual": "Manual reset",
+    "archiveAuto": "Automatic 24h",
+    "archiveOrders": "orders",
+    "archiveCash": "Cash",
+    "archiveCard": "Card",
+    "archiveUnpaid": "Unpaid",
+    "archiveBack": "Back",
+    "archiveTable": "Table",
+    "archiveTakeaway": "Takeaway/Counter",
+    "archiveCancelled": "Cancelled",
+    "archivePaid": "Paid",
     "title": "Admin Panel",
     "subtitle": "Manage menu, tables and QR codes",
     "logout": "Logout",
@@ -414,6 +433,10 @@
     "error": "Couldn't register this iPad. Check the connection and reload."
   },
   "cassa": {
+    "resetAll": "Clear all orders",
+    "resetConfirm": "Delete ALL orders? They will be archived in Admin and tables will be freed. This cannot be undone.",
+    "resetDone": "Orders cleared",
+    "resetFailed": "Could not clear orders",
     "title": "Cashier",
     "subtitle": "Payment and receipt management",
     "tablesWithOrders": "Tables with orders",

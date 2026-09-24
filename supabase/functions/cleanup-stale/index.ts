@@ -3,12 +3,15 @@
  * - TableSession senza ordini attive da più di 30 minuti → chiude subito
  * - TableSession con ordini attive da più di 4 ore → chiude
  * - TableCustomer inattivi da più di 4 ore
+ * - Ordini piu' vecchi di 24 ore → archiviati in OrderArchive (visibili in admin
+ *   per eventuali contestazioni) e poi cancellati
  * - Sincronizza Table.status con la presenza effettiva di clienti
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getSecretKey } from "../_shared/keys.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { archiveAndDeleteOrders } from "../_shared/archive.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +21,7 @@ const corsHeaders = {
 const CUSTOMER_STALE_HOURS = 4;
 const SESSION_NO_ORDERS_MINUTES = 30; // sessione senza ordini → chiude dopo 30 min
 const SESSION_WITH_ORDERS_HOURS = 4;  // sessione con ordini → chiude dopo 4 ore
+const ORDER_RETENTION_HOURS = 24;     // ordini → archiviati e cancellati dopo 24 ore
 
 /**
  * Segreto condiviso col job pg_cron `cleanup-stale-sessions`.
@@ -76,6 +80,7 @@ Deno.serve(async (req) => {
       staleCustomers: 0,
       staleSessions: 0,
       syncedTables: 0,
+      archivedOrders: 0,
       errors: [] as string[],
     };
 
@@ -131,6 +136,17 @@ Deno.serve(async (req) => {
           results.staleSessions = toClose.length;
         }
       }
+    }
+
+    // 2b. Archivia e cancella gli ordini vecchi di 24 ore. Se l'archiviazione
+    // fallisce non cancella niente (vedi archiveAndDeleteOrders).
+    try {
+      const orderCutoff = new Date(now.getTime() - ORDER_RETENTION_HOURS * 60 * 60 * 1000);
+      const archived = await archiveAndDeleteOrders(supabase, "AUTO_24H", orderCutoff);
+      results.archivedOrders = archived.orderCount;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : JSON.stringify(err);
+      results.errors.push(`Order archive error: ${message}`);
     }
 
     // 3. Sync table status with actual customer presence

@@ -185,6 +185,10 @@
     "takeaway": "Para llevar"
   },
   "kitchen": {
+    "resetAll": "Borrar pedidos",
+    "resetConfirm": "¿Borrar TODOS los pedidos? Se archivarán en Admin y se liberarán las mesas. No se puede deshacer.",
+    "resetDone": "Pedidos borrados",
+    "resetFailed": "No se pudieron borrar los pedidos",
     "title": "Pantalla de Cocina",
     "lastUpdate": "Última actualización",
     "noActiveOrders": "No hay pedidos activos",
@@ -212,6 +216,21 @@
     "orderNotes": "Order notes"
   },
   "admin": {
+    "archiveTab": "Archivo de caja",
+    "archiveTitle": "Archivo de caja",
+    "archiveNote": "Los pedidos y la caja se guardan aquí antes de borrarse (reinicio manual o automático tras 24 horas), por si hay reclamaciones.",
+    "archiveEmpty": "Sin archivos",
+    "archiveManual": "Reinicio manual",
+    "archiveAuto": "Automático 24h",
+    "archiveOrders": "pedidos",
+    "archiveCash": "Efectivo",
+    "archiveCard": "Tarjeta",
+    "archiveUnpaid": "Sin pagar",
+    "archiveBack": "Volver",
+    "archiveTable": "Mesa",
+    "archiveTakeaway": "Para llevar/Barra",
+    "archiveCancelled": "Cancelado",
+    "archivePaid": "Pagado",
     "title": "Panel de Admin",
     "subtitle": "Gestionar menú, mesas y códigos QR",
     "logout": "Salir",
@@ -387,6 +406,10 @@
     "error": "No se pudo registrar este iPad. Comprueba la conexion y recarga."
   },
   "cassa": {
+    "resetAll": "Borrar pedidos",
+    "resetConfirm": "¿Borrar TODOS los pedidos? Se archivarán en Admin y se liberarán las mesas. No se puede deshacer.",
+    "resetDone": "Pedidos borrados",
+    "resetFailed": "No se pudieron borrar los pedidos",
     "title": "Caja",
     "subtitle": "Gestión de pagos y tickets",
     "tablesWithOrders": "Mesas con pedidos",

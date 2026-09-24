@@ -185,6 +185,10 @@
     "takeaway": "À emporter"
   },
   "kitchen": {
+    "resetAll": "Effacer les commandes",
+    "resetConfirm": "Supprimer TOUTES les commandes ? Elles seront archivées dans Admin et les tables libérées. Action irréversible.",
+    "resetDone": "Commandes effacées",
+    "resetFailed": "Impossible d'effacer les commandes",
     "title": "Écran Cuisine",
     "lastUpdate": "Dernière mise à jour",
     "noActiveOrders": "Aucune commande active",
@@ -212,6 +216,21 @@
     "orderNotes": "Order notes"
   },
   "admin": {
+    "archiveTab": "Archive caisse",
+    "archiveTitle": "Archive caisse",
+    "archiveNote": "Les commandes et la caisse sont enregistrées ici avant suppression (réinitialisation manuelle ou automatique après 24 heures), en cas de litige.",
+    "archiveEmpty": "Aucune archive",
+    "archiveManual": "Réinitialisation manuelle",
+    "archiveAuto": "Automatique 24h",
+    "archiveOrders": "commandes",
+    "archiveCash": "Espèces",
+    "archiveCard": "Carte",
+    "archiveUnpaid": "Impayé",
+    "archiveBack": "Retour",
+    "archiveTable": "Table",
+    "archiveTakeaway": "À emporter/Comptoir",
+    "archiveCancelled": "Annulée",
+    "archivePaid": "Payée",
     "title": "Panneau Admin",
     "subtitle": "Gérer menu, tables et codes QR",
     "logout": "Déconnexion",
@@ -387,6 +406,10 @@
     "error": "Impossible d'enregistrer cet iPad. Verifiez la connexion et rechargez."
   },
   "cassa": {
+    "resetAll": "Effacer les commandes",
+    "resetConfirm": "Supprimer TOUTES les commandes ? Elles seront archivées dans Admin et les tables libérées. Action irréversible.",
+    "resetDone": "Commandes effacées",
+    "resetFailed": "Impossible d'effacer les commandes",
     "title": "Caisse",
     "subtitle": "Gestion des paiements et tickets",
     "tablesWithOrders": "Tables avec commandes",

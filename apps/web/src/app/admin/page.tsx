@@ -12,11 +12,12 @@ import { TablesTab } from '@/components/admin/TablesTab'
 import { KioskTab } from '@/components/admin/KioskTab'
 import { QRTab } from '@/components/admin/QRTab'
 import { ReportsTab } from '@/components/admin/ReportsTab'
+import { ArchiveTab } from '@/components/admin/ArchiveTab'
 import { PricesTab } from '@/components/admin/PricesTab'
 import { ClosureConfigModal } from '@/components/admin/ClosureConfigModal'
 import type { Category, Table } from '@shared/types'
 
-type Tab = 'menu' | 'ingredients' | 'tables' | 'kiosk' | 'qr' | 'reports' | 'prices'
+type Tab = 'menu' | 'ingredients' | 'tables' | 'kiosk' | 'qr' | 'reports' | 'archive' | 'prices'
 
 export default function AdminPage() {
   const t = useTranslations('admin')
@@ -247,6 +248,15 @@ export default function AdminPage() {
             {t('reportsTab')}
           </button>
           <button
+            onClick={() => setActiveTab('archive')}
+            className={`flex-1 py-4 px-6 font-medium transition ${activeTab === 'archive'
+                ? 'text-primary-600 border-b-2 border-primary-500'
+                : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            {t('archiveTab')}
+          </button>
+          <button
             onClick={() => setActiveTab('prices')}
             className={`flex-1 py-4 px-6 font-medium transition ${activeTab === 'prices'
                 ? 'text-primary-600 border-b-2 border-primary-500'
@@ -277,6 +287,9 @@ export default function AdminPage() {
         )}
         {activeTab === 'reports' && (
           <ReportsTab t={t} tc={tc} />
+        )}
+        {activeTab === 'archive' && (
+          <ArchiveTab t={t} />
         )}
         {activeTab === 'prices' && (
           <PricesTab categories={categories} onUpdate={loadData} t={t} tc={tc} />
