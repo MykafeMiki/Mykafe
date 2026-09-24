@@ -50,12 +50,24 @@ export function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
     fetchClosureConfig().then(setClosureConfig)
   }, [])
 
+  // Aggiorna la UI subito, ma se il server rifiuta torna indietro.
+  const applyClosureConfig = (newConfig: ClosureConfig) => {
+    const previous = closureConfig
+    setClosureConfig(newConfig)
+    saveClosureConfigToServer(newConfig).catch(err => {
+      console.error('Failed to save closure config:', err)
+      setClosureConfig(previous)
+      alert(t('saveError'))
+    })
+  }
+
   const handleToggleAvailability = async (item: MenuItem) => {
     try {
       await updateItemAvailability(item.id, !item.available)
       await onUpdate()
     } catch (err) {
       console.error('Failed to update availability:', err)
+      alert(t('saveError'))
     }
   }
 
@@ -66,6 +78,7 @@ export function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
       await onUpdate()
     } catch (err) {
       console.error('Failed to toggle category:', err)
+      alert(t('saveError'))
     } finally {
       setTogglingCategory(null)
     }
@@ -240,8 +253,7 @@ export function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                   until: undefined,
                 }
               }
-              setClosureConfig(newConfig)
-              saveClosureConfigToServer(newConfig).catch(e => console.error('Failed to save closure config:', e))
+              applyClosureConfig(newConfig)
             }}
             className={`px-4 py-2 rounded-lg font-semibold transition ${
               closureConfig.temporaryClosure.active
@@ -633,8 +645,7 @@ export function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
           config={closureConfig}
           onClose={() => setShowClosureModal(false)}
           onSave={(newConfig) => {
-            setClosureConfig(newConfig)
-            saveClosureConfigToServer(newConfig).catch(e => console.error('Failed to save closure config:', e))
+            applyClosureConfig(newConfig)
             setShowClosureModal(false)
           }}
         />

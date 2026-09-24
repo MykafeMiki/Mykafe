@@ -66,22 +66,6 @@ export function getTranslatedDescription(
 }
 
 /**
- * Helper to get both name and description translated
- */
-export function getTranslatedContent(
-  item: TranslatableItem,
-  locale: string
-): {
-  name: string;
-  description?: string;
-} {
-  return {
-    name: getTranslatedName(item, locale),
-    description: getTranslatedDescription(item, locale),
-  };
-}
-
-/**
  * Cache for translations to avoid repeated API calls
  */
 const translationCache = new Map<string, { text: string; timestamp: number }>();

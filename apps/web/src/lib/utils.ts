@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { MenuItem } from "@shared/types";
+import type { MenuItem, PriceContext } from "@shared/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,8 +29,8 @@ export function formatTime(date: Date): string {
   }).format(date);
 }
 
-// Tipi di contesto prezzo
-export type PriceContext = "dine-in" | "takeaway-counter" | "takeaway-remote";
+// Il tipo vive in @shared/types perche' viaggia anche nel payload dell'ordine.
+export type { PriceContext };
 
 /**
  * Ottiene il prezzo appropriato per un articolo in base al contesto

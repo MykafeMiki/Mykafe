@@ -79,6 +79,7 @@ interface Order {
   orderType: string;
   customerName?: string;
   customerPhone?: string;
+  paymentMethod?: string | null;
   notes?: string;
   totalAmount: number;
   createdAt: string;
@@ -109,8 +110,13 @@ const COMMANDS = {
 
 // Format date/time
 function formatDateTime(isoString: string): string {
-  const date = new Date(isoString);
+  // Postgres returns "timestamp without time zone" (stored as UTC) with no
+  // "Z"/offset: without it JS parses the value as local time and the receipt
+  // shows the UTC hour. Force UTC, then print in Italian time.
+  const hasZone = /(Z|[+-]\d{2}(:?\d{2})?)$/.test(isoString);
+  const date = new Date(hasZone ? isoString : `${isoString}Z`);
   return date.toLocaleString("it-IT", {
+    timeZone: "Europe/Rome",
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
@@ -161,6 +167,16 @@ function generateReceipt(order: Order, items: OrderItem[], section: ReceiptSecti
       cmd(COMMANDS.BOLD_ON);
       line(`Tel. ${order.customerPhone}`);
       cmd(COMMANDS.BOLD_OFF);
+    }
+    // Carta = gia' pagato online, contanti = si incassa alla consegna
+    if (order.paymentMethod === "CARD") {
+      cmd(COMMANDS.BOLD_ON + COMMANDS.DOUBLE_HEIGHT);
+      line("** PAGATO **");
+      cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
+    } else if (order.paymentMethod === "CASH") {
+      cmd(COMMANDS.BOLD_ON + COMMANDS.DOUBLE_HEIGHT);
+      line("** DA PAGARE **");
+      cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
     }
   } else {
     line(`TAVOLO ${order.table?.number || "?"}`);

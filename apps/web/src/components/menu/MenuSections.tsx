@@ -1,8 +1,3 @@
-"use client";
-
-import { useLocale } from "next-intl";
-import Image from "next/image";
-
 export interface MenuSection {
   id: string;
   name: string;
@@ -169,60 +164,4 @@ export function getSectionName(section: MenuSection, locale: string): string {
     default:
       return section.name;
   }
-}
-
-interface MenuSectionsProps {
-  onSelectSection: (sectionId: string) => void;
-  // Categorie già filtrate (attive + nel range orario): usate per capire quali sezioni mostrare
-  activeCategories?: { name: string }[];
-}
-
-export function MenuSections({ onSelectSection, activeCategories }: MenuSectionsProps) {
-  const locale = useLocale();
-
-  const visibleSections = menuSections.filter((section) => {
-    // Se non abbiamo le categorie, mostriamo tutto tranne sushi (comportamento sicuro)
-    if (!activeCategories) return section.id !== "sushi";
-
-    // Una sezione è visibile se esiste almeno una categoria attiva che vi appartiene
-    const sectionCategoryNames = Object.entries(categoryToSectionMap)
-      .filter(([, sectionId]) => sectionId === section.id)
-      .map(([catName]) => catName.toLowerCase());
-
-    return activeCategories.some((cat) => sectionCategoryNames.includes(cat.name.toLowerCase()));
-  });
-
-  return (
-    <div className="p-4 grid grid-cols-3 gap-3">
-      {visibleSections.map((section) => (
-        <button
-          key={section.id}
-          onClick={() => onSelectSection(section.id)}
-          className="relative aspect-square rounded-2xl overflow-hidden shadow-lg group active:scale-95 transition-transform"
-        >
-          {/* Background Image */}
-          <Image
-            src={section.image}
-            alt={section.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, 33vw"
-          />
-
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-          {/* Section Name */}
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <h3 className="text-white text-sm font-display font-semibold text-center drop-shadow-lg italic leading-tight line-clamp-2">
-              {getSectionName(section, locale)}
-            </h3>
-          </div>
-
-          {/* Hover/Active effect */}
-          <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors" />
-        </button>
-      ))}
-    </div>
-  );
 }

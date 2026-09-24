@@ -372,7 +372,24 @@
     "onlineReasonClosedToday": "Closed today.",
     "onlineReasonNotOpenYet": "Not open yet.",
     "onlineReasonClosedForToday": "Closed for today.",
-    "onlineReasonClosed": "Closed."
+    "onlineReasonClosed": "Closed.",
+    "kioskTab": "אייפדים",
+    "kioskManagement": "ניהול אייפדים",
+    "kioskNoDevices": "עדיין לא נרשמו אייפדים. פתח את /kiosk באייפד כדי לרשום אותו.",
+    "kioskDeviceLabel": "אייפד",
+    "kioskUnassigned": "לא הוקצה שולחן",
+    "kioskUpdatedAt": "עודכן",
+    "kioskForget": "הסר",
+    "kioskConfirmForget": "להסיר את האייפד הזה? יהיה עליו להירשם מחדש.",
+    "kioskSaveError": "שגיאה בשמירת ההקצאה",
+    "kioskForgetError": "שגיאה בהסרת האייפד"
+  },
+  "kiosk": {
+    "registering": "רושם את האייפד...",
+    "waitingTitle": "ממתין להקצאה",
+    "waitingBody": "בקש מאיש צוות להקצות את האייפד הזה לשולחן דרך פאנל הניהול > אייפדים.",
+    "deviceId": "מזהה מכשיר",
+    "error": "לא ניתן לרשום את האייפד הזה. בדוק את החיבור וטען מחדש."
   },
   "cassa": {
     "title": "קופה",

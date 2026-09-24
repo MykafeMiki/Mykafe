@@ -70,10 +70,10 @@ export function ChoiceStep({
 
           <button
             onClick={onMergeTables}
-            className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition"
+            className="w-full flex items-center gap-4 p-6 bg-white rounded-xl border-2 border-gray-200 hover:border-primary-500 hover:bg-primary-50 transition"
           >
-            <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center">
-              <Users className="w-7 h-7 text-orange-600" />
+            <div className="w-14 h-14 bg-primary-100 rounded-full flex items-center justify-center">
+              <Users className="w-7 h-7 text-primary-600" />
             </div>
             <div className="text-left">
               <span className="block font-semibold text-lg text-gray-900">

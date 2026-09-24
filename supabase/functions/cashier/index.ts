@@ -99,7 +99,10 @@ Deno.serve(async (req) => {
       >();
 
       for (const order of orders || []) {
-        if (!order.table) continue; // Skip orders without table (takeaway handled separately)
+        // Gli ordini di banco/asporto hanno comunque un Table (isCounter), ma
+        // vanno solo nella lista takeaway qui sotto: raggrupparli anche per
+        // tavolo li faceva comparire due volte, con i totali sommati due volte.
+        if (!order.table || order.table.isCounter) continue;
 
         const tableId = order.table.id;
         if (!tableMap.has(tableId)) {

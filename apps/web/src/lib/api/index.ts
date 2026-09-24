@@ -65,15 +65,6 @@ export {
   getMenuItemIngredients,
 } from './ingredients'
 
-// Re-export party functions
-export {
-  createParty,
-  getPartyByCode,
-  joinParty,
-  getPartyBill,
-  closeParty,
-} from './party'
-
 // Re-export table session functions and types
 export {
   createTableSession,
@@ -94,6 +85,17 @@ export {
   type PeakHoursReport,
   type SummaryReport,
 } from './reports'
+
+// Re-export kiosk device functions and types
+export {
+  registerKioskDevice,
+  getKioskDevice,
+  getKioskDevices,
+  setKioskDeviceTable,
+  renameKioskDevice,
+  forgetKioskDevice,
+  type KioskDevice,
+} from './kiosk'
 
 // Re-export cashier functions and types
 export {

@@ -1,0 +1,33 @@
+# Servizio systemd per il print-server su Raspberry Pi.
+# Equivalente Linux di start-print-server.ps1 (che restava per il PC di cassa Windows):
+# qui il restart automatico e i log li gestisce systemd/journald, non serve reinventarli.
+#
+# Installazione:
+#   sudo cp print-server.service /etc/systemd/system/print-server.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now print-server
+#
+# Log:
+#   journalctl -u print-server -f
+#
+# Assunzioni: repo clonato in /home/pi/MyKafe, pnpm install + pnpm build già fatti
+# in apps/print-server, .env compilato in apps/print-server/.env, utente "pi".
+# Adatta User/WorkingDirectory/ExecStart se il percorso o l'utente sono diversi.
+
+[Unit]
+Description=MyKafe Print Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/MyKafe/apps/print-server
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

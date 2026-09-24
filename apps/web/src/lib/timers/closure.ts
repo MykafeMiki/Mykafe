@@ -6,6 +6,7 @@
  */
 
 import { DAYS_OF_WEEK } from './config'
+import { getAuthToken } from '../api/core'
 
 export interface DaySchedule {
   enabled: boolean    // Se il giorno è abilitato per ordini online
@@ -70,9 +71,15 @@ export async function fetchClosureConfig(): Promise<ClosureConfig> {
  * Save closure configuration to server
  */
 export async function saveClosureConfigToServer(config: ClosureConfig): Promise<void> {
+  const token = getAuthToken()
+  if (!token) throw new Error('Sessione admin scaduta: rifai il login')
+
   const res = await fetch('/api/settings/closure', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(config),
   })
   if (!res.ok) {
@@ -160,18 +167,4 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
   }
 
   return { isOpen: true }
-}
-
-/**
- * Get formatted weekly schedule for display
- */
-export function getFormattedSchedule(config: ClosureConfig): { day: string; schedule: string }[] {
-  return DAYS_OF_WEEK.map(day => {
-    const daySchedule = config.schedule[day.value]
-    if (!daySchedule.enabled) return { day: day.label, schedule: 'Chiuso' }
-
-    const open = `${daySchedule.openHour.toString().padStart(2, '0')}:${daySchedule.openMinute.toString().padStart(2, '0')}`
-    const close = `${daySchedule.closeHour.toString().padStart(2, '0')}:${daySchedule.closeMinute.toString().padStart(2, '0')}`
-    return { day: day.label, schedule: `${open} - ${close}` }
-  })
 }

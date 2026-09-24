@@ -9,11 +9,9 @@ import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 import { NameStep } from '@/components/banco/NameStep'
 import { ServiceChoiceStep } from '@/components/banco/ServiceChoiceStep'
-import { SectionsStep } from '@/components/banco/SectionsStep'
 import { MenuStep } from '@/components/banco/MenuStep'
-import { categoryToSectionMap } from '@/components/menu/MenuSections'
 
-type OrderStep = 'name' | 'choice' | 'sections' | 'menu'
+type OrderStep = 'name' | 'choice' | 'menu'
 type ServiceMode = 'takeaway' | 'dine-in'
 
 export default function BancoPage() {
@@ -23,7 +21,6 @@ export default function BancoPage() {
   const [step, setStep] = useState<OrderStep>('name')
   const [customerName, setCustomerName] = useState('')
   const [serviceMode, setServiceMode] = useState<ServiceMode>('takeaway')
-  const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [activeCategory, setActiveCategory] = useState<string>('')
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
@@ -41,39 +38,6 @@ export default function BancoPage() {
   const filteredCategories = useMemo(() => {
     return filterCategoriesByTime(categories, 'bar')
   }, [categories])
-
-  // Filter categories for the selected section
-  // For "toast" section, merge all toast categories into one sorted list
-  const sectionCategories = useMemo(() => {
-    if (!selectedSection) return filteredCategories
-
-    const sectionCats = filteredCategories.filter(cat => {
-      const sectionId = categoryToSectionMap[cat.name]
-      return sectionId === selectedSection
-    })
-
-    // Special handling for "toast" section: merge all items and sort by number
-    if (selectedSection === 'toast' && sectionCats.length >= 1) {
-      const allToastItems = sectionCats.flatMap(cat => cat.items || [])
-      allToastItems.sort((a, b) => {
-        const numA = parseInt(a.name.match(/\d+/)?.[0] || '0')
-        const numB = parseInt(b.name.match(/\d+/)?.[0] || '0')
-        return numA - numB
-      })
-      return [{
-        ...sectionCats[0],
-        id: 'toast-merged',
-        name: 'Panini',
-        nameEn: 'Sandwiches',
-        nameFr: 'Sandwichs',
-        nameEs: 'Sándwiches',
-        nameHe: 'כריכות',
-        items: allToastItems
-      }]
-    }
-
-    return sectionCats
-  }, [filteredCategories, selectedSection])
 
   useEffect(() => {
     async function loadData() {
@@ -147,18 +111,6 @@ export default function BancoPage() {
     } else {
       setPriceContext('takeaway-counter')
     }
-    setStep('sections')
-  }
-
-  const handleSelectSection = (sectionId: string) => {
-    setSelectedSection(sectionId)
-    const sectionCats = filteredCategories.filter(cat => {
-      const catSectionId = categoryToSectionMap[cat.name]
-      return catSectionId === sectionId
-    })
-    if (sectionCats.length > 0) {
-      setActiveCategory(sectionCats[0].id)
-    }
     setStep('menu')
   }
 
@@ -212,32 +164,17 @@ export default function BancoPage() {
     )
   }
 
-  if (step === 'sections') {
-    return (
-      <SectionsStep
-        customerName={customerName}
-        serviceMode={serviceMode}
-        filteredCategories={filteredCategories}
-        isCartOpen={isCartOpen}
-        onGoBack={() => setStep('choice')}
-        onSelectSection={handleSelectSection}
-        onCartOpen={setIsCartOpen}
-        onOrderSuccess={handleOrderSuccess}
-      />
-    )
-  }
-
   return (
     <MenuStep
       customerName={customerName}
-      sectionCategories={sectionCategories}
+      categories={filteredCategories}
       activeCategory={activeCategory}
       selectedItem={selectedItem}
       isCartOpen={isCartOpen}
       orderSuccess={orderSuccess}
       currentPriceContext={currentPriceContext}
       currentConsumeMode={currentConsumeMode}
-      onGoBack={() => setStep('sections')}
+      onGoBack={() => setStep('choice')}
       onCategorySelect={setActiveCategory}
       onAddItem={handleAddItem}
       onAddWithModifiers={handleAddWithModifiers}

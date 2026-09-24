@@ -53,12 +53,12 @@ export function DateTimeStep({
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-orange-500 text-white p-4">
+      <header className="bg-primary-500 text-white p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={onGoBack}
-              className="p-2 -ml-2 rounded-full hover:bg-orange-400 transition"
+              className="p-2 -ml-2 rounded-full hover:bg-primary-400 transition"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -69,7 +69,7 @@ export function DateTimeStep({
           </div>
           <LanguageSelectorCompact />
         </div>
-        <p className="text-orange-100 text-sm mt-1 ml-10">
+        <p className="text-primary-100 text-sm mt-1 ml-10">
           {t('subtitle')} • {paymentLabel}
         </p>
       </header>
@@ -99,7 +99,7 @@ export function DateTimeStep({
                 className={cn(
                   'flex-shrink-0 px-4 py-3 rounded-xl border-2 transition text-center min-w-[100px]',
                   selectedDate.toDateString() === date.toDateString()
-                    ? 'border-orange-500 bg-orange-50 text-orange-700'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
                     : 'border-gray-200 bg-white hover:border-gray-300'
                 )}
               >
@@ -131,7 +131,7 @@ export function DateTimeStep({
                   className={cn(
                     'py-2 px-3 rounded-lg border-2 transition text-sm font-medium',
                     selectedTime === time
-                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   )}
                 >
@@ -162,7 +162,7 @@ export function DateTimeStep({
           className={cn(
             'w-full py-4 rounded-xl font-semibold text-lg transition',
             selectedTime
-              ? 'bg-orange-500 text-white hover:bg-orange-600'
+              ? 'bg-primary-500 text-white hover:bg-primary-600'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           )}
         >

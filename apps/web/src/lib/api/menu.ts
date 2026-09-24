@@ -269,32 +269,34 @@ export const preloadMenu = () => {
 
 export const getAdminCategories = () => fetchApi<Category[]>('/menu/admin/categories')
 
+// Le mutazioni del menu richiedono il token admin (guard lato edge function):
+// con fetchApi passerebbe solo la anon key e la risposta sarebbe sempre 401.
 export const createCategory = (data: { name: string; description?: string; imageUrl?: string; sortOrder?: number }) =>
-  fetchApi<Category>('/menu/categories', {
+  fetchApiAuth<Category>('/menu/categories', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 
 export const updateCategory = (id: string, data: { name?: string; description?: string; imageUrl?: string; sortOrder?: number; active?: boolean }) =>
-  fetchApi<Category>(`/menu/categories/${id}`, {
+  fetchApiAuth<Category>(`/menu/categories/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   })
 
 export const createMenuItem = (data: { name: string; description?: string; price: number; categoryId: string; imageUrl?: string; sortOrder?: number }) =>
-  fetchApi<MenuItem>('/menu/items', {
+  fetchApiAuth<MenuItem>('/menu/items', {
     method: 'POST',
     body: JSON.stringify(data),
   })
 
 export const updateMenuItem = (id: string, data: { name?: string; description?: string; price?: number; priceTakeaway?: number | null; priceTakeawayRemote?: number | null; imageUrl?: string; sortOrder?: number; available?: boolean }) =>
-  fetchApi<MenuItem>(`/menu/items/${id}`, {
+  fetchApiAuth<MenuItem>(`/menu/items/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   })
 
 export const updateItemAvailability = (id: string, available: boolean) =>
-  fetchApi<MenuItem>(`/menu/items/${id}`, {
+  fetchApiAuth<MenuItem>(`/menu/items/${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ available }),
   })

@@ -401,7 +401,24 @@
     "onlineReasonClosedToday": "Chiuso oggi.",
     "onlineReasonNotOpenYet": "Non ancora aperto.",
     "onlineReasonClosedForToday": "Chiuso per oggi.",
-    "onlineReasonClosed": "Chiuso."
+    "onlineReasonClosed": "Chiuso.",
+    "kioskTab": "iPad",
+    "kioskManagement": "Gestione iPad",
+    "kioskNoDevices": "Nessun iPad registrato. Apri /kiosk su un iPad per registrarlo.",
+    "kioskDeviceLabel": "iPad",
+    "kioskUnassigned": "Nessun tavolo assegnato",
+    "kioskUpdatedAt": "Aggiornato",
+    "kioskForget": "Rimuovi",
+    "kioskConfirmForget": "Rimuovere questo iPad? Dovra' registrarsi di nuovo.",
+    "kioskSaveError": "Errore nel salvataggio dell'assegnazione",
+    "kioskForgetError": "Errore nella rimozione dell'iPad"
+  },
+  "kiosk": {
+    "registering": "Registrazione dell'iPad in corso...",
+    "waitingTitle": "In attesa di assegnazione",
+    "waitingBody": "Chiedi a un membro dello staff di assegnare questo iPad a un tavolo dal pannello Admin > iPad.",
+    "deviceId": "ID dispositivo",
+    "error": "Impossibile registrare questo iPad. Controlla la connessione e ricarica."
   },
   "cassa": {
     "title": "Cassa",

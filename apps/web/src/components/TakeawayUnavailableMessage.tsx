@@ -54,7 +54,7 @@ export function TakeawayUnavailableMessage({ status }: TakeawayUnavailableProps)
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-amber-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
         <div className="text-6xl mb-4">{getIcon()}</div>
 
@@ -87,7 +87,7 @@ export function TakeawayUnavailableMessage({ status }: TakeawayUnavailableProps)
         <div className="space-y-3">
           <a
             href="/"
-            className="block w-full py-3 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition"
+            className="block w-full py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition"
           >
             {t("backHome")}
           </a>

@@ -27,3 +27,30 @@ export function applyCardSurcharge(basePriceCents: number, isCardPayment: boolea
   if (!isCardPayment) return basePriceCents
   return roundUpToTenCents(Math.round(basePriceCents * CARD_MULTIPLIER))
 }
+
+/** Listino applicato all'articolo. Identico a PriceContext in packages/shared. */
+export type PriceContext = "dine-in" | "takeaway-counter" | "takeaway-remote"
+
+/** Colonne prezzo di MenuItem lette per calcolare un ordine. */
+export interface PricedMenuItem {
+  price: number
+  priceTakeaway?: number | null
+  priceTakeawayRemote?: number | null
+}
+
+/**
+ * Prezzo di un articolo nel listino richiesto, con gli stessi fallback del
+ * carrello (getItemPrice in apps/web/src/lib/utils.ts – tenerle in sync).
+ * Se il listino specifico non e' valorizzato si ricade sul prezzo base.
+ */
+export function getItemPrice(item: PricedMenuItem, context: PriceContext): number {
+  switch (context) {
+    case "takeaway-counter":
+      return item.priceTakeaway ?? item.price
+    case "takeaway-remote":
+      return item.priceTakeawayRemote ?? item.priceTakeaway ?? item.price
+    case "dine-in":
+    default:
+      return item.price
+  }
+}

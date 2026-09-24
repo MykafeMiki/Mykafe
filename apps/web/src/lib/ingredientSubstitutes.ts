@@ -1,10 +1,16 @@
 /**
  * Ingredient Substitution System
- * Stores a global mapping: ingredientId → substitute ingredient data
- * Used when an ingredient is out of stock → show substitute instead in menu descriptions
+ * Mappa globale: ingredientId → ingrediente sostitutivo.
+ * Quando un ingrediente e' esaurito, nelle descrizioni del menu compare il
+ * sostituto al suo posto.
+ *
+ * La mappa vive lato server in AppSettings['ingredient_substitutes'], che e'
+ * l'unica fonte letta dal menu servito ai clienti. Prima esisteva anche una
+ * copia in localStorage scritta dalla scheda piatto: quella non arrivava mai
+ * al cliente, quindi e' stata rimossa.
  */
 
-const SUBSTITUTES_KEY = "mykafe-ingredient-substitutes";
+import { getAuthToken } from "./api/core";
 
 export interface SubstituteIngredient {
   id: string;
@@ -17,35 +23,54 @@ export interface SubstituteIngredient {
 
 export type SubstituteMap = Record<string, SubstituteIngredient>;
 
-export function getIngredientSubstitutes(): SubstituteMap {
-  if (typeof window === "undefined") return {};
+const ENDPOINT = "/api/settings/substitutes";
+
+/** Mappa corrente. In caso di errore torna vuota: la UI resta usabile. */
+export async function fetchIngredientSubstitutes(): Promise<SubstituteMap> {
   try {
-    const stored = localStorage.getItem(SUBSTITUTES_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch {
+    const res = await fetch(ENDPOINT, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return ((await res.json()) as SubstituteMap) || {};
+  } catch (e) {
+    console.error("Error fetching ingredient substitutes:", e);
     return {};
   }
 }
 
-export function setIngredientSubstitute(
-  ingredientId: string,
-  substitute: SubstituteIngredient | null
-): void {
-  if (typeof window === "undefined") return;
-  try {
-    const current = getIngredientSubstitutes();
-    if (substitute === null) {
-      delete current[ingredientId];
-    } else {
-      current[ingredientId] = substitute;
-    }
-    localStorage.setItem(SUBSTITUTES_KEY, JSON.stringify(current));
-  } catch (e) {
-    console.error("Error saving ingredient substitute:", e);
+/**
+ * Salva l'intera mappa. Lancia se il server rifiuta, cosi' il chiamante non
+ * puo' mostrare un successo che non c'e' stato.
+ */
+export async function saveIngredientSubstitutes(map: SubstituteMap): Promise<void> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Sessione admin scaduta: rifai il login");
+
+  const res = await fetch(ENDPOINT, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(map),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error || `HTTP ${res.status}`);
   }
 }
 
-export function clearIngredientSubstitutes(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(SUBSTITUTES_KEY);
+/** Imposta (o rimuove, con null) il sostituto di un singolo ingrediente. */
+export async function setIngredientSubstitute(
+  ingredientId: string,
+  substitute: SubstituteIngredient | null
+): Promise<SubstituteMap> {
+  const current = await fetchIngredientSubstitutes();
+  if (substitute === null) {
+    delete current[ingredientId];
+  } else {
+    current[ingredientId] = substitute;
+  }
+  await saveIngredientSubstitutes(current);
+  return current;
 }

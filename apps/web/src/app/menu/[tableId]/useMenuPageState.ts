@@ -24,7 +24,6 @@ import {
 import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
-import { categoryToSectionMap } from '@/components/menu/MenuSections'
 
 export type PageStep =
   | 'enter-name'
@@ -32,19 +31,19 @@ export type PageStep =
   | 'merge-input'
   | 'join-group'
   | 'blocked'
-  | 'sections'
   | 'menu'
 
-export function useMenuPageState() {
+export function useMenuPageState(qrCodeOverride?: string) {
   const t = useTranslations('tableMenu')
   const tc = useTranslations('common')
   const locale = useLocale()
   const params = useParams()
-  const tableId = params.tableId as string
+  // qrCodeOverride e' usato dalla pagina /kiosk: li' il tavolo non arriva
+  // dallo slug della route ma dall'assegnazione admin del dispositivo.
+  const tableId = qrCodeOverride ?? (params.tableId as string)
 
   // ── Navigation ───────────────────────────────────────────────────────────
   const [step, setStep] = useState<PageStep>('enter-name')
-  const [selectedSection, setSelectedSection] = useState<string | null>(null)
 
   // ── Menu data ─────────────────────────────────────────────────────────────
   const [categories, setCategories] = useState<Category[]>([])
@@ -78,6 +77,7 @@ export function useMenuPageState() {
   const setTableSessionInCart = useCart((state) => state.setTableSessionId)
   const setCustomerNameInCart = useCart((state) => state.setCustomerName)
   const checkAndClearStale = useCart((state) => state.checkAndClearStale)
+  const setPriceContext = useCart((state) => state.setPriceContext)
   const addToCart = useCart((state) => state.addItem)
 
   // ── Derived ───────────────────────────────────────────────────────────────
@@ -88,33 +88,13 @@ export function useMenuPageState() {
     [categories, menuContext]
   )
 
-  const sectionCategories = useMemo(() => {
-    if (!selectedSection) return filteredCategories
-
-    const sectionCats = filteredCategories.filter(
-      (cat) => categoryToSectionMap[cat.name] === selectedSection
-    )
-
-    // Merge all toast/panini categories into a single sorted list
-    if (selectedSection === 'toast' && sectionCats.length >= 1) {
-      const allPaniniItems = sectionCats.flatMap((cat) => cat.items || [])
-      allPaniniItems.sort((a, b) => {
-        const numA = parseInt(a.name.match(/\d+/)?.[0] ?? '')
-        const numB = parseInt(b.name.match(/\d+/)?.[0] ?? '')
-        if (!isNaN(numA) && !isNaN(numB)) return numA - numB
-        if (!isNaN(numA)) return -1
-        if (!isNaN(numB)) return 1
-        return a.name.localeCompare(b.name)
-      })
-      return [{ ...sectionCats[0], id: 'panini-merged', name: 'Panini', nameEn: 'Sandwiches', nameFr: 'Sandwichs', nameEs: 'Sándwiches', nameHe: 'כריכות', items: allPaniniItems }]
-    }
-
-    return sectionCats
-  }, [filteredCategories, selectedSection])
-
   // ── Load data ─────────────────────────────────────────────────────────────
   useEffect(() => {
     checkAndClearStale()
+
+    // Il listino e' persistito nel carrello: senza riassegnarlo, chi ha appena
+    // ordinato da /ordina si porterebbe dietro i prezzi asporto al tavolo.
+    setPriceContext('dine-in')
 
     async function loadData() {
       if (!tableId) return
@@ -153,7 +133,7 @@ export function useMenuPageState() {
     }
 
     loadData()
-  }, [tableId, setTableIdInCart, setTableSessionInCart, checkAndClearStale, tc])
+  }, [tableId, setTableIdInCart, setTableSessionInCart, checkAndClearStale, setPriceContext, tc])
 
   // ── Android / iOS back-button guard ──────────────────────────────────────
   // Keeps a "ghost" history entry so the hardware back button navigates steps
@@ -163,8 +143,7 @@ export function useMenuPageState() {
 
     const handlePopState = () => {
       setStep((prev) => {
-        if (prev === 'menu') return 'sections'
-        if (prev === 'sections') return 'choice'
+        if (prev === 'menu') return 'choice'
         if (prev === 'choice') return 'enter-name'
         if (prev === 'merge-input') return 'choice'
         if (prev === 'join-group') return 'enter-name'
@@ -237,8 +216,7 @@ export function useMenuPageState() {
       const session = await createTableSession({ hostTableId: tableDbId, linkedTableNumbers: numbers })
       setTableSession(session)
       setTableSessionInCart(session.id)
-      setSelectedSection(null)
-      setStep('sections')
+      setStep('menu')
     } catch (err) {
       console.error('Failed to create session:', err)
       setMergeError(tc('error'))
@@ -249,14 +227,6 @@ export function useMenuPageState() {
 
   const handleJoinGroup = () => {
     if (tableSession) setTableSessionInCart(tableSession.id)
-    setSelectedSection(null)
-    setStep('sections')
-  }
-
-  const handleSelectSection = (sectionId: string) => {
-    setSelectedSection(sectionId)
-    const first = filteredCategories.find((cat) => categoryToSectionMap[cat.name] === sectionId)
-    if (first) setActiveCategory(first.id)
     setStep('menu')
   }
 
@@ -264,7 +234,7 @@ export function useMenuPageState() {
     // Navigation
     step, setStep,
     // Menu
-    sectionCategories, filteredCategories, activeCategory, setActiveCategory,
+    filteredCategories, activeCategory, setActiveCategory,
     selectedItem, setSelectedItem: () => setSelectedItem(null),
     // Table
     tableNumber, isCounterTable,
@@ -285,13 +255,11 @@ export function useMenuPageState() {
     handleOrderSuccess,
     handleSubmitName,
     handleSelectExistingCustomer,
-    handleSingleTable: () => { setSelectedSection(null); setStep('sections') },
+    handleSingleTable: () => setStep('menu'),
     handleMergeTables: () => setStep('merge-input'),
     handleConfirmMerge,
     handleJoinGroup,
     handleNotInGroup: () => setStep('blocked'),
-    handleSelectSection,
-    handleBackToSections: () => { setSelectedSection(null); setStep('sections') },
     // i18n
     locale,
   }

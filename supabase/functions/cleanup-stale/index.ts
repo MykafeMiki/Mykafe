@@ -19,9 +19,46 @@ const CUSTOMER_STALE_HOURS = 4;
 const SESSION_NO_ORDERS_MINUTES = 30; // sessione senza ordini → chiude dopo 30 min
 const SESSION_WITH_ORDERS_HOURS = 4;  // sessione con ordini → chiude dopo 4 ore
 
+/**
+ * Segreto condiviso col job pg_cron `cleanup-stale-sessions`.
+ *
+ * Questa funzione gira con la secret key (bypassa le RLS) e scrive su
+ * TableSession, TableCustomer e Table: senza guard chiunque conoscesse l'URL
+ * poteva farla partire a ripetizione. Il cron non manda un JWT di progetto,
+ * quindi il controllo e' un bearer condiviso invece di verify_jwt.
+ *
+ * Fail-closed: se CRON_SECRET non e' configurato non passa nessuno.
+ */
+const CRON_SECRET = Deno.env.get("CRON_SECRET");
+
+/** Confronto a tempo costante: evita di far trapelare il segreto carattere per carattere. */
+function secretsMatch(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+function isAuthorized(req: Request): boolean {
+  if (!CRON_SECRET) {
+    console.error("CRON_SECRET non configurato: richiesta rifiutata");
+    return false;
+  }
+  const header = req.headers.get("authorization") ?? "";
+  if (!header.startsWith("Bearer ")) return false;
+  return secretsMatch(header.slice(7), CRON_SECRET);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  if (!isAuthorized(req)) {
+    return new Response(JSON.stringify({ error: "Non autorizzato" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
@@ -120,13 +157,6 @@ Deno.serve(async (req) => {
         }
       }
     }
-
-    // 4. Close stale PartySession (deprecated)
-    await supabase
-      .from("PartySession")
-      .update({ isActive: false, closedAt: now.toISOString() })
-      .eq("isActive", true)
-      .lt("createdAt", sessionWithOrdersCutoff.toISOString());
 
     console.log("Cleanup completed:", results);
 
