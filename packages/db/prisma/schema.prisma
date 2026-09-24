@@ -237,3 +237,20 @@ model OrderItemModifier {
   modifierId  String
   modifier    Modifier  @relation(fields: [modifierId], references: [id])
 }
+
+// Archivio cassa: snapshot JSON degli ordini prima della cancellazione
+// (reset manuale o pulizia automatica dopo 24h). Importi in centesimi.
+model OrderArchive {
+  id          String   @id @default(cuid())
+  archivedAt  DateTime @default(now())
+  reason      String   // MANUAL_RESET, AUTO_24H
+  orderCount  Int      @default(0)
+  totalCash   Int      @default(0)
+  totalCard   Int      @default(0)
+  totalUnpaid Int      @default(0)
+  periodStart DateTime?
+  periodEnd   DateTime?
+  orders      Json
+
+  @@index([archivedAt(sort: Desc)])
+}

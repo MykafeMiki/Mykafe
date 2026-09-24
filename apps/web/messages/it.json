@@ -197,6 +197,10 @@
     "takeaway": "Porto via"
   },
   "kitchen": {
+    "resetAll": "Azzera ordini",
+    "resetConfirm": "Cancellare TUTTI gli ordini? Verranno archiviati in Admin e i tavoli liberati. L'operazione non si può annullare.",
+    "resetDone": "Ordini azzerati",
+    "resetFailed": "Impossibile azzerare gli ordini",
     "title": "Kitchen Display",
     "lastUpdate": "Ultimo aggiornamento",
     "noActiveOrders": "Nessun ordine attivo",
@@ -224,6 +228,21 @@
     "orderNotes": "Note ordine"
   },
   "admin": {
+    "archiveTab": "Archivio cassa",
+    "archiveTitle": "Archivio cassa",
+    "archiveNote": "Gli ordini e la cassa vengono salvati qui prima di essere cancellati (reset manuale o automatico dopo 24 ore), per eventuali contestazioni.",
+    "archiveEmpty": "Nessun archivio",
+    "archiveManual": "Reset manuale",
+    "archiveAuto": "Automatico 24h",
+    "archiveOrders": "ordini",
+    "archiveCash": "Contanti",
+    "archiveCard": "Carta",
+    "archiveUnpaid": "Non pagato",
+    "archiveBack": "Indietro",
+    "archiveTable": "Tavolo",
+    "archiveTakeaway": "Asporto/Banco",
+    "archiveCancelled": "Annullato",
+    "archivePaid": "Pagato",
     "title": "Pannello Admin",
     "subtitle": "Gestisci menu, tavoli e QR code",
     "logout": "Esci",
@@ -421,6 +440,10 @@
     "error": "Impossibile registrare questo iPad. Controlla la connessione e ricarica."
   },
   "cassa": {
+    "resetAll": "Azzera ordini",
+    "resetConfirm": "Cancellare TUTTI gli ordini? Verranno archiviati in Admin e i tavoli liberati. L'operazione non si può annullare.",
+    "resetDone": "Ordini azzerati",
+    "resetFailed": "Impossibile azzerare gli ordini",
     "title": "Cassa",
     "subtitle": "Gestione pagamenti e scontrini",
     "tablesWithOrders": "Tavoli con ordini",

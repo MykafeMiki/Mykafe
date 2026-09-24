@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getSecretKey } from "../_shared/keys.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { archiveAndDeleteOrders } from "../_shared/archive.ts";
 import {
   PaymentSchema,
   validateRequest,
@@ -266,6 +267,27 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // POST /cashier/reset - Archivia (per l'admin) e cancella tutti gli ordini
+    // e libera tavoli e sessioni. Usato dai tasti "azzera" di cassa e cucina.
+    if (req.method === "POST" && subPath[0] === "reset") {
+      const result = await archiveAndDeleteOrders(supabase, "MANUAL_RESET");
+
+      const now = new Date().toISOString();
+      await supabase
+        .from("TableSession")
+        .update({ isActive: false, closedAt: now })
+        .eq("isActive", true);
+      await supabase
+        .from("TableCustomer")
+        .update({ isActive: false, leftAt: now })
+        .eq("isActive", true);
+      await supabase.from("Table").update({ status: "AVAILABLE" }).eq("status", "OCCUPIED");
+
+      return new Response(JSON.stringify({ success: true, ...result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // GET /cashier/history - Get paid orders for today

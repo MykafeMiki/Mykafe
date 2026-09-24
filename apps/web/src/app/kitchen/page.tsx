@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Volume2, VolumeX, RefreshCw, Lock, Loader2, ChefHat } from "lucide-react";
+import { Volume2, VolumeX, RefreshCw, Lock, Loader2, ChefHat, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { AppHeader } from "@/components/AppHeader";
 import { LanguageSelectorCompact } from "@/components/LanguageSelector";
@@ -13,6 +13,7 @@ import {
   adminLogin,
   setAuthToken,
   getAuthToken,
+  resetAllOrders,
 } from "@/lib/api";
 import type { Order, OrderStatus } from "@shared/types";
 
@@ -160,6 +161,17 @@ export default function KitchenPage() {
     }
   };
 
+  const handleReset = async () => {
+    if (!window.confirm(t("resetConfirm"))) return;
+    try {
+      await resetAllOrders();
+      setOrders([]);
+    } catch (err) {
+      console.error("Failed to reset orders:", err);
+      window.alert(t("resetFailed"));
+    }
+  };
+
   const pendingOrders = orders.filter((o) => o.status === "PENDING");
   const preparingOrders = orders.filter((o) => o.status === "PREPARING");
 
@@ -203,6 +215,15 @@ export default function KitchenPage() {
               title={soundEnabled ? t("soundOff") : t("soundOn")}
             >
               {soundEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+            </button>
+
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 px-3 py-2 text-white bg-red-700 hover:bg-red-800 rounded-lg transition"
+              title={t("resetAll")}
+            >
+              <Trash2 className="w-5 h-5" />
+              <span className="hidden sm:inline">{t("resetAll")}</span>
             </button>
 
             <button

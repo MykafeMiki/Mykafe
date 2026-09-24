@@ -190,6 +190,10 @@
     "takeaway": "לקחת"
   },
   "kitchen": {
+    "resetAll": "מחק את כל ההזמנות",
+    "resetConfirm": "למחוק את כל ההזמנות? הן יישמרו בארכיון באדמין והשולחנות ישוחררו. לא ניתן לבטל.",
+    "resetDone": "ההזמנות נמחקו",
+    "resetFailed": "לא ניתן למחוק את ההזמנות",
     "title": "מסך מטבח",
     "lastUpdate": "עדכון אחרון",
     "noActiveOrders": "אין הזמנות פעילות",
@@ -217,6 +221,21 @@
     "orderNotes": "Order notes"
   },
   "admin": {
+    "archiveTab": "ארכיון קופה",
+    "archiveTitle": "ארכיון קופה",
+    "archiveNote": "ההזמנות והקופה נשמרות כאן לפני המחיקה (איפוס ידני או אוטומטי אחרי 24 שעות), למקרה של מחלוקות.",
+    "archiveEmpty": "אין ארכיונים",
+    "archiveManual": "איפוס ידני",
+    "archiveAuto": "אוטומטי 24 שעות",
+    "archiveOrders": "הזמנות",
+    "archiveCash": "מזומן",
+    "archiveCard": "כרטיס",
+    "archiveUnpaid": "לא שולם",
+    "archiveBack": "חזרה",
+    "archiveTable": "שולחן",
+    "archiveTakeaway": "טייק אוויי/דלפק",
+    "archiveCancelled": "בוטל",
+    "archivePaid": "שולם",
     "title": "פאנל ניהול",
     "subtitle": "נהל תפריט, שולחנות וקודי QR",
     "logout": "יציאה",
@@ -392,6 +411,10 @@
     "error": "לא ניתן לרשום את האייפד הזה. בדוק את החיבור וטען מחדש."
   },
   "cassa": {
+    "resetAll": "מחק את כל ההזמנות",
+    "resetConfirm": "למחוק את כל ההזמנות? הן יישמרו בארכיון באדמין והשולחנות ישוחררו. לא ניתן לבטל.",
+    "resetDone": "ההזמנות נמחקו",
+    "resetFailed": "לא ניתן למחוק את ההזמנות",
     "title": "קופה",
     "subtitle": "ניהול תשלומים וקבלות",
     "tablesWithOrders": "שולחנות עם הזמנות",

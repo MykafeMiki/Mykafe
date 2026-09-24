@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Loader2, RefreshCw, ArrowLeft, Clock } from 'lucide-react'
+import { Loader2, RefreshCw, ArrowLeft, Clock, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
   getCashierTables,
@@ -9,6 +9,7 @@ import {
   payTable,
   payOrder,
   getCashierHistory,
+  resetAllOrders,
   type TableWithOrders,
   type CashierHistoryResponse,
 } from '@/lib/api'
@@ -103,6 +104,23 @@ export function CassaContent({ t }: CassaContentProps) {
     setPaymentLoading(false)
   }
 
+  const handleReset = async () => {
+    if (!window.confirm(t('resetConfirm'))) return
+    setLoading(true)
+    try {
+      await resetAllOrders()
+      setSuccessMessage(t('resetDone'))
+      setTimeout(() => setSuccessMessage(null), 3000)
+      setView('tables')
+      setSelectedTable(null)
+      await loadData()
+    } catch (err) {
+      console.error('Failed to reset orders:', err)
+      window.alert(t('resetFailed'))
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-purple-600 text-white p-4">
@@ -126,6 +144,13 @@ export function CassaContent({ t }: CassaContentProps) {
             >
               {view === 'history' ? <ArrowLeft className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
               {view === 'history' ? t('back') : t('history')}
+            </button>
+            <button
+              onClick={handleReset}
+              className="px-4 py-2 bg-red-500 rounded-lg hover:bg-red-400 transition flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              {t('resetAll')}
             </button>
             <button
               onClick={() => view === 'history' ? loadHistory() : loadData()}

@@ -54,3 +54,16 @@ export const payTable = (tableId: string, paymentMethod: 'CASH' | 'CARD') =>
   })
 
 export const getCashierHistory = () => fetchApiAuth<CashierHistoryResponse>('/cashier/history')
+
+export interface ResetOrdersResponse {
+  success: boolean
+  archiveId: string | null
+  orderCount: number
+  totalCash: number
+  totalCard: number
+  totalUnpaid: number
+}
+
+/** Archivia (visibile in admin) e cancella tutti gli ordini, liberando i tavoli. */
+export const resetAllOrders = () =>
+  fetchApiAuth<ResetOrdersResponse>('/cashier/reset', { method: 'POST' })
