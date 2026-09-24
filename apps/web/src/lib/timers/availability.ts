@@ -76,7 +76,8 @@ export function isCategoryVisible(category: Category, context: MenuContext): boo
     'focaccia farcita', 'ciabatte', 'ciabatta',
     'club sandwich', 'piadina', 'piadine',
   ])
-  if (TOAST_CATEGORIES.has(categoryNameLower)) {
+  // I nomi "My..." (es. MyPanino, MyPiadina) valgono come quelli senza prefisso
+  if (TOAST_CATEGORIES.has(categoryNameLower.replace(/^my\s*/, ''))) {
     if (context === 'takeaway') return true
     return isPaniniTimeActive()
   }

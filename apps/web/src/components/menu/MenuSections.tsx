@@ -14,71 +14,71 @@ export interface MenuSection {
 export const menuSections: MenuSection[] = [
   {
     id: "toast",
-    name: "Panini",
-    nameEn: "Sandwiches",
-    nameFr: "Sandwichs",
-    nameEs: "Sándwiches",
-    nameHe: "כריכות",
+    name: "MyPanino",
+    nameEn: "MyPanino",
+    nameFr: "MyPanino",
+    nameEs: "MyPanino",
+    nameHe: "MyPanino",
     image: "/sections/panini.jpg",
     categoryIds: [], // Panini, Bagel, Focaccia Farcita
   },
   {
     id: "piadine",
-    name: "Piadine",
-    nameEn: "Piadinas",
-    nameFr: "Piadines",
-    nameEs: "Piadinas",
-    nameHe: "פיאדינות",
+    name: "MyPiadina",
+    nameEn: "MyPiadina",
+    nameFr: "MyPiadina",
+    nameEs: "MyPiadina",
+    nameHe: "MyPiadina",
     image: "/sections/panini.jpg", // placeholder
     categoryIds: [], // Piadina
   },
   {
     id: "pizze-focacce",
-    name: "Pizze e Focacce",
-    nameEn: "Pizza & Focaccia",
-    nameFr: "Pizzas et Focaccias",
-    nameEs: "Pizzas y Focaccias",
-    nameHe: "פיצה ופוקאצ'ה",
+    name: "MyFocaccia e MyPizza",
+    nameEn: "MyFocaccia e MyPizza",
+    nameFr: "MyFocaccia e MyPizza",
+    nameEs: "MyFocaccia e MyPizza",
+    nameHe: "MyFocaccia e MyPizza",
     image: "/sections/piatti.jpg", // placeholder
     categoryIds: [], // Focaccia e Pizza
   },
   {
     id: "bruschette",
-    name: "Bruschette",
-    nameEn: "Bruschetta",
-    nameFr: "Bruschetta",
-    nameEs: "Bruschetta",
-    nameHe: "ברוסקטה",
+    name: "MyBruschetta",
+    nameEn: "MyBruschetta",
+    nameFr: "MyBruschetta",
+    nameEs: "MyBruschetta",
+    nameHe: "MyBruschetta",
     image: "/sections/piatti.jpg", // placeholder
     categoryIds: [], // Bruschetta
   },
   {
     id: "affumicato",
-    name: "Affumicato",
-    nameEn: "Smoked",
-    nameFr: "Fumé",
-    nameEs: "Ahumado",
-    nameHe: "מעושן",
+    name: "MyAffumicato",
+    nameEn: "MyAffumicato",
+    nameFr: "MyAffumicato",
+    nameEs: "MyAffumicato",
+    nameHe: "MyAffumicato",
     image: "/sections/piatti.jpg", // placeholder
     categoryIds: [], // Affumicato
   },
   {
     id: "caprese",
-    name: "Caprese",
-    nameEn: "Caprese",
-    nameFr: "Caprese",
-    nameEs: "Caprese",
-    nameHe: "קפרזה",
+    name: "MyCaprese",
+    nameEn: "MyCaprese",
+    nameFr: "MyCaprese",
+    nameEs: "MyCaprese",
+    nameHe: "MyCaprese",
     image: "/sections/piatti.jpg", // placeholder
     categoryIds: [], // Caprese
   },
   {
     id: "salad",
-    name: "Salad",
-    nameEn: "Salad",
-    nameFr: "Salade",
-    nameEs: "Ensalada",
-    nameHe: "סלט",
+    name: "MyInsalata",
+    nameEn: "MyInsalata",
+    nameFr: "MyInsalata",
+    nameEs: "MyInsalata",
+    nameHe: "MyInsalata",
     image: "/sections/piatti.jpg", // placeholder
     categoryIds: [], // Insalate
   },
@@ -104,11 +104,11 @@ export const menuSections: MenuSection[] = [
   },
   {
     id: "sushi",
-    name: "Sushi",
-    nameEn: "Sushi",
-    nameFr: "Sushi",
-    nameEs: "Sushi",
-    nameHe: "סושי",
+    name: "MySushi",
+    nameEn: "MySushi",
+    nameFr: "MySushi",
+    nameEs: "MySushi",
+    nameHe: "MySushi",
     image: "/sections/sushi.jpg",
     categoryIds: [], // Sushi
   },
@@ -149,6 +149,15 @@ export const categoryToSectionMap: Record<string, string> = {
   Caffetteria: "caffetteria",
   // Sushi
   Sushi: "sushi",
+  // Nomi "My..." (rinomina categorie)
+  MyPanino: "toast",
+  MyPiadina: "piadine",
+  "MyFocaccia e MyPizza": "pizze-focacce",
+  MyBruschetta: "bruschette",
+  MyAffumicato: "affumicato",
+  MyCaprese: "caprese",
+  MyInsalata: "salad",
+  MySushi: "sushi",
 };
 
 export function getSectionName(section: MenuSection, locale: string): string {

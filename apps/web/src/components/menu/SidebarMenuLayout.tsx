@@ -52,11 +52,11 @@ function mergeToastCategories(categories: Category[]): Category[] {
   const merged: Category = {
     ...toast[0],
     id: MERGED_TOAST_ID,
-    name: 'Panini',
-    nameEn: 'Sandwiches',
-    nameFr: 'Sandwichs',
-    nameEs: 'Sándwiches',
-    nameHe: 'כריכות',
+    name: 'MyPanino',
+    nameEn: 'MyPanino',
+    nameFr: 'MyPanino',
+    nameEs: 'MyPanino',
+    nameHe: 'MyPanino',
     items,
   }
 
