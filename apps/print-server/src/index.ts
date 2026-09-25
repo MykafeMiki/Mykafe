@@ -152,16 +152,19 @@ function generateReceipt(order: Order, items: OrderItem[], section: ReceiptSecti
     out += text + "\n";
   };
 
-  // Header
-  cmd(COMMANDS.INIT + COMMANDS.ALIGN_CENTER + COMMANDS.DOUBLE_SIZE + COMMANDS.BOLD_ON);
+  // Header: un po' di margine sopra, cosi' la prima riga non finisce sul bordo
+  cmd(COMMANDS.INIT + COMMANDS.ALIGN_CENTER);
+  line();
+  cmd(COMMANDS.DOUBLE_SIZE + COMMANDS.BOLD_ON);
   line(getSectionLabel(section));
   cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
+  line();
 
   // Order info
-  cmd(COMMANDS.DOUBLE_HEIGHT);
+  cmd(COMMANDS.DOUBLE_HEIGHT + COMMANDS.BOLD_ON);
   if (order.table?.isCounter || order.orderType === "TAKEAWAY") {
     line(`ASPORTO: ${order.customerName || "N/A"}`);
-    cmd(COMMANDS.NORMAL_SIZE);
+    cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
     // Telefono: serve per richiamare il cliente se l'ordine tarda o manca qualcosa
     if (order.customerPhone) {
       cmd(COMMANDS.BOLD_ON);
@@ -169,48 +172,50 @@ function generateReceipt(order: Order, items: OrderItem[], section: ReceiptSecti
       cmd(COMMANDS.BOLD_OFF);
     }
     // Carta = gia' pagato online, contanti = si incassa alla consegna
-    if (order.paymentMethod === "CARD") {
+    if (order.paymentMethod === "CARD" || order.paymentMethod === "CASH") {
+      line();
       cmd(COMMANDS.BOLD_ON + COMMANDS.DOUBLE_HEIGHT);
-      line("** PAGATO **");
-      cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
-    } else if (order.paymentMethod === "CASH") {
-      cmd(COMMANDS.BOLD_ON + COMMANDS.DOUBLE_HEIGHT);
-      line("** DA PAGARE **");
+      line(order.paymentMethod === "CARD" ? "** PAGATO **" : "** DA PAGARE **");
       cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
     }
   } else {
     line(`TAVOLO ${order.table?.number || "?"}`);
-    cmd(COMMANDS.NORMAL_SIZE);
+    cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
   }
 
+  line();
   line(formatDateTime(order.createdAt));
-  line("--------------------------------");
+  line("================================");
+  line();
 
-  // Items: niente riga vuota tra uno e l'altro, il nome a doppia altezza
-  // in grassetto separa gia' gli articoli a colpo d'occhio
+  // Items: nome a doppia altezza in grassetto, dettagli rientrati e una riga
+  // vuota tra un articolo e l'altro per leggerli a colpo d'occhio
   cmd(COMMANDS.ALIGN_LEFT);
-  for (const item of items) {
+  items.forEach((item, index) => {
+    if (index > 0) line();
+
     cmd(COMMANDS.BOLD_ON + COMMANDS.DOUBLE_HEIGHT);
     line(`${item.quantity}x ${item.menuItem.name}`);
     cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
 
     if (item.modifiers && item.modifiers.length > 0) {
       for (const mod of item.modifiers) {
-        line(`   + ${mod.modifier.name}`);
+        line(`    + ${mod.modifier.name}`);
       }
     }
 
     if (item.notes) {
-      line(`   >> ${item.notes}`);
+      line(`    >> ${item.notes}`);
     }
 
     if (item.consumeMode === "TAKEAWAY") {
-      line("   [DA ASPORTO]");
+      line("    [DA ASPORTO]");
     }
-  }
+  });
 
   // Order notes
   if (order.notes) {
+    line();
     line("--------------------------------");
     cmd(COMMANDS.BOLD_ON);
     line("NOTE:");
@@ -219,11 +224,12 @@ function generateReceipt(order: Order, items: OrderItem[], section: ReceiptSecti
   }
 
   // Footer
-  line("--------------------------------");
+  line();
+  line("================================");
   cmd(COMMANDS.ALIGN_CENTER);
   line(`#${order.id.slice(-6).toUpperCase()}`);
-  // Avanzamento minimo perche' il taglio non tronchi l'ultima riga
-  cmd(COMMANDS.FEED_LINES(2) + COMMANDS.PARTIAL_CUT);
+  // Avanzamento sufficiente perche' il taglio non tronchi l'ultima riga
+  cmd(COMMANDS.FEED_LINES(4) + COMMANDS.PARTIAL_CUT);
 
   return out;
 }
