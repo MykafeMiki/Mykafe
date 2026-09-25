@@ -13,13 +13,28 @@ export interface PricesTabProps {
   tc: ReturnType<typeof useTranslations<'common'>>
 }
 
+type PriceField = 'price' | 'priceTakeaway' | 'priceTakeawayRemote' | 'priceTakeawayCard'
+
 interface PriceEditState {
-  [itemId: string]: {
-    price: string
-    priceTakeaway: string
-    priceTakeawayRemote: string
-  }
+  [itemId: string]: Record<PriceField, string>
 }
+
+// I quattro listini: al tavolo, al banco, takeaway alla consegna, takeaway con carta.
+// Solo il prezzo al tavolo e' obbligatorio, gli altri vuoti ricadono sul precedente.
+const PRICE_FIELDS: { field: PriceField; labelKey: string; descKey: string; dot: string; ring: string; required?: boolean }[] = [
+  { field: 'price', labelKey: 'priceDineIn', descKey: 'priceDineInDesc', dot: 'bg-green-500', ring: 'focus:ring-green-500', required: true },
+  { field: 'priceTakeaway', labelKey: 'priceTakeaway', descKey: 'priceTakeawayDesc', dot: 'bg-orange-500', ring: 'focus:ring-orange-500' },
+  { field: 'priceTakeawayRemote', labelKey: 'priceTakeawayRemote', descKey: 'priceTakeawayRemoteDesc', dot: 'bg-purple-500', ring: 'focus:ring-purple-500' },
+  { field: 'priceTakeawayCard', labelKey: 'priceTakeawayCard', descKey: 'priceTakeawayCardDesc', dot: 'bg-blue-500', ring: 'focus:ring-blue-500' },
+]
+
+const toInput = (cents: number | null | undefined) => (cents ? (cents / 100).toFixed(2) : '')
+const originalPrices = (item: MenuItem): Record<PriceField, string> => ({
+  price: (item.price / 100).toFixed(2),
+  priceTakeaway: toInput(item.priceTakeaway),
+  priceTakeawayRemote: toInput(item.priceTakeawayRemote),
+  priceTakeawayCard: toInput(item.priceTakeawayCard),
+})
 
 export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
   const [editedPrices, setEditedPrices] = useState<PriceEditState>({})

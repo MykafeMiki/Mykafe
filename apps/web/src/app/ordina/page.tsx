@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
-import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig } from '@/lib/menuTimers'
+import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig, isOrderingBlackoutNow, isPickupInBlackout, type ClosureConfig } from '@/lib/menuTimers'
 import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
@@ -13,9 +13,11 @@ import { PaymentStep } from '@/components/ordina/PaymentStep'
 import { DateTimeStep } from '@/components/ordina/DateTimeStep'
 import { MenuStep } from '@/components/ordina/MenuStep'
 import { ClosedScreen } from '@/components/ordina/ClosedScreen'
+import { ServiceStep, type ServiceType } from '@/components/ordina/ServiceStep'
+import { DriverCodeStep } from '@/components/ordina/DriverCodeStep'
 import { emptyPhoneInput, type PhoneInputState } from '@/lib/phone'
 
-type OrderStep = 'identity' | 'payment' | 'datetime' | 'menu'
+type OrderStep = 'identity' | 'service' | 'driver' | 'payment' | 'datetime' | 'menu'
 
 /**
  * Data locale in formato YYYY-MM-DD.
@@ -39,6 +41,11 @@ function getAvailableTimeSlots(selectedDate: Date, openingHour: number, closingH
       slotTime.setHours(hour, minute, 0, 0)
 
       if (isToday && slotTime <= now) {
+        continue
+      }
+
+      // Venerdi dalle 15 a sabato alle 22:30 il locale e' fermo
+      if (isPickupInBlackout(slotTime)) {
         continue
       }
 
@@ -68,8 +75,10 @@ export default function OrdinaPage() {
   const locale = useLocale()
 
   const [takeawayStatus, setTakeawayStatus] = useState<ReturnType<typeof getTakeawayStatus> | null>(null)
-  const [orderingStatus, setOrderingStatus] = useState<{ isOpen: boolean; reason?: string; nextOpenTime?: string }>({ isOpen: true })
+  const [orderingStatus, setOrderingStatus] = useState<ReturnType<typeof isOnlineOrderingOpen>>({ isOpen: true })
+  const [closureConfig, setClosureConfig] = useState<ClosureConfig | null>(null)
   const [step, setStep] = useState<OrderStep>('identity')
+  const [serviceType, setServiceType] = useState<ServiceType>('takeaway')
   const [customerName, setCustomerName] = useState('')
   const [phoneInput, setPhoneInput] = useState<PhoneInputState>(() => emptyPhoneInput(locale))
   const [resolvedPhone, setResolvedPhone] = useState('')
@@ -99,7 +108,22 @@ export default function OrdinaPage() {
   // Get takeaway pickup hours config
   const takeawayConfig = getTakeawayConfig()
 
-  const availableDates = getAvailableDatesFromConfig(7)
+  // Fuori orario (cucina chiusa) si puo' ordinare solo per i giorni successivi.
+  // Le chiusure esplicite dell'admin (menu disattivato, chiusura temporanea) restano bloccanti.
+  const closedBySchedule = !orderingStatus.isOpen && orderingStatus.kind === 'schedule'
+  const closedByTakeawayHours =
+    !!takeawayStatus && !takeawayStatus.isAvailable &&
+    (takeawayStatus.reason === 'outside_hours' || takeawayStatus.reason === 'closed_day')
+  const nextDayOnly = closedBySchedule || closedByTakeawayHours
+
+  const availableDates = getAvailableDatesFromConfig(7).filter((date) => {
+    if (nextDayOnly && date.toDateString() === new Date().toDateString()) return false
+    // Giorni in cui il calendario admin non prevede ordini online
+    if (closureConfig?.enabled && closureConfig.schedule[date.getDay()]?.enabled === false) return false
+    // Giorni senza nemmeno un orario prenotabile (es. sabato)
+    return getAvailableTimeSlots(date, takeawayConfig.openingHour, takeawayConfig.closingHour).length > 0 ||
+      date.toDateString() === new Date().toDateString()
+  })
   const availableTimeSlots = getAvailableTimeSlots(selectedDate, takeawayConfig.openingHour, takeawayConfig.closingHour)
   const showWarning = !!(selectedTime && isWithin30Minutes(selectedDate, selectedTime))
 
@@ -148,6 +172,7 @@ export default function OrdinaPage() {
     if (loading) return
     fetchClosureConfig()
       .then(config => {
+        setClosureConfig(config)
         try {
           setOrderingStatus(isOnlineOrderingOpen(config))
         } catch (e) {
@@ -156,6 +181,17 @@ export default function OrdinaPage() {
       })
       .catch(e => console.error('fetchClosureConfig error:', e))
   }, [loading])
+
+  // La data preselezionata (oggi) puo' non essere ordinabile: si passa alla prima disponibile
+  const firstAvailableKey = availableDates[0]?.toDateString()
+  const selectedIsAvailable = availableDates.some((d) => d.toDateString() === selectedDate.toDateString())
+  useEffect(() => {
+    if (!selectedIsAvailable && firstAvailableKey && availableDates[0]) {
+      setSelectedDate(availableDates[0])
+      setSelectedTime('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIsAvailable, firstAvailableKey])
 
   useEffect(() => {
     if (selectedDate && selectedTime) {
@@ -201,12 +237,18 @@ export default function OrdinaPage() {
     setSelectedTime('')
     setSelectedDate(new Date())
     setPaymentMethod(null)
+    setServiceType('takeaway')
     setStep('identity')
   }
 
   const handleIdentityContinue = (phone: string) => {
     setResolvedPhone(phone)
-    setStep('payment')
+    setStep('service')
+  }
+
+  const handleSelectService = (service: ServiceType) => {
+    setServiceType(service)
+    setStep(service === 'delivery' ? 'driver' : 'payment')
   }
 
   const handleContinueToMenu = () => {
@@ -217,6 +259,8 @@ export default function OrdinaPage() {
 
   const handleSelectPayment = (method: PaymentMethod) => {
     setPaymentMethod(method)
+    // Il listino dipende dal pagamento: con carta il cliente vede i prezzi carta.
+    setPriceContext(method === PaymentMethod.CARD ? 'takeaway-card' : 'takeaway-remote')
     setStep('datetime')
   }
 
@@ -233,7 +277,12 @@ export default function OrdinaPage() {
     )
   }
 
-  if (!orderingStatus.isOpen) {
+  // Venerdi dalle 15 a sabato alle 22:30 non si ordina mai, nemmeno per i giorni dopo
+  if (isOrderingBlackoutNow()) {
+    return <ClosedScreen reason={t('blackoutMessage')} />
+  }
+
+  if (!orderingStatus.isOpen && !closedBySchedule) {
     return (
       <ClosedScreen
         reason={orderingStatus.reason}
@@ -243,7 +292,7 @@ export default function OrdinaPage() {
   }
 
   // Show unavailable message if takeaway is not available
-  if (takeawayStatus && !takeawayStatus.isAvailable) {
+  if (takeawayStatus && !takeawayStatus.isAvailable && !closedByTakeawayHours) {
     return <TakeawayUnavailableMessage status={takeawayStatus} />
   }
 
@@ -271,6 +320,20 @@ export default function OrdinaPage() {
         onNameChange={setCustomerName}
         onPhoneChange={setPhoneInput}
         onContinue={handleIdentityContinue}
+      />
+    )
+  }
+
+  if (step === 'service') {
+    return <ServiceStep onSelect={handleSelectService} onGoBack={() => setStep('identity')} />
+  }
+
+  if (step === 'driver') {
+    return (
+      <DriverCodeStep
+        driverPhone={closureConfig?.deliveryDriverPhone}
+        onGoBack={() => setStep('service')}
+        onContinue={() => setStep('payment')}
       />
     )
   }
@@ -310,6 +373,7 @@ export default function OrdinaPage() {
       customerPhone={resolvedPhone}
       scheduledDate={toLocalDateString(selectedDate)}
       scheduledTime={selectedTime}
+      isDelivery={serviceType === 'delivery'}
       onGoBack={() => setStep('datetime')}
       onCategorySelect={setActiveCategory}
       onAddItem={handleAddItem}

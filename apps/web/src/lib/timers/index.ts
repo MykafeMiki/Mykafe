@@ -10,3 +10,4 @@
 export * from './config'
 export * from './availability'
 export * from './closure'
+export * from './blackout'

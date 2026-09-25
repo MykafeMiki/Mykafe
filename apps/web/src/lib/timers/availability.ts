@@ -7,6 +7,7 @@
 import type { Category } from '@shared/types'
 import { getTimerConfig, type MenuContext, type TimerConfig } from './config'
 import { DAYS_OF_WEEK } from './config'
+import { isPickupInBlackout } from './blackout'
 
 /**
  * Check if current time is within sushi availability window
@@ -186,8 +187,12 @@ export function getAvailableTimeSlots(date: Date, openingHour: number, closingHo
   const startHour = isToday ? Math.max(openingHour, now.getHours() + 1) : openingHour
 
   for (let hour = startHour; hour < closingHour; hour++) {
-    slots.push(`${hour.toString().padStart(2, '0')}:00`)
-    slots.push(`${hour.toString().padStart(2, '0')}:30`)
+    for (const minute of [0, 30]) {
+      const slot = new Date(date)
+      slot.setHours(hour, minute, 0, 0)
+      if (isPickupInBlackout(slot)) continue
+      slots.push(`${hour.toString().padStart(2, '0')}:${minute === 0 ? '00' : '30'}`)
+    }
   }
 
   return slots

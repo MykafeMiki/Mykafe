@@ -28,7 +28,7 @@ export async function GET() {
           items:MenuItem(
             id, name, nameEn, nameFr, nameEs, nameHe,
             description, descriptionEn, descriptionFr, descriptionEs, descriptionHe,
-            price, priceTakeaway, priceTakeawayRemote,
+            price, priceTakeaway, priceTakeawayRemote, priceTakeawayCard,
             imageUrl, available, sortOrder, categoryId,
             modifierGroups:ModifierGroup(
               id, name, nameEn, nameFr, nameEs, nameHe,

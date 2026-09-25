@@ -24,6 +24,8 @@ export interface ClosureConfig {
     until?: string  // ISO date string
     message?: string
   }
+  /** Numero del driver per le consegne, impostato dal pannello admin */
+  deliveryDriverPhone?: string
 }
 
 const DEFAULT_DAY_SCHEDULE: DaySchedule = {
@@ -60,6 +62,7 @@ export async function fetchClosureConfig(): Promise<ClosureConfig> {
       enabled: data.enabled ?? true,
       schedule: { ...DEFAULT_CLOSURE_CONFIG.schedule, ...data.schedule },
       temporaryClosure: { ...DEFAULT_CLOSURE_CONFIG.temporaryClosure, ...data.temporaryClosure },
+      deliveryDriverPhone: typeof data.deliveryDriverPhone === 'string' ? data.deliveryDriverPhone : undefined,
     }
   } catch (e) {
     console.error('Error fetching closure config:', e)
@@ -95,9 +98,14 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
   isOpen: boolean
   reason?: string
   nextOpenTime?: string
+  /**
+   * 'schedule' = chiuso solo per orario/giorno: si puo' comunque ordinare per i giorni successivi.
+   * 'disabled' / 'temporary' = chiusura esplicita dell'admin: non si ordina affatto.
+   */
+  kind?: 'disabled' | 'temporary' | 'schedule'
 } {
   if (!config.enabled) {
-    return { isOpen: false, reason: 'Menu online disabilitato' }
+    return { isOpen: false, kind: 'disabled', reason: 'Menu online disabilitato' }
   }
 
   if (config.temporaryClosure.active) {
@@ -106,6 +114,7 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
       if (new Date() < untilDate) {
         return {
           isOpen: false,
+          kind: 'temporary',
           reason: config.temporaryClosure.message || 'Chiusura temporanea',
           nextOpenTime: untilDate.toLocaleDateString('it-IT', {
             weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
@@ -114,7 +123,7 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
       }
       config.temporaryClosure.active = false // expired
     } else {
-      return { isOpen: false, reason: config.temporaryClosure.message || 'Chiusura temporanea' }
+      return { isOpen: false, kind: 'temporary', reason: config.temporaryClosure.message || 'Chiusura temporanea' }
     }
   }
 
@@ -131,12 +140,13 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
         const dayName = DAYS_OF_WEEK.find(d => d.value === nextDay)?.label || ''
         return {
           isOpen: false,
+          kind: 'schedule',
           reason: 'Chiuso oggi',
           nextOpenTime: `${dayName} alle ${nextSchedule.openHour.toString().padStart(2, '0')}:${nextSchedule.openMinute.toString().padStart(2, '0')}`,
         }
       }
     }
-    return { isOpen: false, reason: 'Chiuso' }
+    return { isOpen: false, kind: 'schedule', reason: 'Chiuso' }
   }
 
   const openTime = todaySchedule.openHour * 60 + todaySchedule.openMinute
@@ -145,6 +155,7 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
   if (currentTime < openTime) {
     return {
       isOpen: false,
+          kind: 'schedule',
       reason: 'Non ancora aperto',
       nextOpenTime: `oggi alle ${todaySchedule.openHour.toString().padStart(2, '0')}:${todaySchedule.openMinute.toString().padStart(2, '0')}`,
     }
@@ -158,12 +169,13 @@ export function isOnlineOrderingOpen(config: ClosureConfig): {
         const dayName = DAYS_OF_WEEK.find(d => d.value === nextDay)?.label || ''
         return {
           isOpen: false,
+          kind: 'schedule',
           reason: 'Chiuso per oggi',
           nextOpenTime: `${dayName} alle ${nextSchedule.openHour.toString().padStart(2, '0')}:${nextSchedule.openMinute.toString().padStart(2, '0')}`,
         }
       }
     }
-    return { isOpen: false, reason: 'Chiuso' }
+    return { isOpen: false, kind: 'schedule', reason: 'Chiuso' }
   }
 
   return { isOpen: true }

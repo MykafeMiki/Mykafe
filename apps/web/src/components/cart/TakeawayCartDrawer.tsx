@@ -4,7 +4,7 @@ import { useState } from "react";
 import { X, Minus, Plus, Trash2, Loader2, User, Phone, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCart } from "@/lib/cart";
-import { formatPrice, getItemPrice as getContextPrice } from "@/lib/utils";
+import { formatPrice, getItemPrice as getContextPrice, isCardPriceList } from "@/lib/utils";
 import { createOrder } from "@/lib/api";
 import { PaymentMethod, OrderType, ConsumeMode, applyCardSurcharge } from "@shared/types";
 
@@ -21,6 +21,8 @@ interface TakeawayCartDrawerProps {
   scheduledDate: string;
   /** Formato "HH:MM", scelto nel passo data/ora */
   scheduledTime: string;
+  /** Consegna a domicilio: lo si scrive nelle note, cosi' finisce sulla comanda */
+  isDelivery?: boolean;
 }
 
 // Calcola il prezzo di un item con eventuale maggiorazione carta
@@ -50,13 +52,15 @@ export function TakeawayCartDrawer({
   customerPhone,
   scheduledDate,
   scheduledTime,
+  isDelivery,
 }: TakeawayCartDrawerProps) {
   const t = useTranslations("cart");
   const { items, tableId, priceContext, updateQuantity, removeItem, clearCart } = useCart();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isCard = paymentMethod === PaymentMethod.CARD;
+  // Col listino carta il prezzo comprende gia' il sovrapprezzo: non si somma il +3%
+  const isCard = paymentMethod === PaymentMethod.CARD && !isCardPriceList(priceContext);
 
   // Calcola il totale con i prezzi già maggiorati per carta
   const total = items.reduce((sum, item) => {
@@ -99,7 +103,7 @@ export function TakeawayCartDrawer({
         paymentMethod,
         customerName: customerName.trim(),
         customerPhone,
-        notes: t("pickupNote", { date: scheduledDate, time: scheduledTime }),
+        notes: `${isDelivery ? "** CONSEGNA A DOMICILIO **" + String.fromCharCode(10) : ""}${t("pickupNote", { date: scheduledDate, time: scheduledTime })}`,
       });
 
       clearCart();

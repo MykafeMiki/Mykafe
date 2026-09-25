@@ -135,9 +135,16 @@ export function resolvePhone(
 
   if (!digits) return { ok: false, error: "number" };
 
-  const confirm = input.confirm.replace(/\D/g, "");
-  if (!confirm || confirm.length < 3) return { ok: false, error: "confirmMissing" };
-  if (!digits.startsWith(confirm)) return { ok: false, error: "confirmMismatch" };
+  // La conferma va riscritta per intero e con le stesse regole del numero:
+  // stesso "+prefisso" opzionale e stesso zero iniziale ignorato.
+  const typedConfirm = input.confirm.trim();
+  let confirm = typedConfirm.replace(/\D/g, "");
+  if (typedConfirm.startsWith("+") && confirm.startsWith(prefixDigits)) {
+    confirm = confirm.slice(prefixDigits.length);
+  }
+  confirm = confirm.replace(/^0+/, "");
+  if (!confirm) return { ok: false, error: "confirmMissing" };
+  if (confirm !== digits) return { ok: false, error: "confirmMismatch" };
 
   return { ok: true, value: `${prefix} ${digits}` };
 }
