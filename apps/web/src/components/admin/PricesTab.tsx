@@ -48,29 +48,16 @@ export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
     }
   }, [categories])
 
-  const getItemPrices = (item: MenuItem) => {
-    if (editedPrices[item.id]) {
-      return editedPrices[item.id]
-    }
-    return {
-      price: (item.price / 100).toFixed(2),
-      priceTakeaway: item.priceTakeaway ? (item.priceTakeaway / 100).toFixed(2) : '',
-      priceTakeawayRemote: item.priceTakeawayRemote ? (item.priceTakeawayRemote / 100).toFixed(2) : '',
-    }
-  }
+  const getItemPrices = (item: MenuItem) => editedPrices[item.id] ?? originalPrices(item)
 
-  const handlePriceChange = (itemId: string, field: 'price' | 'priceTakeaway' | 'priceTakeawayRemote', value: string) => {
+  const handlePriceChange = (item: MenuItem, field: PriceField, value: string) => {
     setEditedPrices(prev => ({
       ...prev,
-      [itemId]: {
-        ...getItemPrices(categories.flatMap(c => c.items || []).find(i => i.id === itemId)!),
-        ...prev[itemId],
-        [field]: value,
-      },
+      [item.id]: { ...getItemPrices(item), ...prev[item.id], [field]: value },
     }))
     setSavedItems(prev => {
       const next = new Set(prev)
-      next.delete(itemId)
+      next.delete(item.id)
       return next
     })
   }
@@ -81,14 +68,13 @@ export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
     setSavingItems(prev => new Set(prev).add(item.id))
 
     try {
-      const priceValue = parseFloat(prices.price)
-      const priceTakeawayValue = prices.priceTakeaway ? parseFloat(prices.priceTakeaway) : null
-      const priceTakeawayRemoteValue = prices.priceTakeawayRemote ? parseFloat(prices.priceTakeawayRemote) : null
+      const optional = (v: string) => (v ? parseFloat(v) : null)
 
       await updateMenuItem(item.id, {
-        price: priceValue,
-        priceTakeaway: priceTakeawayValue,
-        priceTakeawayRemote: priceTakeawayRemoteValue,
+        price: parseFloat(prices.price),
+        priceTakeaway: optional(prices.priceTakeaway),
+        priceTakeawayRemote: optional(prices.priceTakeawayRemote),
+        priceTakeawayCard: optional(prices.priceTakeawayCard),
       })
 
       setSavedItems(prev => new Set(prev).add(item.id))
@@ -121,14 +107,9 @@ export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
   }
 
   const hasChanges = (item: MenuItem) => {
-    const currentPrices = getItemPrices(item)
-    const originalPrice = (item.price / 100).toFixed(2)
-    const originalTakeaway = item.priceTakeaway ? (item.priceTakeaway / 100).toFixed(2) : ''
-    const originalRemote = item.priceTakeawayRemote ? (item.priceTakeawayRemote / 100).toFixed(2) : ''
-
-    return currentPrices.price !== originalPrice ||
-      currentPrices.priceTakeaway !== originalTakeaway ||
-      currentPrices.priceTakeawayRemote !== originalRemote
+    const current = getItemPrices(item)
+    const original = originalPrices(item)
+    return PRICE_FIELDS.some(({ field }) => current[field] !== original[field])
   }
 
   const toggleCategory = (categoryId: string) => {
@@ -142,6 +123,21 @@ export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
       return next
     })
   }
+
+  const priceInput = (item: MenuItem, { field, ring, required }: (typeof PRICE_FIELDS)[number]) => (
+    <div className="relative">
+      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">€</span>
+      <input
+        type="number"
+        step="0.01"
+        min="0"
+        value={getItemPrices(item)[field]}
+        onChange={(e) => handlePriceChange(item, field, e.target.value)}
+        placeholder={required ? undefined : '-'}
+        className={`w-full pl-6 pr-2 py-2 text-sm border rounded-lg focus:ring-2 ${ring} focus:border-transparent`}
+      />
+    </div>
+  )
 
   return (
     <div className="space-y-6">
@@ -160,28 +156,16 @@ export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
       {/* Legend */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
         <h3 className="font-semibold text-blue-800 mb-3">{t('priceTypes')}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div className="flex items-start gap-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full mt-1 flex-shrink-0" />
-            <div>
-              <span className="font-medium text-gray-800">{t('priceDineIn')}</span>
-              <p className="text-gray-500 text-xs">{t('priceDineInDesc')}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+          {PRICE_FIELDS.map(({ field, labelKey, descKey, dot }) => (
+            <div key={field} className="flex items-start gap-2">
+              <div className={`w-3 h-3 ${dot} rounded-full mt-1 flex-shrink-0`} />
+              <div>
+                <span className="font-medium text-gray-800">{t(labelKey)}</span>
+                <p className="text-gray-500 text-xs">{t(descKey)}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <div className="w-3 h-3 bg-orange-500 rounded-full mt-1 flex-shrink-0" />
-            <div>
-              <span className="font-medium text-gray-800">{t('priceTakeaway')}</span>
-              <p className="text-gray-500 text-xs">{t('priceTakeawayDesc')}</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <div className="w-3 h-3 bg-purple-500 rounded-full mt-1 flex-shrink-0" />
-            <div>
-              <span className="font-medium text-gray-800">{t('priceTakeawayRemote')}</span>
-              <p className="text-gray-500 text-xs">{t('priceTakeawayRemoteDesc')}</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -214,30 +198,19 @@ export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
             <div className="divide-y">
               {/* Header Row */}
               <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2 bg-gray-100 text-xs font-medium text-gray-600">
-                <div className="col-span-4">{t('itemName')}</div>
-                <div className="col-span-2 text-center">
-                  <span className="flex items-center justify-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full" />
-                    {t('priceDineIn')}
-                  </span>
-                </div>
-                <div className="col-span-2 text-center">
-                  <span className="flex items-center justify-center gap-1">
-                    <span className="w-2 h-2 bg-orange-500 rounded-full" />
-                    {t('priceTakeaway')}
-                  </span>
-                </div>
-                <div className="col-span-2 text-center">
-                  <span className="flex items-center justify-center gap-1">
-                    <span className="w-2 h-2 bg-purple-500 rounded-full" />
-                    {t('priceTakeawayRemote')}
-                  </span>
-                </div>
-                <div className="col-span-2"></div>
+                <div className="col-span-3">{t('itemName')}</div>
+                {PRICE_FIELDS.map(({ field, labelKey, dot }) => (
+                  <div key={field} className="col-span-2 text-center">
+                    <span className="flex items-center justify-center gap-1">
+                      <span className={`w-2 h-2 ${dot} rounded-full flex-shrink-0`} />
+                      {t(labelKey)}
+                    </span>
+                  </div>
+                ))}
+                <div className="col-span-1"></div>
               </div>
 
               {category.items?.map((item) => {
-                const prices = getItemPrices(item)
                 const isSaving = savingItems.has(item.id)
                 const isSaved = savedItems.has(item.id)
                 const itemHasChanges = hasChanges(item)
@@ -260,60 +233,16 @@ export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
                         <span className="font-medium text-gray-900">{item.name}</span>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <label className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <span className="w-2 h-2 bg-green-500 rounded-full" />
-                            {t('priceDineIn')}
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">€</span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={prices.price}
-                              onChange={(e) => handlePriceChange(item.id, 'price', e.target.value)}
-                              className="w-full pl-6 pr-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                            />
+                      <div className="grid grid-cols-2 gap-2">
+                        {PRICE_FIELDS.map((cfg) => (
+                          <div key={cfg.field}>
+                            <label className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                              <span className={`w-2 h-2 ${cfg.dot} rounded-full flex-shrink-0`} />
+                              {t(cfg.labelKey)}
+                            </label>
+                            {priceInput(item, cfg)}
                           </div>
-                        </div>
-                        <div>
-                          <label className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <span className="w-2 h-2 bg-orange-500 rounded-full" />
-                            {t('priceTakeaway')}
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">€</span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={prices.priceTakeaway}
-                              onChange={(e) => handlePriceChange(item.id, 'priceTakeaway', e.target.value)}
-                              placeholder="-"
-                              className="w-full pl-6 pr-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                            <span className="w-2 h-2 bg-purple-500 rounded-full" />
-                            {t('priceTakeawayRemote')}
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">€</span>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={prices.priceTakeawayRemote}
-                              onChange={(e) => handlePriceChange(item.id, 'priceTakeawayRemote', e.target.value)}
-                              placeholder="-"
-                              className="w-full pl-6 pr-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            />
-                          </div>
-                        </div>
+                        ))}
                       </div>
 
                       {itemHasChanges && (
@@ -341,7 +270,7 @@ export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
 
                     {/* Desktop Layout */}
                     <div className="hidden md:grid grid-cols-12 gap-2 items-center">
-                      <div className="col-span-4 flex items-center gap-2">
+                      <div className="col-span-3 flex items-center gap-2">
                         {item.imageUrl && (
                           <img
                             src={item.imageUrl}
@@ -352,68 +281,27 @@ export function PricesTab({ categories, onUpdate, t, tc }: PricesTabProps) {
                         <span className="font-medium text-gray-900">{item.name}</span>
                       </div>
 
-                      <div className="col-span-2">
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">€</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={prices.price}
-                            onChange={(e) => handlePriceChange(item.id, 'price', e.target.value)}
-                            className="w-full pl-6 pr-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          />
+                      {PRICE_FIELDS.map((cfg) => (
+                        <div key={cfg.field} className="col-span-2">
+                          {priceInput(item, cfg)}
                         </div>
-                      </div>
+                      ))}
 
-                      <div className="col-span-2">
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">€</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={prices.priceTakeaway}
-                            onChange={(e) => handlePriceChange(item.id, 'priceTakeaway', e.target.value)}
-                            placeholder="-"
-                            className="w-full pl-6 pr-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="col-span-2">
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">€</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={prices.priceTakeawayRemote}
-                            onChange={(e) => handlePriceChange(item.id, 'priceTakeawayRemote', e.target.value)}
-                            placeholder="-"
-                            className="w-full pl-6 pr-2 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="col-span-2 flex items-center justify-end gap-2">
-                        {isSaved && (
-                          <span className="text-green-600 text-sm flex items-center gap-1">
-                            <Check className="w-4 h-4" />
-                          </span>
-                        )}
+                      <div className="col-span-1 flex items-center justify-end gap-1">
+                        {isSaved && <Check className="w-4 h-4 text-green-600" />}
                         {itemHasChanges && (
                           <button
                             onClick={() => handleSaveItem(item)}
                             disabled={isSaving}
-                            className="px-3 py-1.5 bg-primary-500 text-white text-sm rounded-lg hover:bg-primary-600 disabled:opacity-50 flex items-center gap-1"
+                            title={tc('save')}
+                            aria-label={tc('save')}
+                            className="p-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50"
                           >
                             {isSaving ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                               <Save className="w-4 h-4" />
                             )}
-                            {tc('save')}
                           </button>
                         )}
                       </div>
