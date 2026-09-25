@@ -70,7 +70,7 @@ export async function fetchMenuDirect(): Promise<Category[]> {
         items:MenuItem(
           id, name, nameEn, nameFr, nameEs, nameHe,
           description, descriptionEn, descriptionFr, descriptionEs, descriptionHe,
-          price, priceTakeaway, priceTakeawayRemote,
+          price, priceTakeaway, priceTakeawayRemote, priceTakeawayCard,
           imageUrl, available, sortOrder, categoryId,
           modifierGroups:ModifierGroup(
             id, name, nameEn, nameFr, nameEs, nameHe,
@@ -289,7 +289,7 @@ export const createMenuItem = (data: { name: string; description?: string; price
     body: JSON.stringify(data),
   })
 
-export const updateMenuItem = (id: string, data: { name?: string; description?: string; price?: number; priceTakeaway?: number | null; priceTakeawayRemote?: number | null; imageUrl?: string; sortOrder?: number; available?: boolean }) =>
+export const updateMenuItem = (id: string, data: { name?: string; description?: string; price?: number; priceTakeaway?: number | null; priceTakeawayRemote?: number | null; priceTakeawayCard?: number | null; imageUrl?: string; sortOrder?: number; available?: boolean }) =>
   fetchApiAuth<MenuItem>(`/menu/items/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),

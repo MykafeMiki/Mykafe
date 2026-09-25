@@ -138,7 +138,8 @@ model MenuItem {
   descriptionHe           String?                         // Hebrew translation
   price                   Int                             // Prezzo consumazione al tavolo (centesimi)
   priceTakeaway           Int?                            // Prezzo takeaway in loco/banco (centesimi) - se null usa price
-  priceTakeawayRemote     Int?                            // Prezzo takeaway da remoto /ordina (centesimi) - se null usa priceTakeaway o price
+  priceTakeawayRemote     Int?                            // Prezzo takeaway da remoto /ordina, alla consegna (centesimi) - se null usa priceTakeaway o price
+  priceTakeawayCard       Int?                            // Prezzo takeaway da remoto /ordina, con carta (centesimi) - se null usa priceTakeawayRemote + 3%
   imageUrl                String?
   available               Boolean                         @default(true)
   sortOrder               Int                             @default(0)

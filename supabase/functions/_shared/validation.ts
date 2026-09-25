@@ -75,7 +75,7 @@ export const CreateOrderSchema = z.object({
   tableSessionId: z.string().optional(),
   // Listino usato dal carrello. Assente = ordine da un client vecchio: si
   // ricade sul prezzo base, che e' il comportamento storico.
-  priceContext: z.enum(["dine-in", "takeaway-counter", "takeaway-remote"]).optional(),
+  priceContext: z.enum(["dine-in", "takeaway-counter", "takeaway-remote", "takeaway-card"]).optional(),
 });
 
 // Update order status schema

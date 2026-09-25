@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { MenuItem, PriceContext } from "@shared/types";
+import { applyCardSurcharge, type MenuItem, type PriceContext } from "@shared/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -46,7 +46,18 @@ export function getItemPrice(item: MenuItem, context: PriceContext): number {
       return item.priceTakeaway ?? item.price;
     case "takeaway-remote":
       return item.priceTakeawayRemote ?? item.priceTakeaway ?? item.price;
+    case "takeaway-card":
+      // Listino carta esplicito; se manca, prezzo da remoto con il +3% di sempre.
+      return (
+        item.priceTakeawayCard ??
+        applyCardSurcharge(item.priceTakeawayRemote ?? item.priceTakeaway ?? item.price, true)
+      );
     default:
       return item.price;
   }
+}
+
+/** Il listino carta include gia' il sovrapprezzo: non va applicato una seconda volta. */
+export function isCardPriceList(context: PriceContext): boolean {
+  return context === "takeaway-card";
 }

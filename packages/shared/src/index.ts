@@ -117,7 +117,8 @@ export interface MenuItem {
   descriptionHe?: string;
   price: number; // prezzo consumazione al tavolo (in cents)
   priceTakeaway?: number; // prezzo takeaway in loco/banco (in cents) - se null usa price
-  priceTakeawayRemote?: number; // prezzo takeaway da remoto /ordina (in cents) - se null usa priceTakeaway o price
+  priceTakeawayRemote?: number; // prezzo takeaway da remoto /ordina, alla consegna (in cents) - se null usa priceTakeaway o price
+  priceTakeawayCard?: number; // prezzo takeaway da remoto /ordina, con carta (in cents) - se null usa priceTakeawayRemote + 3%
   imageUrl?: string;
   available: boolean;
   sortOrder: number;

@@ -503,6 +503,7 @@ Deno.serve(async (req) => {
         price,
         priceTakeaway,
         priceTakeawayRemote,
+        priceTakeawayCard,
         imageUrl,
         sortOrder,
         available,
@@ -519,6 +520,10 @@ Deno.serve(async (req) => {
       if (priceTakeawayRemote !== undefined) {
         updateData.priceTakeawayRemote =
           priceTakeawayRemote !== null ? Math.round(priceTakeawayRemote * 100) : null;
+      }
+      if (priceTakeawayCard !== undefined) {
+        updateData.priceTakeawayCard =
+          priceTakeawayCard !== null ? Math.round(priceTakeawayCard * 100) : null;
       }
       if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
       if (sortOrder !== undefined) updateData.sortOrder = sortOrder;

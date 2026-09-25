@@ -6,7 +6,7 @@ import {
   UpdateOrderStatusSchema,
   validateRequest,
 } from "../_shared/validation.ts";
-import { applyCardSurcharge, getItemPrice } from "../_shared/pricing.ts";
+import { applyCardSurcharge, getItemPrice, isCardPriceList } from "../_shared/pricing.ts";
 
 // Generate cuid-like ID
 function generateId(): string {
@@ -215,6 +215,30 @@ Deno.serve(async (req) => {
         priceContext,
       } = validation.data;
 
+      // Ordini online (asporto/consegna): stop dal venerdi 15:00 al sabato 22:30, ora italiana.
+      // Il controllo del client e' solo cortesia, questo e' quello che fa fede.
+      if (priceContext === "takeaway-remote" || priceContext === "takeaway-card") {
+        const parts = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Europe/Rome",
+          weekday: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+        }).formatToParts(new Date());
+        const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+        const day = get("weekday");
+        const minutes = Number(get("hour")) * 60 + Number(get("minute"));
+        if ((day === "Fri" && minutes >= 15 * 60) || (day === "Sat" && minutes < 22 * 60 + 30)) {
+          return new Response(
+            JSON.stringify({
+              error: "Online orders are closed from Friday 15:00 to Saturday 22:30",
+              code: "ORDERS_PAUSED",
+            }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
       // Verifica se il tavolo è un banco (richiede customerName)
       const { data: table } = await supabase
         .from("Table")
@@ -351,6 +375,14 @@ Deno.serve(async (req) => {
       // cliente; qui si ricalcola sullo stesso, altrimenti l'importo registrato
       // sull'ordine (e quindi cassa, storico e report) non e' quello pagato.
       const activePriceContext = priceContext ?? "dine-in";
+      // Il listino carta contiene gia' il sovrapprezzo: non si somma il +3%.
+      const cardPriceList = isCardPriceList(activePriceContext);
+      if (cardPriceList && !isCard) {
+        return new Response(
+          JSON.stringify({ error: "Card price list requires card payment" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       // Calculate totals - OPTIMIZED: Batch fetch instead of N+1 queries
       let subtotal = 0;
@@ -362,7 +394,7 @@ Deno.serve(async (req) => {
       ];
       const { data: menuItems } = await supabase
         .from("MenuItem")
-        .select("id, price, priceTakeaway, priceTakeawayRemote")
+        .select("id, price, priceTakeaway, priceTakeawayRemote, priceTakeawayCard")
         .in("id", menuItemIds);
 
       const menuItemMap = new Map(menuItems?.map((mi) => [mi.id, mi]) || []);
@@ -400,7 +432,7 @@ Deno.serve(async (req) => {
         }
 
         subtotal += itemBasePrice;
-        totalAmount += applyCardSurcharge(itemBasePrice, isCard);
+        totalAmount += applyCardSurcharge(itemBasePrice, isCard && !cardPriceList);
       }
 
       const surcharge = totalAmount - subtotal;

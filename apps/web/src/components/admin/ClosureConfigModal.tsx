@@ -76,6 +76,21 @@ export function ClosureConfigModal({ config, onClose, onSave }: ClosureConfigMod
             </button>
           </div>
 
+          {/* Driver per le consegne */}
+          <div className="space-y-2">
+            <h3 className="font-semibold text-gray-900">Driver consegne</h3>
+            <p className="text-xs text-gray-500">
+              Numero che il cliente chiama per concordare la consegna a domicilio
+            </p>
+            <input
+              type="tel"
+              value={localConfig.deliveryDriverPhone ?? ''}
+              onChange={(e) => setLocalConfig({ ...localConfig, deliveryDriverPhone: e.target.value })}
+              placeholder="Es: +39 333 1234567"
+              className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
           {localConfig.enabled && (
             <>
               {/* Weekly Schedule */}

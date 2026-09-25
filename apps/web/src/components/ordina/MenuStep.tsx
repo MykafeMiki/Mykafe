@@ -9,6 +9,7 @@ import { CartButton } from '@/components/cart/CartButton'
 import { TakeawayCartDrawer } from '@/components/cart/TakeawayCartDrawer'
 import type { Category, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
+import type { PriceContext } from '@/lib/utils'
 
 export interface MenuStepProps {
   filteredCategories: Category[]
@@ -24,6 +25,7 @@ export interface MenuStepProps {
   customerPhone: string
   scheduledDate: string
   scheduledTime: string
+  isDelivery?: boolean
   onGoBack: () => void
   onCategorySelect: (categoryId: string) => void
   onAddItem: (item: MenuItem) => void
@@ -46,6 +48,7 @@ export function MenuStep({
   customerPhone,
   scheduledDate,
   scheduledTime,
+  isDelivery,
   onGoBack,
   onCategorySelect,
   onAddItem,
@@ -71,6 +74,9 @@ export function MenuStep({
     }
   }
 
+  // Listino in base al pagamento scelto: carta e alla consegna hanno prezzi diversi
+  const priceContext: PriceContext =
+    paymentMethod === PaymentMethod.CARD ? 'takeaway-card' : 'takeaway-remote'
   const paymentLabel = paymentMethod === PaymentMethod.CARD ? t('card') : t('cashAtPickup')
   const pickupTimeDisplay = `${formatDate(selectedDate)} ${selectedTime}`
 
@@ -120,7 +126,7 @@ export function MenuStep({
       activeCategory={activeCategory}
       onCategorySelect={onCategorySelect}
       onAddItem={onAddItem}
-      priceContext="takeaway-remote"
+      priceContext={priceContext}
     >
       <CartButton onClick={() => onCartOpen(true)} />
 
@@ -133,6 +139,7 @@ export function MenuStep({
         customerPhone={customerPhone}
         scheduledDate={scheduledDate}
         scheduledTime={scheduledTime}
+        isDelivery={isDelivery}
       />
 
       {selectedItem && (
@@ -141,7 +148,7 @@ export function MenuStep({
           onClose={onSelectItemClose}
           onAdd={onAddWithModifiers}
           defaultConsumeMode={ConsumeMode.TAKEAWAY}
-          priceContext="takeaway-remote"
+          priceContext={priceContext}
           hideConsumeModeSelector={true}
         />
       )}

@@ -29,13 +29,19 @@ export function applyCardSurcharge(basePriceCents: number, isCardPayment: boolea
 }
 
 /** Listino applicato all'articolo. Identico a PriceContext in packages/shared. */
-export type PriceContext = "dine-in" | "takeaway-counter" | "takeaway-remote"
+export type PriceContext = "dine-in" | "takeaway-counter" | "takeaway-remote" | "takeaway-card"
+
+/** Il listino carta include gia' il sovrapprezzo: sull'ordine non va applicato di nuovo. */
+export function isCardPriceList(context: PriceContext): boolean {
+  return context === "takeaway-card"
+}
 
 /** Colonne prezzo di MenuItem lette per calcolare un ordine. */
 export interface PricedMenuItem {
   price: number
   priceTakeaway?: number | null
   priceTakeawayRemote?: number | null
+  priceTakeawayCard?: number | null
 }
 
 /**
@@ -49,6 +55,12 @@ export function getItemPrice(item: PricedMenuItem, context: PriceContext): numbe
       return item.priceTakeaway ?? item.price
     case "takeaway-remote":
       return item.priceTakeawayRemote ?? item.priceTakeaway ?? item.price
+    case "takeaway-card":
+      // Listino carta esplicito; se manca, prezzo da remoto con il +3% di sempre.
+      return (
+        item.priceTakeawayCard ??
+        applyCardSurcharge(item.priceTakeawayRemote ?? item.priceTakeaway ?? item.price, true)
+      )
     case "dine-in":
     default:
       return item.price
