@@ -112,5 +112,5 @@ export default function KioskPage() {
   // key forza il remount completo del flusso menu quando il tavolo assegnato
   // cambia: azzera step, carrello e sessione invece di lasciare in giro
   // stato del tavolo precedente.
-  return <MenuPageContent qrCodeOverride={device.table.qrCode} key={device.table.id} />
+  return <MenuPageContent qrCodeOverride={device.table.qrCode} key={device.table.id} kioskGuard />
 }

@@ -7,7 +7,7 @@
  * Extracted from page.tsx to keep the rendering layer thin.
  */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { useTranslations, useLocale } from 'next-intl'
 import { useCart } from '@/lib/cart'
@@ -33,7 +33,7 @@ export type PageStep =
   | 'blocked'
   | 'menu'
 
-export function useMenuPageState(qrCodeOverride?: string) {
+export function useMenuPageState(qrCodeOverride?: string, kioskGuard = false) {
   const t = useTranslations('tableMenu')
   const tc = useTranslations('common')
   const locale = useLocale()
@@ -135,6 +135,28 @@ export function useMenuPageState(qrCodeOverride?: string) {
     loadData()
   }, [tableId, setTableIdInCart, setTableSessionInCart, checkAndClearStale, setPriceContext, tc])
 
+  // ── Back navigation ──────────────────────────────────────────────────────
+  // In kiosk (iPad) ogni "indietro" che riporta verso l'inizio del flusso passa
+  // dal codice staff: un cliente non puo' azzerare il tavolo. Il passo
+  // merge-input -> choice e' interno al flusso e resta libero.
+  const stepRef = useRef<PageStep>(step)
+  stepRef.current = step
+  const [pendingBack, setPendingBack] = useState<PageStep | null>(null)
+
+  const goBack = useCallback(
+    (target: PageStep) => {
+      if (kioskGuard && stepRef.current !== 'merge-input') setPendingBack(target)
+      else setStep(target)
+    },
+    [kioskGuard]
+  )
+
+  const confirmBack = () => {
+    if (pendingBack) setStep(pendingBack)
+    setPendingBack(null)
+  }
+  const cancelBack = () => setPendingBack(null)
+
   // ── Android / iOS back-button guard ──────────────────────────────────────
   // Keeps a "ghost" history entry so the hardware back button navigates steps
   // instead of exiting the app.
@@ -142,20 +164,21 @@ export function useMenuPageState(qrCodeOverride?: string) {
     const pushGuard = () => window.history.pushState({ mykafe: 'guard' }, '', location.href)
 
     const handlePopState = () => {
-      setStep((prev) => {
-        if (prev === 'menu') return 'choice'
-        if (prev === 'choice') return 'enter-name'
-        if (prev === 'merge-input') return 'choice'
-        if (prev === 'join-group') return 'enter-name'
-        return prev
-      })
+      const prev = stepRef.current
+      const target: PageStep | null =
+        prev === 'menu' ? 'choice'
+        : prev === 'choice' ? 'enter-name'
+        : prev === 'merge-input' ? 'choice'
+        : prev === 'join-group' ? 'enter-name'
+        : null
+      if (target) goBack(target)
       pushGuard()
     }
 
     pushGuard()
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
+  }, [goBack])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleAddItem = (item: MenuItem) => {
@@ -233,6 +256,7 @@ export function useMenuPageState(qrCodeOverride?: string) {
   return {
     // Navigation
     step, setStep,
+    goBack, pendingBack, confirmBack, cancelBack,
     // Menu
     filteredCategories, activeCategory, setActiveCategory,
     selectedItem, setSelectedItem: () => setSelectedItem(null),

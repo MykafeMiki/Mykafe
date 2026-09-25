@@ -437,7 +437,11 @@
     "waitingTitle": "In attesa di assegnazione",
     "waitingBody": "Chiedi a un membro dello staff di assegnare questo iPad a un tavolo dal pannello Admin > iPad.",
     "deviceId": "ID dispositivo",
-    "error": "Impossibile registrare questo iPad. Controlla la connessione e ricarica."
+    "error": "Impossibile registrare questo iPad. Controlla la connessione e ricarica.",
+    "pinTitle": "Codice staff",
+    "pinBody": "Inserisci il codice per uscire dal tavolo",
+    "pinWrong": "Codice errato",
+    "pinCancel": "Annulla"
   },
   "cassa": {
     "resetAll": "Azzera ordini",
