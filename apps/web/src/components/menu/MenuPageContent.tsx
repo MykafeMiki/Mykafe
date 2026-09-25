@@ -7,17 +7,29 @@ import { MergeInputStep } from '@/components/menu/steps/MergeInputStep'
 import { JoinGroupStep } from '@/components/menu/steps/JoinGroupStep'
 import { BlockedStep } from '@/components/menu/steps/BlockedStep'
 import { MenuStep } from '@/components/menu/steps/MenuStep'
+import { KioskPinModal } from '@/components/menu/KioskPinModal'
 import { useMenuPageState } from '@/app/menu/[tableId]/useMenuPageState'
 
 export interface MenuPageContentProps {
   // Passato dalla pagina /kiosk, dove il tavolo non arriva dallo slug della
   // route ma dal tavolo assegnato dall'admin al dispositivo.
   qrCodeOverride?: string
+  // Su iPad ogni indietro richiede il codice staff.
+  kioskGuard?: boolean
 }
 
-export function MenuPageContent({ qrCodeOverride }: MenuPageContentProps) {
+export function MenuPageContent({ qrCodeOverride, kioskGuard }: MenuPageContentProps) {
+  const s = useMenuPageState(qrCodeOverride, kioskGuard)
+  return (
+    <>
+      <MenuPageSteps s={s} />
+      {s.pendingBack && <KioskPinModal onSuccess={s.confirmBack} onCancel={s.cancelBack} />}
+    </>
+  )
+}
+
+function MenuPageSteps({ s }: { s: ReturnType<typeof useMenuPageState> }) {
   const tc = useTranslations('common')
-  const s = useMenuPageState(qrCodeOverride)
 
   if (s.loading) {
     return (
@@ -64,7 +76,7 @@ export function MenuPageContent({ qrCodeOverride }: MenuPageContentProps) {
       <ChoiceStep
         tableNumber={s.tableNumber}
         customerName={s.customerName}
-        onGoBack={() => s.setStep('enter-name')}
+        onGoBack={() => s.goBack('enter-name')}
         onSingleTable={s.handleSingleTable}
         onMergeTables={s.handleMergeTables}
       />
@@ -79,7 +91,7 @@ export function MenuPageContent({ qrCodeOverride }: MenuPageContentProps) {
         mergeError={s.mergeError}
         creatingSession={s.creatingSession}
         onMergeInputChange={s.setMergeInput}
-        onGoBack={() => s.setStep('choice')}
+        onGoBack={() => s.goBack('choice')}
         onConfirmMerge={s.handleConfirmMerge}
       />
     )
@@ -90,7 +102,7 @@ export function MenuPageContent({ qrCodeOverride }: MenuPageContentProps) {
       <JoinGroupStep
         tableNumber={s.tableNumber}
         tableSession={s.tableSession}
-        onGoBack={() => s.setStep('enter-name')}
+        onGoBack={() => s.goBack('enter-name')}
         onJoinGroup={s.handleJoinGroup}
         onNotInGroup={s.handleNotInGroup}
       />
@@ -111,7 +123,7 @@ export function MenuPageContent({ qrCodeOverride }: MenuPageContentProps) {
       isCartOpen={s.isCartOpen}
       orderSuccess={s.orderSuccess}
       estimatedWait={s.estimatedWait}
-      onGoBack={() => s.setStep('choice')}
+      onGoBack={() => s.goBack('choice')}
       onCategorySelect={s.setActiveCategory}
       onAddItem={s.handleAddItem}
       onAddWithModifiers={s.handleAddWithModifiers}

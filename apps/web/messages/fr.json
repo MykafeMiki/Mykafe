@@ -403,7 +403,11 @@
     "waitingTitle": "En attente d'assignation",
     "waitingBody": "Demandez a un membre du personnel d'assigner cet iPad a une table depuis Admin > iPad.",
     "deviceId": "ID de l'appareil",
-    "error": "Impossible d'enregistrer cet iPad. Verifiez la connexion et rechargez."
+    "error": "Impossible d'enregistrer cet iPad. Verifiez la connexion et rechargez.",
+    "pinTitle": "Code du personnel",
+    "pinBody": "Saisissez le code pour quitter la table",
+    "pinWrong": "Code incorrect",
+    "pinCancel": "Annuler"
   },
   "cassa": {
     "resetAll": "Effacer les commandes",

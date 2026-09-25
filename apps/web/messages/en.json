@@ -430,7 +430,11 @@
     "waitingTitle": "Waiting for assignment",
     "waitingBody": "Ask a staff member to assign this iPad to a table from Admin > iPads.",
     "deviceId": "Device ID",
-    "error": "Couldn't register this iPad. Check the connection and reload."
+    "error": "Couldn't register this iPad. Check the connection and reload.",
+    "pinTitle": "Staff code",
+    "pinBody": "Enter the code to leave this table",
+    "pinWrong": "Wrong code",
+    "pinCancel": "Cancel"
   },
   "cassa": {
     "resetAll": "Clear all orders",

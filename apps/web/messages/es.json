@@ -403,7 +403,11 @@
     "waitingTitle": "Esperando asignacion",
     "waitingBody": "Pide a un miembro del personal que asigne este iPad a una mesa desde Admin > iPad.",
     "deviceId": "ID del dispositivo",
-    "error": "No se pudo registrar este iPad. Comprueba la conexion y recarga."
+    "error": "No se pudo registrar este iPad. Comprueba la conexion y recarga.",
+    "pinTitle": "Codigo del personal",
+    "pinBody": "Introduce el codigo para salir de la mesa",
+    "pinWrong": "Codigo incorrecto",
+    "pinCancel": "Cancelar"
   },
   "cassa": {
     "resetAll": "Borrar pedidos",
