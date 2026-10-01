@@ -192,6 +192,7 @@
     "pickupNote": "איסוף: {date} בשעה {time}"
   },
   "menuItem": {
+    "ingredients": "מרכיבים",
     "addToCart": "הוסף",
     "selectOptions": "בחר אפשרויות",
     "required": "חובה",
