@@ -61,6 +61,7 @@ export {
   createIngredient,
   updateIngredient,
   setIngredientStock,
+  deleteIngredient,
   setMenuItemIngredients,
   getMenuItemIngredients,
 } from './ingredients'

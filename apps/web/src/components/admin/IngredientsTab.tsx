@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Loader2, ToggleLeft, ToggleRight, Check } from 'lucide-react'
+import { Plus, Loader2, ToggleLeft, ToggleRight, Check, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { getIngredients, createIngredient, setIngredientStock } from '@/lib/api'
+import { getIngredients, createIngredient, setIngredientStock, deleteIngredient } from '@/lib/api'
 import { fetchIngredientSubstitutes, saveIngredientSubstitutes } from '@/lib/ingredientSubstitutes'
 import type { Ingredient } from '@shared/types'
 
@@ -28,6 +28,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
   const [newIngredientNameEs, setNewIngredientNameEs] = useState('')
   const [newIngredientNameHe, setNewIngredientNameHe] = useState('')
   const [creating, setCreating] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
     loadIngredients()
@@ -96,6 +97,43 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
       setToggling(null)
     }
   }
+
+  const handleDeleteIngredient = async (ingredient: Ingredient) => {
+    if (!confirm(`Eliminare definitivamente l'ingrediente "${ingredient.name}"? Verrà rimosso anche dai piatti a cui è collegato.`)) return
+    setDeleting(ingredient.id)
+    try {
+      await deleteIngredient(ingredient.id)
+      setIngredients(prev => prev.filter(ing => ing.id !== ingredient.id))
+      // Toglie l'ingrediente dai sostituti, sia come esaurito sia come sostituto di altri
+      const updated = Object.fromEntries(
+        Object.entries(substitutes).filter(([key, sub]) => key !== ingredient.id && sub.id !== ingredient.id)
+      )
+      if (Object.keys(updated).length !== Object.keys(substitutes).length) {
+        try {
+          await saveIngredientSubstitutes(updated)
+          setSubstitutes(updated)
+        } catch (err) {
+          console.error('Failed to clean up substitutes:', err)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete ingredient:', err)
+      alert('Errore nell\'eliminazione dell\'ingrediente')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const deleteButton = (ingredient: Ingredient) => (
+    <button
+      onClick={() => handleDeleteIngredient(ingredient)}
+      disabled={deleting === ingredient.id}
+      title="Elimina ingrediente"
+      className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 transition flex-shrink-0"
+    >
+      {deleting === ingredient.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+    </button>
+  )
 
   const handleSaveSubstitute = async () => {
     if (!substitutePickerFor) return
@@ -274,7 +312,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
             {outOfStock.map((ingredient) => (
               <div
                 key={ingredient.id}
-                className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-200"
+                className="flex items-center justify-between gap-1 p-3 bg-white rounded-lg border border-red-200"
               >
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-gray-900">{ingredient.name}</span>
@@ -319,6 +357,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                   )}
                   <span className="text-sm">{t('markAvailable')}</span>
                 </button>
+                {deleteButton(ingredient)}
               </div>
             ))}
           </div>
@@ -341,21 +380,24 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
               <div>
                 <span className="font-medium text-gray-900">{ingredient.name}</span>
               </div>
-              <button
-                onClick={() => handleToggleStock(ingredient)}
-                disabled={toggling === ingredient.id}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${toggling === ingredient.id
-                    ? 'opacity-50'
-                    : 'bg-red-100 text-red-700 hover:bg-red-200'
-                  }`}
-              >
-                {toggling === ingredient.id ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ToggleRight className="w-4 h-4" />
-                )}
-                <span className="text-sm">{t('markUnavailable')}</span>
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleToggleStock(ingredient)}
+                  disabled={toggling === ingredient.id}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${toggling === ingredient.id
+                      ? 'opacity-50'
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                    }`}
+                >
+                  {toggling === ingredient.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ToggleRight className="w-4 h-4" />
+                  )}
+                  <span className="text-sm">{t('markUnavailable')}</span>
+                </button>
+                {deleteButton(ingredient)}
+              </div>
             </div>
           ))}
 
