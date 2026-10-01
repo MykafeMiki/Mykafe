@@ -36,6 +36,11 @@ export const setIngredientStock = (id: string, inStock: boolean) =>
     body: JSON.stringify({ inStock }),
   })
 
+export const deleteIngredient = (id: string) =>
+  fetchApiAuth<{ success: boolean }>(`/ingredients/${id}`, {
+    method: 'DELETE',
+  })
+
 // ============ MENU ITEM INGREDIENTS ============
 
 export const setMenuItemIngredients = (menuItemId: string, ingredients: { id: string }[]) =>
