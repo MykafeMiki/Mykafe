@@ -187,6 +187,7 @@
     "pickupNote": "Retrait: {date} à {time}"
   },
   "menuItem": {
+    "ingredients": "Ingrédients",
     "addToCart": "Ajouter",
     "selectOptions": "Sélectionnez les options",
     "required": "Obligatoire",

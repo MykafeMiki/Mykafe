@@ -43,6 +43,12 @@ export function ItemModal({
   const translatedName = getTranslatedName(item, locale);
   const displayDescription = getDisplayDescription(item, locale);
   const baseItemPrice = getItemPrice(item, priceContext);
+  // La descrizione dei piatti e' la lista ingredienti separata da virgole
+  // (gia' ripulita dagli esauriti e con i sostituti applicati)
+  const ingredientList = (displayDescription || "")
+    .split(",")
+    .map((s) => s.trim().replace(/\.$/, ""))
+    .filter(Boolean);
 
   const toggleModifier = (groupId: string, modifier: Modifier, multiSelect: boolean) => {
     setSelectedModifiers((prev) => {
@@ -107,7 +113,21 @@ export function ItemModal({
             </div>
           )}
 
-          {displayDescription && <p className="text-gray-600">{displayDescription}</p>}
+          {ingredientList.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">{t("ingredients")}</h3>
+              <ul className="flex flex-wrap gap-2">
+                {ingredientList.map((ing, i) => (
+                  <li
+                    key={`${ing}-${i}`}
+                    className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full"
+                  >
+                    {ing}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Modifier Groups */}
           {item.modifierGroups?.map((group) => (

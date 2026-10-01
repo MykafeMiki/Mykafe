@@ -42,9 +42,10 @@ export function MenuItemCard({
       )}
 
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-gray-900 truncate">{translatedName}</h3>
+        <h3 className="font-semibold text-gray-900">{translatedName}</h3>
+        {/* Descrizione = lista ingredienti: mostrata per intero, niente troncamento */}
         {displayDescription && (
-          <p className="text-sm text-gray-500 line-clamp-2 mt-0.5">{displayDescription}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{displayDescription}</p>
         )}
         <div className="flex items-center justify-between mt-2">
           <span className="font-bold text-primary-600">{formatPrice(displayPrice)}</span>

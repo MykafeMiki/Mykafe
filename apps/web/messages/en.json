@@ -192,6 +192,7 @@
     "pickupNote": "Pickup: {date} at {time}"
   },
   "menuItem": {
+    "ingredients": "Ingredients",
     "addToCart": "Add",
     "selectOptions": "Select options",
     "required": "Required",

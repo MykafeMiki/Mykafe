@@ -187,6 +187,7 @@
     "pickupNote": "Recogida: {date} a las {time}"
   },
   "menuItem": {
+    "ingredients": "Ingredientes",
     "addToCart": "Añadir",
     "selectOptions": "Selecciona opciones",
     "required": "Obligatorio",

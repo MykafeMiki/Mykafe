@@ -199,6 +199,7 @@
     "enterDateTime": "Seleziona giorno e orario"
   },
   "menuItem": {
+    "ingredients": "Ingredienti",
     "addToCart": "Aggiungi",
     "selectOptions": "Seleziona opzioni",
     "required": "Obbligatorio",
