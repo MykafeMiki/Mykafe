@@ -6,7 +6,7 @@ import { verifyAdminToken, unauthorizedResponse } from "../_shared/validation.ts
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, PUT, DELETE, OPTIONS",
 };
 
 // ============================================================
@@ -170,6 +170,31 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       return new Response(JSON.stringify(ingredients), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // PUT /ingredients/substitutes - Salva l'intera mappa ingrediente esaurito → sostituto.
+    // Vive qui perche' AppSettings e' in sola lettura per la anon key (RLS):
+    // serve la secret key, che su Vercel non c'e'.
+    if (req.method === "PUT" && subPath[0] === "substitutes" && !subPath[1]) {
+      const body = await req.json();
+      if (!body || typeof body !== "object" || Array.isArray(body)) {
+        return new Response(JSON.stringify({ error: "Invalid substitutes payload" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error } = await supabase.from("AppSettings").upsert({
+        key: "ingredient_substitutes",
+        value: body,
+        updatedAt: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
