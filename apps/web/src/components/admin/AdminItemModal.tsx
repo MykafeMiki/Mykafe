@@ -134,12 +134,16 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
       if (item) {
         await updateMenuItem(item.id, { name, description, price: priceInCents / 100, imageUrl })
       } else {
+        // In coda alla categoria: senza sortOrder il piatto nuovo finirebbe a 0, cioe' in cima
+        const categoryItems = categories.find(c => c.id === selectedCategory)?.items || []
+        const nextSortOrder = categoryItems.reduce((max, i) => Math.max(max, i.sortOrder ?? 0), 0) + 1
         const newItem = await createMenuItem({
           name,
           description,
           price: priceInCents / 100,
           categoryId: selectedCategory,
-          imageUrl
+          imageUrl,
+          sortOrder: nextSortOrder
         })
         savedItemId = newItem.id
       }
