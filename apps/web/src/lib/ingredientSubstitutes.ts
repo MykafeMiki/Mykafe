@@ -10,7 +10,7 @@
  * al cliente, quindi e' stata rimossa.
  */
 
-import { getAuthToken } from "./api/core";
+import { API_URL, getAuthToken } from "./api/core";
 
 export interface SubstituteIngredient {
   id: string;
@@ -45,7 +45,9 @@ export async function saveIngredientSubstitutes(map: SubstituteMap): Promise<voi
   const token = getAuthToken();
   if (!token) throw new Error("Sessione admin scaduta: rifai il login");
 
-  const res = await fetch(ENDPOINT, {
+  // La scrittura passa dall'edge function: la route Next su Vercel non ha la
+  // secret key e la RLS di AppSettings rifiuta la anon key.
+  const res = await fetch(`${API_URL}/ingredients/substitutes`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

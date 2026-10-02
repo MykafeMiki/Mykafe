@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { isAdminRequest } from "@/lib/server/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -32,32 +31,5 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: NextRequest) {
-  try {
-    if (!(await isAdminRequest(request))) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const supabase = getSupabase();
-    const body = await request.json();
-    if (!body || typeof body !== "object" || Array.isArray(body)) {
-      return NextResponse.json({ error: "Invalid substitutes payload" }, { status: 400 });
-    }
-
-    const { error } = await supabase.from("AppSettings").upsert({
-      key: "ingredient_substitutes",
-      value: body,
-      updatedAt: new Date().toISOString(),
-    });
-
-    if (error) throw error;
-
-    // Note: Substitutes are only used for description display.
-    // MenuItem availability is never affected by ingredient stock changes.
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error saving substitutes:", error);
-    return NextResponse.json({ error: "Failed to save substitutes" }, { status: 500 });
-  }
-}
+// La scrittura sta nell'edge function `ingredients` (PUT /ingredients/substitutes):
+// qui manca la secret key e la RLS di AppSettings rifiuta la anon key.
