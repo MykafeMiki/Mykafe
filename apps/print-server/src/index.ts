@@ -106,7 +106,14 @@ const COMMANDS = {
   CUT: GS + "V" + "\x00",
   PARTIAL_CUT: GS + "V" + "\x01",
   FEED_LINES: (n: number) => ESC + "d" + String.fromCharCode(n),
+  // Cicalino interno (ESC B n t): n bip, ognuno lungo t x 50ms. Verificato sulla Munbyn ITPP047
+  BEEP: (times: number, duration: number) =>
+    ESC + "B" + String.fromCharCode(times) + String.fromCharCode(duration),
 };
+
+// Bip a ogni nuovo ordine, una volta per stampante (PRINTER_BEEP=false per disattivarlo)
+const PRINTER_BEEP = process.env.PRINTER_BEEP !== "false";
+const PRINTER_BEEP_TIMES = parseInt(process.env.PRINTER_BEEP_TIMES || "3");
 
 // Format date/time
 function formatDateTime(isoString: string): string {
@@ -143,7 +150,12 @@ function getSectionLabel(section: ReceiptSection): string {
 //
 // I comandi ESC/POS si concatenano al testo, non vanno su righe proprie:
 // finendo dentro un join("\n") stampavano una riga vuota di carta ciascuno.
-function generateReceipt(order: Order, items: OrderItem[], section: ReceiptSection): string {
+function generateReceipt(
+  order: Order,
+  items: OrderItem[],
+  section: ReceiptSection,
+  beep = false
+): string {
   let out = "";
   const cmd = (c: string) => {
     out += c;
@@ -230,6 +242,7 @@ function generateReceipt(order: Order, items: OrderItem[], section: ReceiptSecti
   line(`#${order.id.slice(-6).toUpperCase()}`);
   // Avanzamento sufficiente perche' il taglio non tronchi l'ultima riga
   cmd(COMMANDS.FEED_LINES(4) + COMMANDS.PARTIAL_CUT);
+  if (beep) cmd(COMMANDS.BEEP(PRINTER_BEEP_TIMES, 3));
 
   return out;
 }
@@ -300,42 +313,28 @@ async function processOrder(order: Order): Promise<void> {
     `  Split: Sushi=${sushi.length}, Panini=${panini.length}, Caffetteria=${caffetteria.length}`
   );
 
-  // Print sushi items
-  if (sushi.length > 0) {
-    console.log(`  Printing ${sushi.length} SUSHI items...`);
-    const receipt = generateReceipt(order, sushi, "SUSHI");
+  const jobs = [
+    { section: "SUSHI" as const, items: sushi, printer: PRINTER_SUSHI },
+    { section: "PANINI" as const, items: panini, printer: PRINTER_PANINI },
+    // Beverages, coffee, desserts, etc.
+    { section: "CAFFETTERIA" as const, items: caffetteria, printer: PRINTER_CAFFETTERIA },
+  ].filter((job) => job.items.length > 0);
+
+  // Le sezioni possono condividere la stessa stampante: il bip va solo
+  // sull'ultimo scontrino di ciascuna, cosi' suona una volta per ordine
+  const lastJobForPrinter = new Map<string, number>();
+  jobs.forEach((job, i) => lastJobForPrinter.set(`${job.printer.ip}:${job.printer.port}`, i));
+
+  for (const [i, { section, items, printer }] of jobs.entries()) {
+    console.log(`  Printing ${items.length} ${section} items...`);
+    const beep = PRINTER_BEEP && lastJobForPrinter.get(`${printer.ip}:${printer.port}`) === i;
+    const receipt = generateReceipt(order, items, section, beep);
 
     try {
-      await printToNetwork(PRINTER_SUSHI.ip, PRINTER_SUSHI.port, receipt);
-      console.log("  SUSHI printer: OK");
+      await printToNetwork(printer.ip, printer.port, receipt);
+      console.log(`  ${section} printer: OK`);
     } catch (err) {
-      console.error("  SUSHI printer: FAILED");
-    }
-  }
-
-  // Print panini items
-  if (panini.length > 0) {
-    console.log(`  Printing ${panini.length} PANINI items...`);
-    const receipt = generateReceipt(order, panini, "PANINI");
-
-    try {
-      await printToNetwork(PRINTER_PANINI.ip, PRINTER_PANINI.port, receipt);
-      console.log("  PANINI printer: OK");
-    } catch (err) {
-      console.error("  PANINI printer: FAILED");
-    }
-  }
-
-  // Print caffetteria items (beverages, coffee, desserts, etc.)
-  if (caffetteria.length > 0) {
-    console.log(`  Printing ${caffetteria.length} CAFFETTERIA items...`);
-    const receipt = generateReceipt(order, caffetteria, "CAFFETTERIA");
-
-    try {
-      await printToNetwork(PRINTER_CAFFETTERIA.ip, PRINTER_CAFFETTERIA.port, receipt);
-      console.log("  CAFFETTERIA printer: OK");
-    } catch (err) {
-      console.error("  CAFFETTERIA printer: FAILED");
+      console.error(`  ${section} printer: FAILED`);
     }
   }
 }
