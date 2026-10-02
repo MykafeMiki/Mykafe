@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { X, Upload, Loader2, Image as ImageIcon, Plus } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { X, Upload, Loader2, Image as ImageIcon, Plus, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { uploadItemImage, updateMenuItem, createMenuItem, getIngredients, createIngredient, setMenuItemIngredients, getMenuItemIngredients } from '@/lib/api'
 import { fetchIngredientSubstitutes, setIngredientSubstitute } from '@/lib/ingredientSubstitutes'
@@ -17,7 +17,29 @@ export interface AdminItemModalProps {
   tc: ReturnType<typeof useTranslations<'common'>>
 }
 
+// Minuscolo e senza accenti: "Peperoni" trova anche "peperóni"
+const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+
+// Evidenzia in grassetto la parte di testo che corrisponde alla ricerca
+function Highlight({ text, term }: { text: string; term: string }) {
+  const needle = normalize(term)
+  if (!needle) return <>{text}</>
+  // Normalizza carattere per carattere per mantenere gli indici del testo originale
+  const folded = Array.from(text).map(c => normalize(c) || c).join('')
+  const start = folded.indexOf(needle)
+  if (start === -1 || folded.length !== text.length) return <>{text}</>
+  const end = start + needle.length
+  return (
+    <>
+      {text.slice(0, start)}
+      <mark className="bg-yellow-200 text-inherit rounded px-0.5 font-semibold">{text.slice(start, end)}</mark>
+      {text.slice(end)}
+    </>
+  )
+}
+
 export function AdminItemModal({ item, categoryId, categories, onClose, onSave, t, tc }: AdminItemModalProps) {
+  const ts = useTranslations('ingredientSelector')
   const [name, setName] = useState(item?.name || '')
   const [description, setDescription] = useState(item?.description || '')
   const [price, setPrice] = useState(item ? (item.price / 100).toFixed(2) : '')
@@ -38,6 +60,42 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
   const [newIngNameEs, setNewIngNameEs] = useState('')
   const [newIngNameHe, setNewIngNameHe] = useState('')
   const [creatingIngredient, setCreatingIngredient] = useState(false)
+  const [ingredientSearch, setIngredientSearch] = useState('')
+
+  // Filtra su nome e traduzioni; i selezionati restano in cima
+  const visibleIngredients = useMemo(() => {
+    const term = normalize(ingredientSearch)
+    const selectedIds = new Set(selectedIngredients.map(i => i.id))
+    return allIngredients
+      .filter(ing => !term || [ing.name, ing.nameEn, ing.nameFr, ing.nameEs, ing.nameHe]
+        .some(n => n && normalize(n).includes(term)))
+      .sort((a, b) => Number(selectedIds.has(b.id)) - Number(selectedIds.has(a.id)) || a.name.localeCompare(b.name, 'it'))
+  }, [allIngredients, selectedIngredients, ingredientSearch])
+
+  const startCreateFromSearch = () => {
+    setNewIngName(ingredientSearch.trim())
+    setShowNewIngredient(true)
+  }
+
+  // Invio: aggiunge il primo risultato non ancora selezionato, o propone di crearlo
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape' && ingredientSearch) {
+      e.preventDefault()
+      e.stopPropagation()
+      setIngredientSearch('')
+      return
+    }
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    if (!ingredientSearch.trim()) return
+    const first = visibleIngredients.find(ing => !selectedIngredients.some(s => s.id === ing.id))
+    if (first) {
+      handleIngredientToggle(first.id)
+      setIngredientSearch('')
+    } else if (visibleIngredients.length === 0) {
+      startCreateFromSearch()
+    }
+  }
 
   // Load ingredients on mount
   useEffect(() => {
@@ -114,6 +172,7 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
       setNewIngNameEs('')
       setNewIngNameHe('')
       setShowNewIngredient(false)
+      setIngredientSearch('')
     } catch (err) {
       console.error('Failed to create ingredient:', err)
       alert(t('saveError'))
@@ -296,8 +355,34 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
                   <p className="text-sm text-gray-500 mb-2">{t('noIngredients')}</p>
                 ) : (
                   <>
+                    <div className="relative mb-2">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="search"
+                        value={ingredientSearch}
+                        onChange={(e) => setIngredientSearch(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
+                        placeholder={ts('searchPlaceholder')}
+                        className="w-full pl-8 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    {selectedIngredients.length > 0 && (
+                      <p className="text-xs text-gray-500 mb-1">{ts('selected', { count: selectedIngredients.length })}</p>
+                    )}
                     <div className="max-h-48 overflow-y-auto border rounded-lg p-2 mb-2 space-y-1">
-                      {allIngredients.map((ing) => {
+                      {visibleIngredients.length === 0 && (
+                        <div className="text-sm text-gray-500 p-2 space-y-2">
+                          <p>{ts('noResults', { term: ingredientSearch.trim() })}</p>
+                          <button
+                            type="button"
+                            onClick={startCreateFromSearch}
+                            className="text-primary-600 hover:text-primary-700"
+                          >
+                            {ts('createFromSearch', { term: ingredientSearch.trim() })}
+                          </button>
+                        </div>
+                      )}
+                      {visibleIngredients.map((ing) => {
                         const selected = selectedIngredients.find(i => i.id === ing.id)
                         return (
                           <div
@@ -311,7 +396,18 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
                               onChange={() => handleIngredientToggle(ing.id)}
                               className="w-4 h-4 text-primary-500 rounded focus:ring-primary-500"
                             />
-                            <span className="text-sm flex-1">{ing.name}</span>
+                            <span className="text-sm flex-1">
+                              <Highlight text={ing.name} term={ingredientSearch} />
+                              {(() => {
+                                // Se combacia solo una traduzione, la mostriamo per far capire il perche' del risultato
+                                const term = normalize(ingredientSearch)
+                                if (!term || normalize(ing.name).includes(term)) return null
+                                const tr = [ing.nameEn, ing.nameFr, ing.nameEs, ing.nameHe].find(n => n && normalize(n).includes(term))
+                                return tr ? (
+                                  <span className="ml-1 text-xs text-gray-400">(<Highlight text={tr} term={ingredientSearch} />)</span>
+                                ) : null
+                              })()}
+                            </span>
                             {selected && (
                               <select
                                 value={selected.substituteId || ''}
