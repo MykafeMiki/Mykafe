@@ -1,5 +1,6 @@
 import { fetchApi, fetchApiAuth, API_URL, supabase, getAuthToken } from './core'
 import type { Category, MenuItem, ModifierGroup, Modifier } from '@shared/types'
+import { buildIngredientIndex, fillDescriptionTranslations } from '@/lib/menuDescription'
 
 // ============ MENU BASIC ============
 
@@ -59,7 +60,7 @@ export const getMenuCached = async (): Promise<Category[]> => {
 // Query diretta a Supabase (bypassa Edge Function)
 export async function fetchMenuDirect(): Promise<Category[]> {
   // Query parallele per massima velocità
-  const [categoriesResult, outOfStockResult, substitutesResult] = await Promise.all([
+  const [categoriesResult, outOfStockResult, substitutesResult, ingredientsResult] = await Promise.all([
     // Menu principale
     supabase
       .from('Category')
@@ -102,7 +103,12 @@ export async function fetchMenuDirect(): Promise<Category[]> {
       .from('AppSettings')
       .select('value')
       .eq('key', 'ingredient_substitutes')
-      .single()
+      .single(),
+
+    // Tutti gli ingredienti: servono a tradurre le descrizioni voce per voce
+    supabase
+      .from('Ingredient')
+      .select('name, nameEn, nameFr, nameEs, nameHe')
   ])
 
   if (categoriesResult.error) {
@@ -111,6 +117,7 @@ export async function fetchMenuDirect(): Promise<Category[]> {
   }
 
   const categories = categoriesResult.data || []
+  const ingredientIndex = buildIngredientIndex(ingredientsResult.data || [])
 
   // Mappa sostituti: ingredientId -> { id, name, ... }
   const substituteMap: Record<string, { id: string; name: string; nameEn?: string; nameFr?: string; nameEs?: string; nameHe?: string }> =
@@ -176,7 +183,7 @@ export async function fetchMenuDirect(): Promise<Category[]> {
         }
 
         return {
-          ...item,
+          ...fillDescriptionTranslations(item, ingredientIndex),
           unavailableIngredients,
           ingredients: undefined, // Rimuovi raw ingredients dalla risposta
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
