@@ -445,6 +445,12 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/ingredients/index.ts"
 
+[functions.settings]
+enabled = true
+# verify_jwt=false: la funzione autentica con il token admin custom (verifyAdminToken).
+verify_jwt = false
+entrypoint = "./functions/settings/index.ts"
+
 [functions.apply-translations]
 enabled = true
 verify_jwt = false

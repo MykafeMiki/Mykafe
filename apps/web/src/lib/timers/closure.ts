@@ -2,11 +2,12 @@
  * Closure Schedule
  *
  * Weekly opening hours and temporary closure management.
- * Configuration is stored server-side via /api/settings/closure.
+ * Configuration is stored server-side in AppSettings: read via /api/settings/closure,
+ * written via the `settings` edge function (the anon key can't write AppSettings).
  */
 
 import { DAYS_OF_WEEK } from './config'
-import { getAuthToken } from '../api/core'
+import { API_URL, getAuthToken } from '../api/core'
 
 export interface DaySchedule {
   enabled: boolean    // Se il giorno è abilitato per ordini online
@@ -77,7 +78,7 @@ export async function saveClosureConfigToServer(config: ClosureConfig): Promise<
   const token = getAuthToken()
   if (!token) throw new Error('Sessione admin scaduta: rifai il login')
 
-  const res = await fetch('/api/settings/closure', {
+  const res = await fetch(`${API_URL}/settings/closure`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
