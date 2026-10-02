@@ -120,8 +120,11 @@ const CONJUNCTIONS: Record<DescriptionLocale, (a: string, b: string) => string> 
   he: (a, b) => `${a} ו${b}`,
 }
 
+// Confronto tollerante: senza accenti, maiuscole, spazi ("Cream cheese" = "Creamcheese")
+// e punteggiatura ai bordi ("Pesto." a fine descrizione = "Pesto")
 const foldName = (s: string) =>
-  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+  s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/^[\s.;:!]+|[\s.;:!]+$/g, '').replace(/\s+/g, '')
 
 // Indice nome italiano normalizzato (anche singolare/plurale) -> ingrediente
 export function buildIngredientIndex(ingredients: IngredientNames[]): Map<string, IngredientNames> {
@@ -186,19 +189,30 @@ interface DescribedItem {
   descriptionHe?: string | null
 }
 
-// Riempie le descrizioni tradotte a partire dagli ingredienti.
-// - tutte le voci riconosciute: usa la traduzione generata (quelle salvate a mano
-//   sono spesso rimaste indietro rispetto all'italiano)
-// - solo alcune voci: la usa solo se non c'e' gia' una traduzione salvata
+// Riempie le descrizioni tradotte a partire dagli ingredienti, ma solo se TUTTE
+// le voci sono ingredienti tradotti: vince sulla traduzione salvata (spesso rimasta
+// indietro rispetto all'italiano). Se manca anche una sola voce resta la traduzione
+// salvata o l'italiano: meglio di un testo mezzo italiano e mezzo tradotto.
 export function fillDescriptionTranslations<T extends DescribedItem>(item: T, index: Map<string, IngredientNames>): T {
   if (!item.description?.trim() || index.size === 0) return item
   const result = { ...item }
   for (const { locale, descKey } of DESCRIPTION_LOCALES) {
     const generated = translateDescriptionFromIngredients(item.description, locale, index)
-    if (!generated) continue
-    if (generated.complete || !item[descKey]?.trim()) {
-      result[descKey] = generated.text
-    }
+    if (generated?.complete) result[descKey] = generated.text
   }
   return result
 }
+
+// Voci della descrizione che non corrispondono a nessun ingrediente:
+// in admin avvisano che la descrizione non verra' tradotta automaticamente.
+export function findUnmatchedDescriptionParts(description: string, index: Map<string, IngredientNames>): string[] {
+  return description.split(',').map(p => p.trim()).filter(Boolean).filter(part => {
+    if (index.has(foldName(part))) return false
+    const halves = part.split(/\s+e\s+/i)
+    return !(halves.length === 2 && halves.every(h => index.has(foldName(h))))
+  }).map(p => p.replace(/[.;:!]+$/, ''))
+}
+
+// Traduzione mancante o rovinata (salvataggi da terminale avevano trasformato
+// l'ebraico in "????" e gli accenti in "�")
+export const isBrokenTranslation = (value?: string | null) => !value?.trim() || /\?{2,}|\uFFFD/.test(value)

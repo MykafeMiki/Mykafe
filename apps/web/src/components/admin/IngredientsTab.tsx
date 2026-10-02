@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Loader2, ToggleLeft, ToggleRight, Check, Trash2 } from 'lucide-react'
+import { Plus, Loader2, ToggleLeft, ToggleRight, Check, Trash2, Pencil, X, Languages } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { getIngredients, createIngredient, setIngredientStock, deleteIngredient } from '@/lib/api'
+import { getIngredients, createIngredient, setIngredientStock, deleteIngredient, updateIngredient } from '@/lib/api'
+import { isBrokenTranslation } from '@/lib/menuDescription'
 import { fetchIngredientSubstitutes, saveIngredientSubstitutes } from '@/lib/ingredientSubstitutes'
 import type { Ingredient } from '@shared/types'
 
@@ -29,6 +30,10 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
   const [newIngredientNameHe, setNewIngredientNameHe] = useState('')
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Ingredient | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', nameEn: '', nameFr: '', nameEs: '', nameHe: '' })
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [onlyToTranslate, setOnlyToTranslate] = useState(false)
 
   useEffect(() => {
     loadIngredients()
@@ -55,10 +60,10 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
     try {
       const newIng = await createIngredient({
         name: newIngredientName.trim(),
-        nameEn: newIngredientNameEn.trim() || newIngredientName.trim(),
-        nameFr: newIngredientNameFr.trim() || newIngredientName.trim(),
-        nameEs: newIngredientNameEs.trim() || newIngredientName.trim(),
-        nameHe: newIngredientNameHe.trim() || newIngredientName.trim(),
+        nameEn: newIngredientNameEn.trim() || undefined,
+        nameFr: newIngredientNameFr.trim() || undefined,
+        nameEs: newIngredientNameEs.trim() || undefined,
+        nameHe: newIngredientNameHe.trim() || undefined,
       })
       setIngredients(prev => [...prev, newIng])
       setNewIngredientName('')
@@ -168,8 +173,56 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
     }
   }
 
+  const needsTranslation = (ing: Ingredient) =>
+    [ing.nameEn, ing.nameFr, ing.nameEs, ing.nameHe].some(isBrokenTranslation)
+  const toTranslateCount = ingredients.filter(needsTranslation).length
+
+  const openEdit = (ing: Ingredient) => {
+    setEditing(ing)
+    // I valori rovinati ("????") partono vuoti, cosi' si vede cosa va riscritto
+    const clean = (v?: string | null) => (isBrokenTranslation(v) ? '' : v || '')
+    setEditForm({ name: ing.name, nameEn: clean(ing.nameEn), nameFr: clean(ing.nameFr), nameEs: clean(ing.nameEs), nameHe: clean(ing.nameHe) })
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editing || !editForm.name.trim()) return
+    setSavingEdit(true)
+    try {
+      const data = {
+        name: editForm.name.trim(),
+        nameEn: editForm.nameEn.trim(),
+        nameFr: editForm.nameFr.trim(),
+        nameEs: editForm.nameEs.trim(),
+        nameHe: editForm.nameHe.trim(),
+      }
+      await updateIngredient(editing.id, data)
+      setIngredients(prev => prev.map(ing => (ing.id === editing.id ? { ...ing, ...data } : ing)))
+      setEditing(null)
+    } catch (err) {
+      console.error('Failed to update ingredient:', err)
+      alert(t('saveError'))
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const editButton = (ingredient: Ingredient) => (
+    <button
+      onClick={() => openEdit(ingredient)}
+      title="Modifica nome e traduzioni"
+      className="p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition flex-shrink-0"
+    >
+      <Pencil className="w-4 h-4" />
+    </button>
+  )
+
+  const translationBadge = (ingredient: Ingredient) =>
+    needsTranslation(ingredient) ? (
+      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 align-middle">da tradurre</span>
+    ) : null
+
   const filteredIngredients = ingredients.filter(ing =>
-    ing.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ing.name.toLowerCase().includes(searchTerm.toLowerCase()) && (!onlyToTranslate || needsTranslation(ing))
   )
 
   const outOfStock = filteredIngredients.filter(ing => !ing.inStock)
@@ -299,6 +352,19 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
         />
       </div>
 
+      {(toTranslateCount > 0 || onlyToTranslate) && (
+        <button
+          onClick={() => setOnlyToTranslate(v => !v)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition ${onlyToTranslate
+              ? 'bg-amber-500 text-white border-amber-500'
+              : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+            }`}
+        >
+          <Languages className="w-4 h-4" />
+          {onlyToTranslate ? 'Mostra tutti gli ingredienti' : `Traduzioni mancanti o da correggere (${toTranslateCount})`}
+        </button>
+      )}
+
       {/* Out of Stock Section */}
       {outOfStock.length > 0 && (
         <div className="bg-red-50 rounded-xl p-4 border-2 border-red-200">
@@ -316,6 +382,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
               >
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-gray-900">{ingredient.name}</span>
+                  {translationBadge(ingredient)}
                   {substitutes[ingredient.id] && (
                     <p className="text-xs text-gray-500 mt-0.5">
                       → {substitutes[ingredient.id].name}
@@ -357,6 +424,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                   )}
                   <span className="text-sm">{t('markAvailable')}</span>
                 </button>
+                {editButton(ingredient)}
                 {deleteButton(ingredient)}
               </div>
             ))}
@@ -379,6 +447,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
             >
               <div>
                 <span className="font-medium text-gray-900">{ingredient.name}</span>
+                {translationBadge(ingredient)}
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -396,6 +465,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                   )}
                   <span className="text-sm">{t('markUnavailable')}</span>
                 </button>
+                {editButton(ingredient)}
                 {deleteButton(ingredient)}
               </div>
             </div>
@@ -415,6 +485,60 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
           {t('ingredientsInfo')}
         </p>
       </div>
+
+      {/* Edit Ingredient Modal */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-bold text-gray-900">Modifica ingrediente</h3>
+              <button onClick={() => setEditing(null)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Le traduzioni servono anche per tradurre le descrizioni dei piatti che contengono questo ingrediente.
+            </p>
+            <div className="space-y-3">
+              {([
+                ['name', 'Nome (IT) *', 'ltr'],
+                ['nameEn', 'Nome (EN)', 'ltr'],
+                ['nameFr', 'Nome (FR)', 'ltr'],
+                ['nameEs', 'Nome (ES)', 'ltr'],
+                ['nameHe', 'Nome (HE)', 'rtl'],
+              ] as const).map(([key, label, dir]) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                  <input
+                    type="text"
+                    dir={dir}
+                    value={editForm[key]}
+                    onChange={(e) => setEditForm(f => ({ ...f, [key]: e.target.value }))}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${key !== 'name' && !editForm[key].trim() ? 'border-amber-400 bg-amber-50' : ''}`}
+                    placeholder={key !== 'name' ? 'Da tradurre' : undefined}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setEditing(null)}
+                className="flex-1 px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={savingEdit || !editForm.name.trim()}
+                className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600 disabled:opacity-50 transition flex items-center justify-center gap-2"
+              >
+                {savingEdit && <Loader2 className="w-4 h-4 animate-spin" />}
+                Salva
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Substitute Picker Modal */}
       {substitutePickerFor && (

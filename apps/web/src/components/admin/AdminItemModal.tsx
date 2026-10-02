@@ -5,6 +5,7 @@ import { X, Upload, Loader2, Image as ImageIcon, Plus, Search } from 'lucide-rea
 import { useTranslations } from 'next-intl'
 import { uploadItemImage, updateMenuItem, createMenuItem, getIngredients, createIngredient, setMenuItemIngredients, getMenuItemIngredients } from '@/lib/api'
 import { fetchIngredientSubstitutes, setIngredientSubstitute } from '@/lib/ingredientSubstitutes'
+import { buildIngredientIndex, findUnmatchedDescriptionParts } from '@/lib/menuDescription'
 import type { Category, MenuItem, Ingredient } from '@shared/types'
 
 export interface AdminItemModalProps {
@@ -63,6 +64,14 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
   const [ingredientSearch, setIngredientSearch] = useState('')
 
   // Filtra su nome e traduzioni; i selezionati restano in cima
+  // Voci della descrizione che il menu non sapra' tradurre (nessun ingrediente con quel nome)
+  const untranslatableParts = useMemo(
+    () => (allIngredients.length && description.trim()
+      ? findUnmatchedDescriptionParts(description, buildIngredientIndex(allIngredients))
+      : []),
+    [allIngredients, description]
+  )
+
   const visibleIngredients = useMemo(() => {
     const term = normalize(ingredientSearch)
     const selectedIds = new Set(selectedIngredients.map(i => i.id))
@@ -320,6 +329,15 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
               rows={2}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Scrivi gli ingredienti separati da virgola: ognuno viene tradotto con le traduzioni dell&apos;ingrediente.
+            </p>
+            {untranslatableParts.length > 0 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1">
+                La descrizione non verrà tradotta perché queste voci non sono ingredienti: <strong>{untranslatableParts.join(', ')}</strong>.
+                Crea l&apos;ingrediente (anche qui sotto) o correggi il nome.
+              </p>
+            )}
           </div>
 
           {/* Price */}
