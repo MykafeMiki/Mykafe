@@ -710,6 +710,50 @@ Deno.serve(async (req) => {
       });
     }
 
+    // DELETE /menu/items/:id - Delete menu item
+    if (req.method === "DELETE" && subPath[0] === "items" && subPath[1] && !subPath[2]) {
+      const itemId = subPath[1];
+
+      // Gli ordini delle ultime 24h puntano ancora al piatto (OrderItem ha la FK
+      // senza cascade). Quelli piu' vecchi sono gia' in OrderArchive come
+      // snapshot con il nome, quindi non bloccano.
+      const { count, error: countError } = await supabase
+        .from("OrderItem")
+        .select("id", { count: "exact", head: true })
+        .eq("menuItemId", itemId);
+
+      if (countError) throw countError;
+      if (count && count > 0) {
+        return new Response(JSON.stringify({ error: "Item has active orders" }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: groups } = await supabase
+        .from("ModifierGroup")
+        .select("id")
+        .eq("menuItemId", itemId);
+      const groupIds = (groups || []).map((g: { id: string }) => g.id);
+      if (groupIds.length > 0) {
+        await supabase.from("Modifier").delete().in("modifierGroupId", groupIds);
+        await supabase.from("ModifierGroup").delete().in("id", groupIds);
+      }
+
+      await supabase.from("MenuItemIngredient").delete().eq("menuItemId", itemId);
+      await supabase.from("MenuItemUnavailableIngredient").delete().eq("menuItemId", itemId);
+
+      const { error } = await supabase.from("MenuItem").delete().eq("id", itemId);
+
+      if (error) throw error;
+
+      lastMenuUpdate = Date.now();
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // PUT /menu/items/:id/ingredients - Set menu item ingredients (replace all)
     if (
       req.method === "PUT" &&

@@ -301,6 +301,11 @@ export const updateItemAvailability = (id: string, available: boolean) =>
     body: JSON.stringify({ available }),
   })
 
+export const deleteMenuItem = (id: string) =>
+  fetchApiAuth<{ success: boolean }>(`/menu/items/${id}`, {
+    method: 'DELETE',
+  })
+
 // ============ MODIFIER GROUPS & MODIFIERS ============
 
 export const addModifierGroup = (menuItemId: string, data: {

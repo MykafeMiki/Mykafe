@@ -19,6 +19,7 @@ export {
   createMenuItem,
   updateMenuItem,
   updateItemAvailability,
+  deleteMenuItem,
   addModifierGroup,
   addModifier,
   updateModifier,
