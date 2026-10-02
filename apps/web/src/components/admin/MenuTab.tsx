@@ -5,7 +5,7 @@ import { Plus, QrCode, Edit, ToggleLeft, ToggleRight, Trash2, X, Upload, Image a
 import { useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/utils'
 import {
-  getAdminCategories, updateCategory, uploadSectionImage, updateItemAvailability
+  getAdminCategories, updateCategory, uploadSectionImage, updateItemAvailability, deleteMenuItem, clearMenuCache
 } from '@/lib/api'
 import {
   getSushiStatus, isSushiTimeActive, getTimerConfig, saveTimerConfig,
@@ -38,6 +38,7 @@ export function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
   const [togglingCategory, setTogglingCategory] = useState<string | null>(null)
+  const [deletingItem, setDeletingItem] = useState<string | null>(null)
   const [timerConfig, setTimerConfig] = useState<TimerConfig>(getTimerConfig())
   const [closureConfig, setClosureConfig] = useState<ClosureConfig>(DEFAULT_CLOSURE_CONFIG)
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
@@ -68,6 +69,25 @@ export function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
     } catch (err) {
       console.error('Failed to update availability:', err)
       alert(t('saveError'))
+    }
+  }
+
+  const handleDeleteItem = async (item: MenuItem) => {
+    if (!confirm(`Eliminare definitivamente il piatto "${item.name}"?`)) return
+    setDeletingItem(item.id)
+    try {
+      await deleteMenuItem(item.id)
+      clearMenuCache()
+      await onUpdate()
+    } catch (err) {
+      console.error('Failed to delete item:', err)
+      if (err instanceof Error && err.message.includes('409')) {
+        alert('Il piatto è in ordini delle ultime 24 ore: per ora rendilo non disponibile, potrai eliminarlo dopo l\'archiviazione degli ordini.')
+      } else {
+        alert('Errore nell\'eliminazione del piatto')
+      }
+    } finally {
+      setDeletingItem(null)
     }
   }
 
@@ -571,6 +591,14 @@ export function MenuTab({ categories, onUpdate, t, tc }: MenuTabProps) {
                             ) : (
                               <ToggleLeft className="w-6 h-6" />
                             )}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item)}
+                            disabled={deletingItem === item.id}
+                            title="Elimina piatto"
+                            className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 transition"
+                          >
+                            {deletingItem === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>
