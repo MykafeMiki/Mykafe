@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { buildIngredientIndex, fillDescriptionTranslations } from "@/lib/menuDescription";
 
 // Force dynamic: evita pre-rendering a build time (env vars non disponibili)
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export async function GET() {
 
   try {
     // Query parallele per massima velocità
-    const [categoriesResult, outOfStockResult] = await Promise.all([
+    const [categoriesResult, outOfStockResult, ingredientsResult] = await Promise.all([
       // Menu principale con ingredienti
       supabase
         .from("Category")
@@ -57,11 +58,15 @@ export async function GET() {
         `
         )
         .eq("inStock", false),
+
+      // Tutti gli ingredienti: servono a tradurre le descrizioni voce per voce
+      supabase.from("Ingredient").select("name, nameEn, nameFr, nameEs, nameHe"),
     ]);
 
     if (categoriesResult.error) throw categoriesResult.error;
 
     const categories = categoriesResult.data || [];
+    const ingredientIndex = buildIngredientIndex(ingredientsResult.data || []);
 
     // Mappa sostituti: ingredientId -> { id, name, ... } — query separata per non rompere i tipi
     const substitutesRes = await supabase
@@ -222,7 +227,7 @@ export async function GET() {
           }));
 
           return {
-            ...item,
+            ...fillDescriptionTranslations(item, ingredientIndex),
             unavailableIngredients,
             ingredients: undefined, // Rimuovi raw ingredients
             modifierGroups: normalizedModifierGroups,
