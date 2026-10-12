@@ -3,10 +3,21 @@
 import { useState, useEffect } from 'react'
 import { Plus, Loader2, ToggleLeft, ToggleRight, Check, Trash2, Pencil, X, Languages } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { getIngredients, createIngredient, setIngredientStock, deleteIngredient, updateIngredient } from '@/lib/api'
+import { getIngredients, createIngredient, setIngredientStock, deleteIngredient, updateIngredient, getAdminCategories } from '@/lib/api'
 import { isBrokenTranslation } from '@/lib/menuDescription'
 import { fetchIngredientSubstitutes, saveIngredientSubstitutes } from '@/lib/ingredientSubstitutes'
-import type { Ingredient } from '@shared/types'
+import { shareCategory } from '@/lib/ingredientCategories'
+import type { Category, Ingredient } from '@shared/types'
+
+// "1,50" / "1.5" -> 150 (centesimi). Vuoto -> null (nessun prezzo). Non valido -> undefined.
+function parsePriceToCents(input: string): number | null | undefined {
+  const trimmed = input.trim().replace(',', '.')
+  if (trimmed === '') return null
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return undefined
+  return Math.round(parseFloat(trimmed) * 100)
+}
+
+const centsToInput = (cents?: number | null) => (cents == null ? '' : (cents / 100).toFixed(2))
 
 export interface IngredientsTabProps {
   t: ReturnType<typeof useTranslations<'admin'>>
@@ -34,6 +45,12 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
   const [editForm, setEditForm] = useState({ name: '', nameEn: '', nameFr: '', nameEs: '', nameHe: '' })
   const [savingEdit, setSavingEdit] = useState(false)
   const [onlyToTranslate, setOnlyToTranslate] = useState(false)
+  // Destinazioni d'uso (categorie) e prezzo
+  const [categories, setCategories] = useState<Category[]>([])
+  const [savingDest, setSavingDest] = useState<string | null>(null)
+  const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({})
+  const [newIngredientPrice, setNewIngredientPrice] = useState('')
+  const [newIngredientCategoryIds, setNewIngredientCategoryIds] = useState<string[]>([])
 
   useEffect(() => {
     loadIngredients()
@@ -41,12 +58,17 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
 
   const loadIngredients = async () => {
     try {
-      const [data, subsRes] = await Promise.all([
+      const [data, subsRes, cats] = await Promise.all([
         getIngredients(),
-        fetchIngredientSubstitutes()
+        fetchIngredientSubstitutes(),
+        getAdminCategories()
       ])
+      const sortedCats = [...cats].sort((a, b) => a.sortOrder - b.sortOrder)
       setIngredients(data)
       setSubstitutes(subsRes)
+      setCategories(sortedCats)
+      // Un ingrediente nuovo parte ammesso in tutte le categorie
+      setNewIngredientCategoryIds(sortedCats.map(c => c.id))
     } catch (err) {
       console.error('Failed to load ingredients:', err)
     } finally {
@@ -56,6 +78,11 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
 
   const handleCreateIngredient = async () => {
     if (!newIngredientName.trim()) return
+    const priceCents = parsePriceToCents(newIngredientPrice)
+    if (priceCents === undefined) {
+      alert('Prezzo non valido: usa un importo come 1,50')
+      return
+    }
     setCreating(true)
     try {
       const newIng = await createIngredient({
@@ -64,6 +91,8 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
         nameFr: newIngredientNameFr.trim() || undefined,
         nameEs: newIngredientNameEs.trim() || undefined,
         nameHe: newIngredientNameHe.trim() || undefined,
+        price: priceCents,
+        categoryIds: newIngredientCategoryIds,
       })
       setIngredients(prev => [...prev, newIng])
       setNewIngredientName('')
@@ -71,6 +100,8 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
       setNewIngredientNameFr('')
       setNewIngredientNameEs('')
       setNewIngredientNameHe('')
+      setNewIngredientPrice('')
+      setNewIngredientCategoryIds(categories.map(c => c.id))
       setShowAddForm(false)
     } catch (err) {
       console.error('Failed to create ingredient:', err)
@@ -128,6 +159,94 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
       setDeleting(null)
     }
   }
+
+  // Spunta/toglie una destinazione d'uso: salva subito, con rollback se fallisce
+  const handleToggleCategory = async (ingredient: Ingredient, categoryId: string) => {
+    const current = ingredient.categoryIds || []
+    const next = current.includes(categoryId)
+      ? current.filter(id => id !== categoryId)
+      : [...current, categoryId]
+    setSavingDest(ingredient.id)
+    setIngredients(prev => prev.map(ing => (ing.id === ingredient.id ? { ...ing, categoryIds: next } : ing)))
+    try {
+      await updateIngredient(ingredient.id, { categoryIds: next })
+    } catch (err) {
+      console.error('Failed to update ingredient categories:', err)
+      setIngredients(prev => prev.map(ing => (ing.id === ingredient.id ? { ...ing, categoryIds: current } : ing)))
+      alert(t('saveError'))
+    } finally {
+      setSavingDest(null)
+    }
+  }
+
+  // Prezzo inserito a mano: si salva all'uscita dal campo, solo se e' cambiato
+  const handleSavePrice = async (ingredient: Ingredient) => {
+    const draft = priceDrafts[ingredient.id]
+    if (draft === undefined) return
+    const cents = parsePriceToCents(draft)
+    const restore = () =>
+      setPriceDrafts(prev => {
+        const rest = { ...prev }
+        delete rest[ingredient.id]
+        return rest
+      })
+    if (cents === undefined) {
+      alert('Prezzo non valido: usa un importo come 1,50')
+      restore()
+      return
+    }
+    if (cents === (ingredient.price ?? null)) {
+      restore()
+      return
+    }
+    setSavingDest(ingredient.id)
+    try {
+      await updateIngredient(ingredient.id, { price: cents })
+      setIngredients(prev => prev.map(ing => (ing.id === ingredient.id ? { ...ing, price: cents } : ing)))
+      restore()
+    } catch (err) {
+      console.error('Failed to update ingredient price:', err)
+      alert(t('saveError'))
+      restore()
+    } finally {
+      setSavingDest(null)
+    }
+  }
+
+  // Prezzo + una spunta per ogni categoria in cui l'ingrediente puo' essere usato
+  const destinationsBlock = (ingredient: Ingredient) => (
+    <div className="mt-2 space-y-2">
+      <div className="flex items-center gap-2">
+        <label className="text-xs text-gray-500" htmlFor={`price-${ingredient.id}`}>Prezzo €</label>
+        <input
+          id={`price-${ingredient.id}`}
+          type="text"
+          inputMode="decimal"
+          placeholder="0,00"
+          value={priceDrafts[ingredient.id] ?? centsToInput(ingredient.price)}
+          onChange={(e) => setPriceDrafts(prev => ({ ...prev, [ingredient.id]: e.target.value }))}
+          onBlur={() => handleSavePrice(ingredient)}
+          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+          className="w-20 px-2 py-1 text-sm border rounded-lg focus:ring-2 focus:ring-primary-500"
+        />
+        {savingDest === ingredient.id && <Loader2 className="w-3 h-3 animate-spin text-gray-400" />}
+      </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-1">
+        {categories.map(cat => (
+          <label key={cat.id} className="flex items-center gap-1 text-xs text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={(ingredient.categoryIds || []).includes(cat.id)}
+              onChange={() => handleToggleCategory(ingredient, cat.id)}
+              disabled={savingDest === ingredient.id}
+              className="w-3.5 h-3.5 text-primary-500 rounded focus:ring-primary-500"
+            />
+            {cat.name}
+          </label>
+        ))}
+      </div>
+    </div>
+  )
 
   const deleteButton = (ingredient: Ingredient) => (
     <button
@@ -314,6 +433,41 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Prezzo (€)
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={newIngredientPrice}
+                onChange={(e) => setNewIngredientPrice(e.target.value)}
+                placeholder="es. 1,50"
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Usabile in
+            </label>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {categories.map(cat => (
+                <label key={cat.id} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newIngredientCategoryIds.includes(cat.id)}
+                    onChange={() =>
+                      setNewIngredientCategoryIds(prev =>
+                        prev.includes(cat.id) ? prev.filter(id => id !== cat.id) : [...prev, cat.id]
+                      )
+                    }
+                    className="w-4 h-4 text-green-500 rounded focus:ring-green-500"
+                  />
+                  {cat.name}
+                </label>
+              ))}
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -332,6 +486,8 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                 setNewIngredientNameFr('')
                 setNewIngredientNameEs('')
                 setNewIngredientNameHe('')
+                setNewIngredientPrice('')
+                setNewIngredientCategoryIds(categories.map(c => c.id))
               }}
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
             >
@@ -408,6 +564,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                       + aggiungi sostituto
                     </button>
                   )}
+                  {destinationsBlock(ingredient)}
                 </div>
                 <button
                   onClick={() => handleToggleStock(ingredient)}
@@ -439,15 +596,16 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
             {t('availableIngredients')} ({inStock.length})
           </h3>
         </div>
-        <div className="divide-y max-h-96 overflow-y-auto">
+        <div className="divide-y max-h-[70vh] overflow-y-auto">
           {inStock.map((ingredient) => (
             <div
               key={ingredient.id}
               className="flex items-center justify-between p-4 hover:bg-gray-50 transition"
             >
-              <div>
+              <div className="flex-1 min-w-0">
                 <span className="font-medium text-gray-900">{ingredient.name}</span>
                 {translationBadge(ingredient)}
+                {destinationsBlock(ingredient)}
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -556,7 +714,8 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
             >
               <option value="">Nessun sostituto</option>
               {ingredients
-                .filter(i => i.id !== substitutePickerFor.id)
+                // Solo ingredienti ammessi in almeno una categoria in cui si usa quello esaurito
+                .filter(i => i.id !== substitutePickerFor.id && shareCategory(i, substitutePickerFor))
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(i => (
                   <option key={i.id} value={i.id}>

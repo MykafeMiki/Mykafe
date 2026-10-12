@@ -17,11 +17,25 @@ model Ingredient {
   nameHe               String?                         // Hebrew translation
   inStock              Boolean                         @default(true)
   menuType             String                          @default("CLASSIC") // CLASSIC, SUSHI - per separare gli stock
+  price                Int?                            // Prezzo come aggiunta (centesimi), inserito a mano. NULL = non impostato
+  categories           IngredientCategory[]            // Categorie del menu in cui l'ingrediente e' ammesso
   menuItems            MenuItemIngredient[]            // Ingrediente principale dei piatti
   modifiers            Modifier[]                      // Usato come modificatore
   unavailableInMenuItems MenuItemUnavailableIngredient[] @relation("UnavailableInMenuItems") // Match pre-calcolati nelle descrizioni
   createdAt            DateTime                        @default(now())
   updatedAt            DateTime                        @updatedAt
+}
+
+// Destinazioni d'uso: in quali categorie del menu si puo' usare un ingrediente
+model IngredientCategory {
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([ingredientId, categoryId])
+  @@index([categoryId])
 }
 
 // Relazione MenuItem <-> Ingrediente principale
@@ -119,6 +133,7 @@ model Category {
   sortOrder   Int        @default(0)
   active      Boolean    @default(true)
   items       MenuItem[]
+  ingredients IngredientCategory[] // Ingredienti ammessi in questa categoria
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }

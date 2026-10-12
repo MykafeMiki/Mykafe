@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { X, Upload, Loader2, Image as ImageIcon, Plus, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { uploadItemImage, updateMenuItem, createMenuItem, getIngredients, createIngredient, setMenuItemIngredients, getMenuItemIngredients } from '@/lib/api'
@@ -72,14 +72,24 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
     [allIngredients, description]
   )
 
+  // Ammesso nella categoria scelta per il piatto. Senza destinazioni nei dati
+  // (API non ancora aggiornata) non si filtra, per non svuotare la lista.
+  const isAllowedHere = useCallback(
+    (ing: Ingredient) => !ing.categoryIds || ing.categoryIds.includes(selectedCategory),
+    [selectedCategory]
+  )
+
   const visibleIngredients = useMemo(() => {
     const term = normalize(ingredientSearch)
     const selectedIds = new Set(selectedIngredients.map(i => i.id))
     return allIngredients
+      // Solo ingredienti ammessi nella categoria del piatto (niente gelato alla crema in un panino);
+      // quelli gia' selezionati restano visibili per poterli togliere.
+      .filter(ing => isAllowedHere(ing) || selectedIds.has(ing.id))
       .filter(ing => !term || [ing.name, ing.nameEn, ing.nameFr, ing.nameEs, ing.nameHe]
         .some(n => n && normalize(n).includes(term)))
       .sort((a, b) => Number(selectedIds.has(b.id)) - Number(selectedIds.has(a.id)) || a.name.localeCompare(b.name, 'it'))
-  }, [allIngredients, selectedIngredients, ingredientSearch])
+  }, [allIngredients, selectedIngredients, ingredientSearch, isAllowedHere])
 
   const startCreateFromSearch = () => {
     setNewIngName(ingredientSearch.trim())
@@ -426,6 +436,9 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
                                 ) : null
                               })()}
                             </span>
+                            {!isAllowedHere(ing) && (
+                              <span className="text-xs text-amber-600">(non ammesso in questa categoria)</span>
+                            )}
                             {selected && (
                               <select
                                 value={selected.substituteId || ''}
@@ -450,7 +463,7 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
                                 className="text-xs border rounded px-1 py-0.5 bg-white text-gray-600 max-w-[110px]"
                               >
                                 <option value="">Nessun sub.</option>
-                                {allIngredients.filter(i => i.id !== ing.id).map(i => (
+                                {allIngredients.filter(i => i.id !== ing.id && (isAllowedHere(i) || i.id === selected.substituteId)).map(i => (
                                   <option key={i.id} value={i.id}>{i.name}</option>
                                 ))}
                               </select>

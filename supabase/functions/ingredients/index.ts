@@ -120,6 +120,53 @@ async function clearIngredientMatches(
   await supabase.from("MenuItemUnavailableIngredient").delete().eq("ingredientId", ingredientId);
 }
 
+/**
+ * Prezzo in centesimi: intero >= 0. null/"" = nessun prezzo.
+ * Ritorna undefined se il valore non e' valido.
+ */
+function normalizePrice(value: unknown): number | null | undefined {
+  if (value === null || value === "") return null;
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) return undefined;
+  return value;
+}
+
+/**
+ * Sostituisce l'insieme delle categorie ammesse per un ingrediente
+ * (aggiunge le nuove, toglie quelle deselezionate).
+ */
+async function setIngredientCategories(
+  supabase: ReturnType<typeof createClient>,
+  ingredientId: string,
+  categoryIds: string[]
+): Promise<void> {
+  const wanted = [...new Set(categoryIds)];
+
+  const { data: existing, error: readError } = await supabase
+    .from("IngredientCategory")
+    .select("categoryId")
+    .eq("ingredientId", ingredientId);
+  if (readError) throw readError;
+
+  const current = new Set((existing || []).map((r: { categoryId: string }) => r.categoryId));
+  const toAdd = wanted.filter((id) => !current.has(id));
+  const toRemove = [...current].filter((id) => !wanted.includes(id));
+
+  if (toAdd.length > 0) {
+    const { error } = await supabase
+      .from("IngredientCategory")
+      .insert(toAdd.map((categoryId) => ({ ingredientId, categoryId })));
+    if (error) throw error;
+  }
+  if (toRemove.length > 0) {
+    const { error } = await supabase
+      .from("IngredientCategory")
+      .delete()
+      .eq("ingredientId", ingredientId)
+      .in("categoryId", toRemove);
+    if (error) throw error;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -156,7 +203,8 @@ Deno.serve(async (req) => {
             isPrimary,
             menuItem:MenuItem(id, name)
           ),
-          modifiers:Modifier(id, name)
+          modifiers:Modifier(id, name),
+          categories:IngredientCategory(categoryId)
         `
         )
         .order("name", { ascending: true });
@@ -165,9 +213,17 @@ Deno.serve(async (req) => {
         query = query.eq("menuType", menuType);
       }
 
-      const { data: ingredients, error } = await query;
+      const { data, error } = await query;
 
       if (error) throw error;
+
+      // Appiattisce la relazione in categoryIds: e' quello che usa il frontend
+      const ingredients = (data || []).map(
+        ({ categories, ...ing }: { categories?: { categoryId: string }[] }) => ({
+          ...ing,
+          categoryIds: (categories || []).map((c) => c.categoryId),
+        })
+      );
 
       return new Response(JSON.stringify(ingredients), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -202,9 +258,9 @@ Deno.serve(async (req) => {
     // POST /ingredients - Create ingredient
     if (req.method === "POST" && subPath.length === 0) {
       const body = await req.json();
-      const { name, nameEn, nameFr, nameEs, nameHe, menuType } = body;
+      const { name, nameEn, nameFr, nameEs, nameHe, menuType, price, categoryIds } = body;
 
-      const { data: ingredient, error } = await supabase
+      const { data: created, error } = await supabase
         .from("Ingredient")
         .insert({
           name,
@@ -214,11 +270,28 @@ Deno.serve(async (req) => {
           nameHe: nameHe || null,
           inStock: true,
           menuType: menuType || "CLASSIC",
+          price: normalizePrice(price) ?? null,
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Senza categorie esplicite il nuovo ingrediente parte ammesso ovunque
+      // (come il backfill), cosi' non sparisce dai menu finche' non lo si spunta.
+      let finalCategoryIds: string[];
+      if (Array.isArray(categoryIds)) {
+        finalCategoryIds = categoryIds;
+      } else {
+        const { data: allCategories, error: catError } = await supabase
+          .from("Category")
+          .select("id");
+        if (catError) throw catError;
+        finalCategoryIds = (allCategories || []).map((c: { id: string }) => c.id);
+      }
+      await setIngredientCategories(supabase, created.id, finalCategoryIds);
+
+      const ingredient = { ...created, categoryIds: finalCategoryIds };
 
       return new Response(JSON.stringify(ingredient), {
         status: 201,
@@ -230,7 +303,7 @@ Deno.serve(async (req) => {
     if (req.method === "PATCH" && subPath[0]) {
       const ingredientId = subPath[0];
       const body = await req.json();
-      const { name, nameEn, nameFr, nameEs, nameHe, inStock, menuType } = body;
+      const { name, nameEn, nameFr, nameEs, nameHe, inStock, menuType, price, categoryIds } = body;
 
       // Prima recupera l'ingrediente attuale per avere il nome e lo stato precedente
       const { data: currentIngredient } = await supabase
@@ -255,15 +328,53 @@ Deno.serve(async (req) => {
       if (inStock !== undefined) updateData.inStock = inStock;
       if (menuType !== undefined) updateData.menuType = menuType;
 
-      // Update ingredient
-      const { data: ingredient, error } = await supabase
-        .from("Ingredient")
-        .update(updateData)
-        .eq("id", ingredientId)
-        .select()
-        .single();
+      // price: numero in centesimi, oppure null per toglierlo
+      let newPrice: number | null | undefined;
+      if (price !== undefined) {
+        newPrice = normalizePrice(price);
+        if (newPrice === undefined) {
+          return new Response(JSON.stringify({ error: "Invalid price" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        updateData.price = newPrice;
+      }
+
+      if (categoryIds !== undefined && !Array.isArray(categoryIds)) {
+        return new Response(JSON.stringify({ error: "Invalid categoryIds" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Update ingredient (se c'e' qualcosa da aggiornare: con solo categoryIds
+      // updateData e' vuoto e un UPDATE senza colonne fallirebbe)
+      const { data: ingredient, error } =
+        Object.keys(updateData).length > 0
+          ? await supabase
+              .from("Ingredient")
+              .update(updateData)
+              .eq("id", ingredientId)
+              .select()
+              .single()
+          : await supabase.from("Ingredient").select().eq("id", ingredientId).single();
 
       if (error) throw error;
+
+      if (Array.isArray(categoryIds)) {
+        await setIngredientCategories(supabase, ingredientId, categoryIds);
+      }
+
+      // Il prezzo dell'ingrediente diventa il prezzo di tutte le sue aggiunte:
+      // l'ordine legge Modifier.price, quindi va tenuto allineato qui.
+      if (typeof newPrice === "number") {
+        const { error: modPriceError } = await supabase
+          .from("Modifier")
+          .update({ price: newPrice })
+          .eq("ingredientId", ingredientId);
+        if (modPriceError) throw modPriceError;
+      }
 
       // ===== Gestione description matching pre-calcolato =====
       // Se lo stock è cambiato, aggiorna i match nella tabella pre-calcolata
@@ -290,9 +401,19 @@ Deno.serve(async (req) => {
       // Modifiers are filtered in the menu API based on outOfStockIds.
       // MenuItem should always remain available if available: true.
 
-      return new Response(JSON.stringify(ingredient), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Restituisce sempre le categorie aggiornate, cosi' il frontend resta coerente
+      const { data: catRows } = await supabase
+        .from("IngredientCategory")
+        .select("categoryId")
+        .eq("ingredientId", ingredientId);
+
+      return new Response(
+        JSON.stringify({
+          ...ingredient,
+          categoryIds: (catRows || []).map((c: { categoryId: string }) => c.categoryId),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // POST /ingredients/:id/menu-items - Associate ingredient with menu item
