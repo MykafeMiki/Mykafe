@@ -28,6 +28,7 @@ export const updateIngredient = (id: string, data: {
   menuType?: string
   price?: number | null
   categoryIds?: string[]
+  hideDishes?: boolean
 }) =>
   fetchApiAuth<Ingredient>(`/ingredients/${id}`, {
     method: 'PATCH',

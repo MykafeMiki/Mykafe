@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { buildIngredientIndex, fillDescriptionTranslations } from "@/lib/menuDescription";
 import { buildIngredientCategoryMap, isModifierAllowedInCategory } from "@/lib/ingredientCategories";
+import { HIDING_INGREDIENTS_SELECT, buildHiddenItemIds } from "@/lib/hiddenDishes";
 
 // Force dynamic: evita pre-rendering a build time (env vars non disponibili)
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function GET() {
 
   try {
     // Query parallele per massima velocità
-    const [categoriesResult, outOfStockResult, ingredientsResult, ingredientCategoriesResult] = await Promise.all([
+    const [categoriesResult, outOfStockResult, ingredientsResult, ingredientCategoriesResult, hidingResult] = await Promise.all([
       // Menu principale con ingredienti
       supabase
         .from("Category")
@@ -65,9 +66,17 @@ export async function GET() {
 
       // Destinazioni d'uso: in quali categorie e' ammesso ogni ingrediente
       supabase.from("IngredientCategory").select("ingredientId, categoryId"),
+
+      // Ingredienti con "nascondi piatti" attivo (query a parte: senza migrazione il menu funziona comunque)
+      supabase.from("Ingredient").select(HIDING_INGREDIENTS_SELECT).eq("hideDishes", true),
     ]);
 
     if (categoriesResult.error) throw categoriesResult.error;
+
+    if (hidingResult.error) {
+      console.error("Hidden dishes fetch error:", hidingResult.error);
+    }
+    const hiddenItemIds = buildHiddenItemIds(hidingResult.error ? null : hidingResult.data);
 
     // Se la lettura fallisce (migrazione non applicata) non si filtra: meglio
     // mostrare tutte le aggiunte che nasconderle tutte.
@@ -170,7 +179,8 @@ export async function GET() {
     const menu = categories.map((category) => ({
       ...category,
       items: (category.items || [])
-        .filter((item) => item.available)
+        // Via i piatti disattivati e quelli con un ingrediente che nasconde i piatti
+        .filter((item) => item.available && !hiddenItemIds.has(item.id))
         .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
         .map((item) => {
           // Ingredienti non disponibili da due fonti:

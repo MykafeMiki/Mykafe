@@ -19,6 +19,8 @@ model Ingredient {
   menuType             String                          @default("CLASSIC") // CLASSIC, SUSHI - per separare gli stock
   price                Int?                            // Prezzo come aggiunta (centesimi), inserito a mano. NULL = non impostato
   categories           IngredientCategory[]            // Categorie del menu in cui l'ingrediente e' ammesso
+  hideDishes           Boolean                         @default(false) // Se true, i piatti con questo ingrediente spariscono dal menu
+  hiddenMenuItems      IngredientHiddenItem[]          @relation("HiddenMenuItems") // Piatti nascosti perche' lo citano nella descrizione
   menuItems            MenuItemIngredient[]            // Ingrediente principale dei piatti
   modifiers            Modifier[]                      // Usato come modificatore
   unavailableInMenuItems MenuItemUnavailableIngredient[] @relation("UnavailableInMenuItems") // Match pre-calcolati nelle descrizioni
@@ -36,6 +38,20 @@ model IngredientCategory {
 
   @@id([ingredientId, categoryId])
   @@index([categoryId])
+}
+
+// Piatti nascosti da un ingrediente con hideDishes attivo che li cita solo nella descrizione (pre-calcolati)
+model IngredientHiddenItem {
+  id           String     @id @default(cuid())
+  menuItemId   String
+  menuItem     MenuItem   @relation("HiddenByIngredient", fields: [menuItemId], references: [id], onDelete: Cascade)
+  ingredientId String
+  ingredient   Ingredient @relation("HiddenMenuItems", fields: [ingredientId], references: [id], onDelete: Cascade)
+  matchedText  String?
+  createdAt    DateTime   @default(now())
+
+  @@unique([menuItemId, ingredientId])
+  @@index([ingredientId])
 }
 
 // Relazione MenuItem <-> Ingrediente principale
@@ -164,6 +180,7 @@ model MenuItem {
   orderItems              OrderItem[]
   ingredients             MenuItemIngredient[]            // Ingredienti del piatto
   unavailableIngredients  MenuItemUnavailableIngredient[] // Match ingredienti non disponibili (pre-calcolati)
+  hiddenByIngredients     IngredientHiddenItem[]          @relation("HiddenByIngredient") // Nascosto da ingredienti con hideDishes
   createdAt               DateTime                        @default(now())
   updatedAt               DateTime                        @updatedAt
 }

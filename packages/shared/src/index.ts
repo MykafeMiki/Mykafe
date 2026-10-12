@@ -46,6 +46,7 @@ export interface Ingredient {
   menuType: MenuType; // CLASSIC o SUSHI - per separare gli stock
   price?: number | null; // prezzo come aggiunta in cents, inserito a mano
   categoryIds?: string[]; // categorie del menu in cui l'ingrediente e' ammesso
+  hideDishes?: boolean; // se true, i piatti con questo ingrediente spariscono dal menu
   createdAt: Date;
   updatedAt: Date;
 }

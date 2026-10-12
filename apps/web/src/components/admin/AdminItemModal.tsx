@@ -83,9 +83,8 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
     const term = normalize(ingredientSearch)
     const selectedIds = new Set(selectedIngredients.map(i => i.id))
     return allIngredients
-      // Solo ingredienti ammessi nella categoria del piatto (niente gelato alla crema in un panino);
-      // quelli gia' selezionati restano visibili per poterli togliere.
-      .filter(ing => isAllowedHere(ing) || selectedIds.has(ing.id))
+      // Solo ingredienti ammessi nella categoria del piatto (niente gelato alla crema in un panino)
+      .filter(ing => isAllowedHere(ing))
       .filter(ing => !term || [ing.name, ing.nameEn, ing.nameFr, ing.nameEs, ing.nameHe]
         .some(n => n && normalize(n).includes(term)))
       .sort((a, b) => Number(selectedIds.has(b.id)) - Number(selectedIds.has(a.id)) || a.name.localeCompare(b.name, 'it'))
@@ -229,7 +228,12 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
       // Save ingredients if we have a valid item ID
       if (savedItemId) {
         try {
-          await setMenuItemIngredients(savedItemId, selectedIngredients.map(i => ({ id: i.id })))
+          // Il piatto non mantiene ingredienti non ammessi nella sua categoria
+          const allowedIds = new Set(allIngredients.filter(isAllowedHere).map(i => i.id))
+          await setMenuItemIngredients(
+            savedItemId,
+            selectedIngredients.filter(i => allowedIds.has(i.id)).map(i => ({ id: i.id }))
+          )
         } catch (err) {
           console.error('Failed to save ingredients:', err)
         }
@@ -436,9 +440,6 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
                                 ) : null
                               })()}
                             </span>
-                            {!isAllowedHere(ing) && (
-                              <span className="text-xs text-amber-600">(non ammesso in questa categoria)</span>
-                            )}
                             {selected && (
                               <select
                                 value={selected.substituteId || ''}
@@ -463,7 +464,7 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
                                 className="text-xs border rounded px-1 py-0.5 bg-white text-gray-600 max-w-[110px]"
                               >
                                 <option value="">Nessun sub.</option>
-                                {allIngredients.filter(i => i.id !== ing.id && (isAllowedHere(i) || i.id === selected.substituteId)).map(i => (
+                                {allIngredients.filter(i => i.id !== ing.id && isAllowedHere(i)).map(i => (
                                   <option key={i.id} value={i.id}>{i.name}</option>
                                 ))}
                               </select>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Loader2, ToggleLeft, ToggleRight, Check, Trash2, Pencil, X, Languages } from 'lucide-react'
+import { Plus, Loader2, ToggleLeft, ToggleRight, Check, Trash2, Pencil, X, Languages, Eye, EyeOff } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { getIngredients, createIngredient, setIngredientStock, deleteIngredient, updateIngredient, getAdminCategories } from '@/lib/api'
 import { isBrokenTranslation } from '@/lib/menuDescription'
@@ -48,6 +48,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
   // Destinazioni d'uso (categorie) e prezzo
   const [categories, setCategories] = useState<Category[]>([])
   const [savingDest, setSavingDest] = useState<string | null>(null)
+  const [togglingHide, setTogglingHide] = useState<string | null>(null)
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({})
   const [newIngredientPrice, setNewIngredientPrice] = useState('')
   const [newIngredientCategoryIds, setNewIngredientCategoryIds] = useState<string[]>([])
@@ -178,6 +179,43 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
       setSavingDest(null)
     }
   }
+
+  // Nasconde (o ripristina) dal menu tutti i piatti che contengono l'ingrediente
+  const handleToggleHideDishes = async (ingredient: Ingredient) => {
+    const next = !ingredient.hideDishes
+    if (next && !confirm(`Tutti i piatti con "${ingredient.name}" spariranno dal menu finché non li ripristini. Continuare?`)) return
+    setTogglingHide(ingredient.id)
+    try {
+      await updateIngredient(ingredient.id, { hideDishes: next })
+      setIngredients(prev => prev.map(ing => (ing.id === ingredient.id ? { ...ing, hideDishes: next } : ing)))
+    } catch (err) {
+      console.error('Failed to toggle hide dishes:', err)
+      alert(t('saveError'))
+    } finally {
+      setTogglingHide(null)
+    }
+  }
+
+  const hideButton = (ingredient: Ingredient) => (
+    <button
+      onClick={() => handleToggleHideDishes(ingredient)}
+      disabled={togglingHide === ingredient.id}
+      title={ingredient.hideDishes ? 'Ripristina i piatti nel menu' : 'Nascondi dal menu tutti i piatti con questo ingrediente'}
+      className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition flex-shrink-0 disabled:opacity-50 ${ingredient.hideDishes
+          ? 'bg-red-500 text-white hover:bg-red-600'
+          : 'text-gray-500 hover:text-red-600 hover:bg-red-50'
+        }`}
+    >
+      {togglingHide === ingredient.id ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : ingredient.hideDishes ? (
+        <Eye className="w-4 h-4" />
+      ) : (
+        <EyeOff className="w-4 h-4" />
+      )}
+      {ingredient.hideDishes ? 'Ripristina piatti' : 'Nascondi piatti'}
+    </button>
+  )
 
   // Prezzo inserito a mano: si salva all'uscita dal campo, solo se e' cambiato
   const handleSavePrice = async (ingredient: Ingredient) => {
@@ -335,10 +373,16 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
     </button>
   )
 
-  const translationBadge = (ingredient: Ingredient) =>
-    needsTranslation(ingredient) ? (
-      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 align-middle">da tradurre</span>
-    ) : null
+  const translationBadge = (ingredient: Ingredient) => (
+    <>
+      {needsTranslation(ingredient) && (
+        <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 align-middle">da tradurre</span>
+      )}
+      {ingredient.hideDishes && (
+        <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-800 align-middle">piatti nascosti</span>
+      )}
+    </>
+  )
 
   const filteredIngredients = ingredients.filter(ing =>
     ing.name.toLowerCase().includes(searchTerm.toLowerCase()) && (!onlyToTranslate || needsTranslation(ing))
@@ -581,6 +625,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                   )}
                   <span className="text-sm">{t('markAvailable')}</span>
                 </button>
+                {hideButton(ingredient)}
                 {editButton(ingredient)}
                 {deleteButton(ingredient)}
               </div>
@@ -623,6 +668,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                   )}
                   <span className="text-sm">{t('markUnavailable')}</span>
                 </button>
+                {hideButton(ingredient)}
                 {editButton(ingredient)}
                 {deleteButton(ingredient)}
               </div>

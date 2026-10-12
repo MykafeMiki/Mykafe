@@ -53,7 +53,10 @@ function generateCuid(): string {
 async function calculateIngredientMatches(
   supabase: ReturnType<typeof createClient>,
   ingredientId: string,
-  ingredientName: string
+  ingredientName: string,
+  // Stessa logica per due usi: ingrediente esaurito (barrato nella descrizione)
+  // e ingrediente che nasconde i piatti dal menu
+  table: "MenuItemUnavailableIngredient" | "IngredientHiddenItem" = "MenuItemUnavailableIngredient"
 ): Promise<number> {
   // Genera varianti singolare/plurale italiano
   const variants = getItalianVariants(ingredientName.toLowerCase());
@@ -101,7 +104,7 @@ async function calculateIngredientMatches(
     }));
 
     // Batch insert con ON CONFLICT DO NOTHING
-    await supabase.from("MenuItemUnavailableIngredient").upsert(records, {
+    await supabase.from(table).upsert(records, {
       onConflict: "menuItemId,ingredientId",
       ignoreDuplicates: true,
     });
@@ -115,9 +118,10 @@ async function calculateIngredientMatches(
  */
 async function clearIngredientMatches(
   supabase: ReturnType<typeof createClient>,
-  ingredientId: string
+  ingredientId: string,
+  table: "MenuItemUnavailableIngredient" | "IngredientHiddenItem" = "MenuItemUnavailableIngredient"
 ): Promise<void> {
-  await supabase.from("MenuItemUnavailableIngredient").delete().eq("ingredientId", ingredientId);
+  await supabase.from(table).delete().eq("ingredientId", ingredientId);
 }
 
 /**
@@ -164,6 +168,24 @@ async function setIngredientCategories(
       .eq("ingredientId", ingredientId)
       .in("categoryId", toRemove);
     if (error) throw error;
+
+    // Deselezionato da una categoria: i piatti di quella categoria perdono
+    // l'ingrediente (il prodotto non lo mantiene).
+    const { data: itemsInRemoved, error: itemsError } = await supabase
+      .from("MenuItem")
+      .select("id")
+      .in("categoryId", toRemove);
+    if (itemsError) throw itemsError;
+
+    const itemIds = (itemsInRemoved || []).map((i: { id: string }) => i.id);
+    if (itemIds.length > 0) {
+      const { error: unlinkError } = await supabase
+        .from("MenuItemIngredient")
+        .delete()
+        .eq("ingredientId", ingredientId)
+        .in("menuItemId", itemIds);
+      if (unlinkError) throw unlinkError;
+    }
   }
 }
 
@@ -303,12 +325,12 @@ Deno.serve(async (req) => {
     if (req.method === "PATCH" && subPath[0]) {
       const ingredientId = subPath[0];
       const body = await req.json();
-      const { name, nameEn, nameFr, nameEs, nameHe, inStock, menuType, price, categoryIds } = body;
+      const { name, nameEn, nameFr, nameEs, nameHe, inStock, menuType, price, categoryIds, hideDishes } = body;
 
       // Prima recupera l'ingrediente attuale per avere il nome e lo stato precedente
       const { data: currentIngredient } = await supabase
         .from("Ingredient")
-        .select("name, inStock")
+        .select("name, inStock, hideDishes")
         .eq("id", ingredientId)
         .single();
 
@@ -327,6 +349,15 @@ Deno.serve(async (req) => {
       if (nameHe !== undefined) updateData.nameHe = nameHe;
       if (inStock !== undefined) updateData.inStock = inStock;
       if (menuType !== undefined) updateData.menuType = menuType;
+      if (hideDishes !== undefined) {
+        if (typeof hideDishes !== "boolean") {
+          return new Response(JSON.stringify({ error: "Invalid hideDishes" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        updateData.hideDishes = hideDishes;
+      }
 
       // price: numero in centesimi, oppure null per toglierlo
       let newPrice: number | null | undefined;
@@ -364,6 +395,23 @@ Deno.serve(async (req) => {
 
       if (Array.isArray(categoryIds)) {
         await setIngredientCategories(supabase, ingredientId, categoryIds);
+      }
+
+      // ===== Nascondi/ripristina i piatti con questo ingrediente =====
+      // I piatti associati all'ingrediente si nascondono dal flag stesso (letto dal menu);
+      // quelli che lo citano solo nella descrizione si pre-calcolano qui, come per gli esauriti.
+      if (typeof hideDishes === "boolean" && hideDishes !== currentIngredient.hideDishes) {
+        if (hideDishes) {
+          const hiddenCount = await calculateIngredientMatches(
+            supabase,
+            ingredientId,
+            name || currentIngredient.name,
+            "IngredientHiddenItem"
+          );
+          console.log(`Ingredient ${ingredient.name} hides dishes: ${hiddenCount} via description`);
+        } else {
+          await clearIngredientMatches(supabase, ingredientId, "IngredientHiddenItem");
+        }
       }
 
       // Il prezzo dell'ingrediente diventa il prezzo di tutte le sue aggiunte:

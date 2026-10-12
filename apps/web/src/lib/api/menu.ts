@@ -2,6 +2,7 @@ import { fetchApi, fetchApiAuth, API_URL, supabase, getAuthToken } from './core'
 import type { Category, MenuItem, ModifierGroup, Modifier } from '@shared/types'
 import { buildIngredientIndex, fillDescriptionTranslations } from '@/lib/menuDescription'
 import { buildIngredientCategoryMap, isModifierAllowedInCategory } from '@/lib/ingredientCategories'
+import { HIDING_INGREDIENTS_SELECT, buildHiddenItemIds } from '@/lib/hiddenDishes'
 
 // ============ MENU BASIC ============
 
@@ -61,7 +62,7 @@ export const getMenuCached = async (): Promise<Category[]> => {
 // Query diretta a Supabase (bypassa Edge Function)
 export async function fetchMenuDirect(): Promise<Category[]> {
   // Query parallele per massima velocità
-  const [categoriesResult, outOfStockResult, substitutesResult, ingredientsResult, ingredientCategoriesResult] = await Promise.all([
+  const [categoriesResult, outOfStockResult, substitutesResult, ingredientsResult, ingredientCategoriesResult, hidingResult] = await Promise.all([
     // Menu principale
     supabase
       .from('Category')
@@ -114,8 +115,20 @@ export async function fetchMenuDirect(): Promise<Category[]> {
     // Destinazioni d'uso: in quali categorie e' ammesso ogni ingrediente
     supabase
       .from('IngredientCategory')
-      .select('ingredientId, categoryId')
+      .select('ingredientId, categoryId'),
+
+    // Ingredienti con "nascondi piatti" attivo: query a parte, cosi' se la
+    // migrazione non e' applicata il menu funziona comunque (senza nascondere)
+    supabase
+      .from('Ingredient')
+      .select(HIDING_INGREDIENTS_SELECT)
+      .eq('hideDishes', true)
   ])
+
+  if (hidingResult.error) {
+    console.error('Hidden dishes fetch error:', hidingResult.error)
+  }
+  const hiddenItemIds = buildHiddenItemIds(hidingResult.error ? null : hidingResult.data)
 
   if (categoriesResult.error) {
     console.error('Menu fetch error:', categoriesResult.error)
@@ -163,7 +176,8 @@ export async function fetchMenuDirect(): Promise<Category[]> {
   const filtered = categories.map(category => ({
     ...category,
     items: (category.items || [])
-      .filter((item: { available: boolean }) => item.available)
+      // Via i piatti disattivati e quelli con un ingrediente che nasconde i piatti
+      .filter((item: { id: string; available: boolean }) => item.available && !hiddenItemIds.has(item.id))
       .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((item: any) => {
