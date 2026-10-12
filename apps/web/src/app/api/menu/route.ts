@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { buildIngredientIndex, fillDescriptionTranslations } from "@/lib/menuDescription";
+import { buildIngredientCategoryMap, isModifierAllowedInCategory } from "@/lib/ingredientCategories";
+import { HIDING_INGREDIENTS_SELECT, buildHiddenItemIds } from "@/lib/hiddenDishes";
 
 // Force dynamic: evita pre-rendering a build time (env vars non disponibili)
 export const dynamic = "force-dynamic";
@@ -17,7 +19,7 @@ export async function GET() {
 
   try {
     // Query parallele per massima velocità
-    const [categoriesResult, outOfStockResult, ingredientsResult] = await Promise.all([
+    const [categoriesResult, outOfStockResult, ingredientsResult, ingredientCategoriesResult, hidingResult] = await Promise.all([
       // Menu principale con ingredienti
       supabase
         .from("Category")
@@ -61,9 +63,29 @@ export async function GET() {
 
       // Tutti gli ingredienti: servono a tradurre le descrizioni voce per voce
       supabase.from("Ingredient").select("name, nameEn, nameFr, nameEs, nameHe"),
+
+      // Destinazioni d'uso: in quali categorie e' ammesso ogni ingrediente
+      supabase.from("IngredientCategory").select("ingredientId, categoryId"),
+
+      // Ingredienti con "nascondi piatti" attivo (query a parte: senza migrazione il menu funziona comunque)
+      supabase.from("Ingredient").select(HIDING_INGREDIENTS_SELECT).eq("hideDishes", true),
     ]);
 
     if (categoriesResult.error) throw categoriesResult.error;
+
+    if (hidingResult.error) {
+      console.error("Hidden dishes fetch error:", hidingResult.error);
+    }
+    const hiddenItemIds = buildHiddenItemIds(hidingResult.error ? null : hidingResult.data);
+
+    // Se la lettura fallisce (migrazione non applicata) non si filtra: meglio
+    // mostrare tutte le aggiunte che nasconderle tutte.
+    const ingredientCategoryMap = ingredientCategoriesResult.error
+      ? null
+      : buildIngredientCategoryMap(ingredientCategoriesResult.data || []);
+    if (ingredientCategoriesResult.error) {
+      console.error("IngredientCategory fetch error:", ingredientCategoriesResult.error);
+    }
 
     const categories = categoriesResult.data || [];
     const ingredientIndex = buildIngredientIndex(ingredientsResult.data || []);
@@ -157,7 +179,8 @@ export async function GET() {
     const menu = categories.map((category) => ({
       ...category,
       items: (category.items || [])
-        .filter((item) => item.available)
+        // Via i piatti disattivati e quelli con un ingrediente che nasconde i piatti
+        .filter((item) => item.available && !hiddenItemIds.has(item.id))
         .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
         .map((item) => {
           // Ingredienti non disponibili da due fonti:
@@ -210,9 +233,16 @@ export async function GET() {
           for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
             if (!seenIds.has(ing.id)) {
               seenIds.add(ing.id);
+              const sub = substituteMap[ing.id];
               unavailableIngredients.push({
                 ...ing,
-                substitute: substituteMap[ing.id] ?? undefined,
+                // Il sostituto vale solo se ammesso nella categoria di questo piatto
+                substitute:
+                  sub &&
+                  (!ingredientCategoryMap ||
+                    isModifierAllowedInCategory(ingredientCategoryMap, { ingredientId: sub.id }, category.id))
+                    ? sub
+                    : undefined,
               });
             }
           }
@@ -221,9 +251,15 @@ export async function GET() {
           // Modifiers with unavailable ingredients should be shown to the frontend,
           // which can mark them as disabled/unavailable. The backend never hides menu items
           // or modifiers based on ingredient availability — substitutes handle that instead.
+          // Unico filtro: le aggiunte il cui ingrediente non e' ammesso nella
+          // categoria del piatto (es. cetriolini in caffetteria) non si mostrano.
           const normalizedModifierGroups = item.modifierGroups?.map((group) => ({
             ...group,
-            modifiers: group.modifiers,
+            modifiers: ingredientCategoryMap
+              ? group.modifiers?.filter((mod: { ingredientId?: string | null }) =>
+                  isModifierAllowedInCategory(ingredientCategoryMap, mod, category.id)
+                )
+              : group.modifiers,
           }));
 
           return {

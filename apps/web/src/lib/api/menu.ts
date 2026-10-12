@@ -1,6 +1,8 @@
 import { fetchApi, fetchApiAuth, API_URL, supabase, getAuthToken } from './core'
 import type { Category, MenuItem, ModifierGroup, Modifier } from '@shared/types'
 import { buildIngredientIndex, fillDescriptionTranslations } from '@/lib/menuDescription'
+import { buildIngredientCategoryMap, isModifierAllowedInCategory } from '@/lib/ingredientCategories'
+import { HIDING_INGREDIENTS_SELECT, buildHiddenItemIds } from '@/lib/hiddenDishes'
 
 // ============ MENU BASIC ============
 
@@ -60,7 +62,7 @@ export const getMenuCached = async (): Promise<Category[]> => {
 // Query diretta a Supabase (bypassa Edge Function)
 export async function fetchMenuDirect(): Promise<Category[]> {
   // Query parallele per massima velocità
-  const [categoriesResult, outOfStockResult, substitutesResult, ingredientsResult] = await Promise.all([
+  const [categoriesResult, outOfStockResult, substitutesResult, ingredientsResult, ingredientCategoriesResult, hidingResult] = await Promise.all([
     // Menu principale
     supabase
       .from('Category')
@@ -108,12 +110,38 @@ export async function fetchMenuDirect(): Promise<Category[]> {
     // Tutti gli ingredienti: servono a tradurre le descrizioni voce per voce
     supabase
       .from('Ingredient')
-      .select('name, nameEn, nameFr, nameEs, nameHe')
+      .select('name, nameEn, nameFr, nameEs, nameHe'),
+
+    // Destinazioni d'uso: in quali categorie e' ammesso ogni ingrediente
+    supabase
+      .from('IngredientCategory')
+      .select('ingredientId, categoryId'),
+
+    // Ingredienti con "nascondi piatti" attivo: query a parte, cosi' se la
+    // migrazione non e' applicata il menu funziona comunque (senza nascondere)
+    supabase
+      .from('Ingredient')
+      .select(HIDING_INGREDIENTS_SELECT)
+      .eq('hideDishes', true)
   ])
+
+  if (hidingResult.error) {
+    console.error('Hidden dishes fetch error:', hidingResult.error)
+  }
+  const hiddenItemIds = buildHiddenItemIds(hidingResult.error ? null : hidingResult.data)
 
   if (categoriesResult.error) {
     console.error('Menu fetch error:', categoriesResult.error)
     throw categoriesResult.error
+  }
+
+  // Se la lettura delle destinazioni fallisce (migrazione non ancora applicata,
+  // RLS) non si filtra: meglio mostrare tutte le aggiunte che nasconderle tutte.
+  const ingredientCategoryMap = ingredientCategoriesResult.error
+    ? null
+    : buildIngredientCategoryMap(ingredientCategoriesResult.data || [])
+  if (ingredientCategoriesResult.error) {
+    console.error('IngredientCategory fetch error:', ingredientCategoriesResult.error)
   }
 
   const categories = categoriesResult.data || []
@@ -148,7 +176,8 @@ export async function fetchMenuDirect(): Promise<Category[]> {
   const filtered = categories.map(category => ({
     ...category,
     items: (category.items || [])
-      .filter((item: { available: boolean }) => item.available)
+      // Via i piatti disattivati e quelli con un ingrediente che nasconde i piatti
+      .filter((item: { id: string; available: boolean }) => item.available && !hiddenItemIds.has(item.id))
       .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((item: any) => {
@@ -175,9 +204,13 @@ export async function fetchMenuDirect(): Promise<Category[]> {
         for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
           if (!seenIds.has(ing.id)) {
             seenIds.add(ing.id)
+            const sub = substituteMap[ing.id]
             unavailableIngredients.push({
               ...ing,
-              substitute: substituteMap[ing.id] ?? undefined
+              // Il sostituto vale solo se ammesso nella categoria di questo piatto
+              substitute: sub && (!ingredientCategoryMap || isModifierAllowedInCategory(ingredientCategoryMap, { ingredientId: sub.id }, category.id))
+                ? sub
+                : undefined
             })
           }
         }
@@ -191,7 +224,10 @@ export async function fetchMenuDirect(): Promise<Category[]> {
             ...group,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             modifiers: group.modifiers?.filter((mod: any) =>
-              mod.available && (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId))
+              mod.available &&
+              (!mod.ingredientId || !outOfStockIds.has(mod.ingredientId)) &&
+              // Solo aggiunte il cui ingrediente e' ammesso nella categoria del piatto
+              (!ingredientCategoryMap || isModifierAllowedInCategory(ingredientCategoryMap, mod, category.id))
             )
           }))
         }

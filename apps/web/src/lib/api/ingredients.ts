@@ -10,6 +10,8 @@ export const createIngredient = (data: {
   nameEs?: string
   nameHe?: string
   menuType?: string
+  price?: number | null
+  categoryIds?: string[]
 }) =>
   fetchApiAuth<Ingredient>('/ingredients', {
     method: 'POST',
@@ -24,6 +26,9 @@ export const updateIngredient = (id: string, data: {
   nameHe?: string
   inStock?: boolean
   menuType?: string
+  price?: number | null
+  categoryIds?: string[]
+  hideDishes?: boolean
 }) =>
   fetchApiAuth<Ingredient>(`/ingredients/${id}`, {
     method: 'PATCH',
