@@ -1,8 +1,9 @@
 /**
  * MyKafe Print Server
  *
- * Listens for new orders via Supabase Realtime and prints to thermal printers.
- * Splits each order into 3 receipts: SUSHI / PANINI / CAFFETTERIA.
+ * Listens for new orders via Supabase Realtime and prints to the thermal printer.
+ * Two receipts per order at most: the sushi, which goes to its own station,
+ * and everything else together.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -20,35 +21,24 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   process.exit(1);
 }
 
-// Category patterns for each printer section
+// Il sushi si prepara altrove: i suoi articoli vanno su uno scontrino a parte
+// (categorie che contengono uno di questi nomi, senza distinzione di maiuscole)
 const SUSHI_CATEGORIES = (process.env.SUSHI_CATEGORIES || "Sushi,Sashimi,Roll,Nigiri")
   .split(",")
-  .map((s) => s.trim().toLowerCase());
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
 
-const PANINI_CATEGORIES = (process.env.PANINI_CATEGORIES || "Panini,Panino,Sandwich,Toast")
-  .split(",")
-  .map((s) => s.trim().toLowerCase());
+// Stampante principale: PRINTER_HOST/PRINTER_PORT, con ripiego sulle vecchie
+// variabili per sezione dei .env gia' installati
+const PRINTER = {
+  ip: process.env.PRINTER_HOST || process.env.PRINTER_CAFFETTERIA_IP || "192.168.1.102",
+  port: parseInt(process.env.PRINTER_PORT || process.env.PRINTER_CAFFETTERIA_PORT || "9100"),
+};
 
-const CAFFETTERIA_CATEGORIES = (
-  process.env.CAFFETTERIA_CATEGORIES || "Caffetteria,Bevande,Caffe,Drink,Bibite,Dolci,Dessert"
-)
-  .split(",")
-  .map((s) => s.trim().toLowerCase());
-
-// Printer configuration - 3 printers
+// Stampante del sushi: se non e' configurata usa la principale
 const PRINTER_SUSHI = {
-  ip: process.env.PRINTER_SUSHI_IP || "192.168.1.100",
-  port: parseInt(process.env.PRINTER_SUSHI_PORT || "9100"),
-};
-
-const PRINTER_PANINI = {
-  ip: process.env.PRINTER_PANINI_IP || "192.168.1.101",
-  port: parseInt(process.env.PRINTER_PANINI_PORT || "9100"),
-};
-
-const PRINTER_CAFFETTERIA = {
-  ip: process.env.PRINTER_CAFFETTERIA_IP || "192.168.1.102",
-  port: parseInt(process.env.PRINTER_CAFFETTERIA_PORT || "9100"),
+  ip: process.env.PRINTER_SUSHI_IP || PRINTER.ip,
+  port: parseInt(process.env.PRINTER_SUSHI_PORT || String(PRINTER.port)),
 };
 
 // Types
@@ -131,31 +121,11 @@ function formatDateTime(isoString: string): string {
   });
 }
 
-// Receipt section type
-type ReceiptSection = "SUSHI" | "PANINI" | "CAFFETTERIA";
-
-// Get section header label
-function getSectionLabel(section: ReceiptSection): string {
-  switch (section) {
-    case "SUSHI":
-      return "** SUSHI **";
-    case "PANINI":
-      return "** PANINI **";
-    case "CAFFETTERIA":
-      return "** CAFFETTERIA **";
-  }
-}
-
 // Generate receipt content
 //
 // I comandi ESC/POS si concatenano al testo, non vanno su righe proprie:
 // finendo dentro un join("\n") stampavano una riga vuota di carta ciascuno.
-function generateReceipt(
-  order: Order,
-  items: OrderItem[],
-  section: ReceiptSection,
-  beep = false
-): string {
+function generateReceipt(order: Order, items: OrderItem[], beep = false): string {
   let out = "";
   const cmd = (c: string) => {
     out += c;
@@ -166,10 +136,6 @@ function generateReceipt(
 
   // Header: un po' di margine sopra, cosi' la prima riga non finisce sul bordo
   cmd(COMMANDS.INIT + COMMANDS.ALIGN_CENTER);
-  line();
-  cmd(COMMANDS.DOUBLE_SIZE + COMMANDS.BOLD_ON);
-  line(getSectionLabel(section));
-  cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
   line();
 
   // Order info
@@ -276,65 +242,39 @@ async function printToNetwork(ip: string, port: number, content: string): Promis
   });
 }
 
-// Separate items by category into 3 sections
-function separateItems(items: OrderItem[]): {
-  sushi: OrderItem[];
-  panini: OrderItem[];
-  caffetteria: OrderItem[];
-} {
-  const sushi: OrderItem[] = [];
-  const panini: OrderItem[] = [];
-  const caffetteria: OrderItem[] = [];
-
-  for (const item of items) {
-    const categoryName = item.menuItem.category?.name?.toLowerCase() || "";
-
-    if (SUSHI_CATEGORIES.some((cat) => categoryName.includes(cat))) {
-      sushi.push(item);
-    } else if (PANINI_CATEGORIES.some((cat) => categoryName.includes(cat))) {
-      panini.push(item);
-    } else {
-      // Everything else goes to caffetteria (beverages, coffee, desserts, etc.)
-      caffetteria.push(item);
-    }
-  }
-
-  return { sushi, panini, caffetteria };
+function isSushi(item: OrderItem): boolean {
+  const categoryName = item.menuItem.category?.name?.toLowerCase() || "";
+  return SUSHI_CATEGORIES.some((cat) => categoryName.includes(cat));
 }
 
-// Process and print order - generates 3 separate receipts
+// Process and print order - sushi on its own receipt, everything else together
 async function processOrder(order: Order): Promise<void> {
   console.log(`\nProcessing order #${order.id.slice(-6).toUpperCase()}`);
   console.log(`  Type: ${order.orderType}, Items: ${order.items.length}`);
 
-  const { sushi, panini, caffetteria } = separateItems(order.items);
-
-  console.log(
-    `  Split: Sushi=${sushi.length}, Panini=${panini.length}, Caffetteria=${caffetteria.length}`
-  );
+  const sushi = order.items.filter(isSushi);
+  const rest = order.items.filter((item) => !isSushi(item));
+  console.log(`  Split: Sushi=${sushi.length}, Resto=${rest.length}`);
 
   const jobs = [
-    { section: "SUSHI" as const, items: sushi, printer: PRINTER_SUSHI },
-    { section: "PANINI" as const, items: panini, printer: PRINTER_PANINI },
-    // Beverages, coffee, desserts, etc.
-    { section: "CAFFETTERIA" as const, items: caffetteria, printer: PRINTER_CAFFETTERIA },
+    { label: "Sushi", items: sushi, printer: PRINTER_SUSHI },
+    { label: "Resto", items: rest, printer: PRINTER },
   ].filter((job) => job.items.length > 0);
 
-  // Le sezioni possono condividere la stessa stampante: il bip va solo
-  // sull'ultimo scontrino di ciascuna, cosi' suona una volta per ordine
+  // Se sushi e resto finiscono sulla stessa stampante il bip va solo
+  // sull'ultimo scontrino, cosi' suona una volta per ordine
   const lastJobForPrinter = new Map<string, number>();
   jobs.forEach((job, i) => lastJobForPrinter.set(`${job.printer.ip}:${job.printer.port}`, i));
 
-  for (const [i, { section, items, printer }] of jobs.entries()) {
-    console.log(`  Printing ${items.length} ${section} items...`);
+  for (const [i, { label, items, printer }] of jobs.entries()) {
     const beep = PRINTER_BEEP && lastJobForPrinter.get(`${printer.ip}:${printer.port}`) === i;
-    const receipt = generateReceipt(order, items, section, beep);
+    const receipt = generateReceipt(order, items, beep);
 
     try {
       await printToNetwork(printer.ip, printer.port, receipt);
-      console.log(`  ${section} printer: OK`);
+      console.log(`  ${label} printer: OK`);
     } catch (err) {
-      console.error(`  ${section} printer: FAILED`);
+      console.error(`  ${label} printer: FAILED`);
     }
   }
 }
@@ -441,21 +381,15 @@ async function pollNewOrders(): Promise<void> {
 async function main(): Promise<void> {
   console.log("========================================");
   console.log("       MyKafe Print Server v3.0");
-  console.log("  (Supabase Realtime + 3-Receipt Split)");
+  console.log("  (Supabase Realtime, sushi a parte)");
   console.log("========================================");
   console.log("");
   console.log("Configuration:");
   console.log(`  Supabase: ${SUPABASE_URL}`);
   console.log("");
-  console.log("Printers:");
-  console.log(`  SUSHI:       ${PRINTER_SUSHI.ip}:${PRINTER_SUSHI.port}`);
-  console.log(`  PANINI:      ${PRINTER_PANINI.ip}:${PRINTER_PANINI.port}`);
-  console.log(`  CAFFETTERIA: ${PRINTER_CAFFETTERIA.ip}:${PRINTER_CAFFETTERIA.port}`);
-  console.log("");
-  console.log("Category Mapping:");
-  console.log(`  Sushi:       ${SUSHI_CATEGORIES.join(", ")}`);
-  console.log(`  Panini:      ${PANINI_CATEGORIES.join(", ")}`);
-  console.log(`  Caffetteria: ${CAFFETTERIA_CATEGORIES.join(", ")} (+ everything else)`);
+  console.log(`Printer:       ${PRINTER.ip}:${PRINTER.port}`);
+  console.log(`Printer sushi: ${PRINTER_SUSHI.ip}:${PRINTER_SUSHI.port}`);
+  console.log(`Categorie sushi: ${SUSHI_CATEGORIES.join(", ")}`);
   console.log("");
 
   await seedExistingOrders();
