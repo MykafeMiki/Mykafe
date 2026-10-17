@@ -6,7 +6,7 @@ import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import { filterCategoriesByTime, getTakeawayConfig, getTakeawayStatus, fetchClosureConfig, isOnlineOrderingOpen, getAvailableDates as getAvailableDatesFromConfig, isOrderingBlackoutNow, isPickupInBlackout, type ClosureConfig } from '@/lib/menuTimers'
 import { TakeawayUnavailableMessage } from '@/components/TakeawayUnavailableMessage'
-import type { Category, MenuItem, Modifier } from '@shared/types'
+import type { Category, DishChanges, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode, PaymentMethod } from '@shared/types'
 import { IdentityStep } from '@/components/ordina/IdentityStep'
 import { PaymentStep } from '@/components/ordina/PaymentStep'
@@ -218,10 +218,11 @@ export default function OrdinaPage() {
     quantity: number,
     modifiers: Modifier[],
     notes?: string,
-    consumeMode?: ConsumeMode
+    consumeMode?: ConsumeMode,
+    changes?: DishChanges
   ) => {
     if (selectedItem) {
-      addToCart(selectedItem, quantity, modifiers, notes, ConsumeMode.TAKEAWAY)
+      addToCart(selectedItem, quantity, modifiers, notes, ConsumeMode.TAKEAWAY, changes)
     }
   }
 

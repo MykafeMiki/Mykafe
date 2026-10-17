@@ -54,6 +54,13 @@ export function unauthorizedResponse(corsHeaders: Record<string, string>): Respo
   )
 }
 
+// Nome di un ingrediente da stampare in cucina: senza caratteri di controllo,
+// che la stampante eseguirebbe come comandi
+const KitchenIngredientName = z
+  .string()
+  .transform((s) => s.replace(/[\u0000-\u001F\u007F]/g, "").trim())
+  .pipe(z.string().min(1).max(80));
+
 // Order item schema
 export const OrderItemSchema = z.object({
   menuItemId: z.string().min(1, "Menu item ID required"),
@@ -61,6 +68,12 @@ export const OrderItemSchema = z.object({
   notes: z.string().max(500).optional(),
   modifierIds: z.array(z.string()).optional(),
   consumeMode: z.enum(["DINE_IN", "TAKEAWAY"]).optional(),
+  // Cambi alla ricetta per scontrino e schermo cucina (nomi in italiano)
+  substitutions: z
+    .array(z.object({ from: KitchenIngredientName, to: KitchenIngredientName }))
+    .max(20)
+    .optional(),
+  removedIngredients: z.array(KitchenIngredientName).max(30).optional(),
 });
 
 // Create order schema

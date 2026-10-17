@@ -2,9 +2,10 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { MenuItem, Modifier, CartItem } from "@shared/types";
+import type { MenuItem, Modifier, CartItem, DishChanges, IngredientSubstitution } from "@shared/types";
 import { ConsumeMode } from "@shared/types";
 import { getItemPrice, type PriceContext } from "./utils";
+import { getDishChanges, getDishIngredients } from "./menuDescription";
 
 interface CartStore {
   items: CartItem[];
@@ -24,7 +25,8 @@ interface CartStore {
     quantity: number,
     modifiers: Modifier[],
     notes?: string,
-    consumeMode?: ConsumeMode
+    consumeMode?: ConsumeMode,
+    changes?: DishChanges
   ) => void;
   removeItem: (index: number) => void;
   updateQuantity: (index: number, quantity: number) => void;
@@ -37,6 +39,18 @@ interface CartStore {
 }
 
 const CART_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+
+// Cosa va scritto per la cucina su un articolo dell'ordine: i sostituti degli
+// ingredienti esauriti e quelli tolti dal cliente (nomi in italiano)
+export function kitchenChanges(item: CartItem): {
+  substitutions?: IngredientSubstitution[];
+  removedIngredients?: string[];
+} {
+  const changes: { substitutions?: IngredientSubstitution[]; removedIngredients?: string[] } = {};
+  if (item.substitutions?.length) changes.substitutions = item.substitutions;
+  if (item.removedIngredients?.length) changes.removedIngredients = item.removedIngredients.map((r) => r.name);
+  return changes;
+}
 
 export const useCart = create<CartStore>()(
   persist(
@@ -74,10 +88,12 @@ export const useCart = create<CartStore>()(
         quantity,
         selectedModifiers,
         notes,
-        consumeMode = ConsumeMode.DINE_IN
+        consumeMode = ConsumeMode.DINE_IN,
+        // Senza il dettaglio del piatto restano comunque i sostituti degli esauriti
+        changes = getDishChanges(getDishIngredients(menuItem, "it"))
       ) => {
         set((state) => ({
-          items: [...state.items, { menuItem, quantity, selectedModifiers, notes, consumeMode }],
+          items: [...state.items, { menuItem, quantity, selectedModifiers, notes, consumeMode, ...changes }],
           lastActivity: Date.now(),
         }));
       },

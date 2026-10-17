@@ -373,6 +373,43 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
     </button>
   )
 
+  // Sostituto scelto per l'ingrediente esaurito, con il nome di adesso (la mappa
+  // salvata ricorda quello di quando e' stato scelto) e un avviso quando il menu
+  // non puo' mostrarlo
+  const substituteLine = (ingredient: Ingredient) => {
+    const saved = substitutes[ingredient.id]
+    const openPicker = () => {
+      setSelectedSubstituteId(saved?.id || '')
+      setSubstitutePickerFor(ingredient)
+    }
+    if (!saved) {
+      return (
+        <button
+          onClick={openPicker}
+          className="text-xs text-primary-500 hover:underline mt-0.5 block"
+        >
+          + aggiungi sostituto
+        </button>
+      )
+    }
+    const live = ingredients.find(i => i.id === saved.id)
+    const problem = !live ? 'eliminato' : !live.inStock ? 'esaurito anche questo' : null
+    return (
+      <p className="text-xs text-gray-500 mt-0.5">
+        → {live?.name ?? saved.name}
+        {problem && (
+          <span className="ml-1 text-amber-700">({problem}: nel menu non compare)</span>
+        )}
+        <button
+          onClick={openPicker}
+          className="ml-1 text-primary-500 hover:underline"
+        >
+          modifica
+        </button>
+      </p>
+    )
+  }
+
   const translationBadge = (ingredient: Ingredient) => (
     <>
       {needsTranslation(ingredient) && (
@@ -583,31 +620,7 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-gray-900">{ingredient.name}</span>
                   {translationBadge(ingredient)}
-                  {substitutes[ingredient.id] && (
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      → {substitutes[ingredient.id].name}
-                      <button
-                        onClick={() => {
-                          setSelectedSubstituteId(substitutes[ingredient.id]?.id || '')
-                          setSubstitutePickerFor(ingredient)
-                        }}
-                        className="ml-1 text-primary-500 hover:underline"
-                      >
-                        modifica
-                      </button>
-                    </p>
-                  )}
-                  {!substitutes[ingredient.id] && (
-                    <button
-                      onClick={() => {
-                        setSelectedSubstituteId('')
-                        setSubstitutePickerFor(ingredient)
-                      }}
-                      className="text-xs text-primary-500 hover:underline mt-0.5 block"
-                    >
-                      + aggiungi sostituto
-                    </button>
-                  )}
+                  {substituteLine(ingredient)}
                   {destinationsBlock(ingredient)}
                 </div>
                 <button
@@ -764,7 +777,8 @@ export function IngredientsTab({ t, tc }: IngredientsTabProps) {
                 .filter(i => i.id !== substitutePickerFor.id && shareCategory(i, substitutePickerFor))
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map(i => (
-                  <option key={i.id} value={i.id}>
+                  // Un sostituto esaurito il menu non lo mostrerebbe
+                  <option key={i.id} value={i.id} disabled={!i.inStock && i.id !== selectedSubstituteId}>
                     {i.name}{!i.inStock ? ' (esaurito)' : ''}
                   </option>
                 ))}

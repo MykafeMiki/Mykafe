@@ -1,0 +1,10 @@
+# La Vercel CLI non legge .gitignore: senza questo file `vercel deploy` caricava
+# anche i .env (con la secret key del print-server) e le copie dei worktree.
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+.claude/
+.idea/
+.turbo/

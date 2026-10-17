@@ -5,8 +5,8 @@ import { X, Minus, Plus, UtensilsCrossed, ShoppingBag } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatPrice, cn, getItemPrice, type PriceContext } from "@/lib/utils";
 import { getTranslatedName } from "@/lib/translations";
-import { getDisplayDescription } from "@/lib/menuDescription";
-import type { MenuItem, Modifier } from "@shared/types";
+import { getDishChanges, getDishIngredients } from "@/lib/menuDescription";
+import type { DishChanges, MenuItem, Modifier } from "@shared/types";
 import { ConsumeMode, applyPriceMultiplier } from "@shared/types";
 
 interface ItemModalProps {
@@ -16,7 +16,8 @@ interface ItemModalProps {
     quantity: number,
     modifiers: Modifier[],
     notes?: string,
-    consumeMode?: ConsumeMode
+    consumeMode?: ConsumeMode,
+    changes?: DishChanges
   ) => void;
   defaultConsumeMode?: ConsumeMode;
   priceMultiplier?: number;
@@ -39,16 +40,23 @@ export function ItemModal({
   const [selectedModifiers, setSelectedModifiers] = useState<Record<string, Modifier[]>>({});
   const [notes, setNotes] = useState("");
   const [consumeMode, setConsumeMode] = useState<ConsumeMode>(defaultConsumeMode);
+  // Posizioni degli ingredienti che il cliente ha tolto
+  const [removed, setRemoved] = useState<Set<number>>(new Set());
 
   const translatedName = getTranslatedName(item, locale);
-  const displayDescription = getDisplayDescription(item, locale);
   const baseItemPrice = getItemPrice(item, priceContext);
   // La descrizione dei piatti e' la lista ingredienti separata da virgole
   // (gia' ripulita dagli esauriti e con i sostituti applicati)
-  const ingredientList = (displayDescription || "")
-    .split(",")
-    .map((s) => s.trim().replace(/\.$/, ""))
-    .filter(Boolean);
+  const ingredientList = getDishIngredients(item, locale);
+
+  const toggleRemoved = (index: number) => {
+    setRemoved((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
 
   const toggleModifier = (groupId: string, modifier: Modifier, multiSelect: boolean) => {
     setSelectedModifiers((prev) => {
@@ -84,7 +92,13 @@ export function ItemModal({
   };
 
   const handleAdd = () => {
-    onAdd(quantity, getAllSelectedModifiers(), notes || undefined, consumeMode);
+    onAdd(
+      quantity,
+      getAllSelectedModifiers(),
+      notes || undefined,
+      consumeMode,
+      getDishChanges(ingredientList, removed)
+    );
     onClose();
   };
 
@@ -115,14 +129,24 @@ export function ItemModal({
 
           {ingredientList.length > 0 && (
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">{t("ingredients")}</h3>
+              <h3 className="font-semibold text-gray-900">{t("ingredients")}</h3>
+              <p className="text-xs text-gray-500 mb-2">{t("removeIngredientHint")}</p>
               <ul className="flex flex-wrap gap-2">
                 {ingredientList.map((ing, i) => (
-                  <li
-                    key={`${ing}-${i}`}
-                    className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full"
-                  >
-                    {ing}
+                  <li key={`${ing.label}-${i}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleRemoved(i)}
+                      aria-pressed={removed.has(i)}
+                      className={cn(
+                        "text-sm px-3 py-1 rounded-full transition",
+                        removed.has(i)
+                          ? "bg-red-50 text-red-400 line-through"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      )}
+                    >
+                      {ing.label}
+                    </button>
                   </li>
                 ))}
               </ul>

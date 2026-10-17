@@ -160,6 +160,7 @@
   },
   "cart": {
     "title": "Tu pedido",
+    "without": "Sin",
     "empty": "Tu carrito está vacío",
     "yourData": "Tus datos",
     "namePlaceholder": "Tu nombre",
@@ -197,9 +198,11 @@
     "addNotes": "Añadir notas",
     "notesPlaceholder": "Ej: sin cebolla, muy hecho...",
     "eatHere": "Comer aquí",
-    "takeaway": "Para llevar"
+    "takeaway": "Para llevar",
+    "removeIngredientHint": "Toca un ingrediente para quitarlo"
   },
   "kitchen": {
+    "without": "SIN",
     "resetAll": "Borrar pedidos",
     "resetConfirm": "¿Borrar TODOS los pedidos? Se archivarán en Admin y se liberarán las mesas. No se puede deshacer.",
     "resetDone": "Pedidos borrados",

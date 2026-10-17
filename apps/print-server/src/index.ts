@@ -61,6 +61,10 @@ interface OrderItem {
       price: number;
     };
   }>;
+  // Cambi alla ricetta (nomi in italiano): sostituti degli ingredienti esauriti
+  // e ingredienti tolti dal cliente
+  substitutions?: Array<{ from: string; to: string }> | null;
+  removedIngredients?: string[] | null;
 }
 
 interface Order {
@@ -121,6 +125,10 @@ function formatDateTime(isoString: string): string {
   });
 }
 
+// Testo scelto dal cliente: senza caratteri di controllo, che la stampante
+// eseguirebbe come comandi ESC/POS
+const printable = (text: string) => String(text).replace(/[\x00-\x1F\x7F]/g, "");
+
 // Generate receipt content
 //
 // I comandi ESC/POS si concatenano al testo, non vanno su righe proprie:
@@ -176,9 +184,22 @@ function generateReceipt(order: Order, items: OrderItem[], beep = false): string
     line(`${item.quantity}x ${item.menuItem.name}`);
     cmd(COMMANDS.NORMAL_SIZE + COMMANDS.BOLD_OFF);
 
+    // Cambi alla ricetta subito sotto il piatto, in grassetto: sono quelli che
+    // in cucina non devono sfuggire
+    const changes = [
+      ...(item.substitutions || []).map((sub) => `${printable(sub.from)} -> ${printable(sub.to)}`),
+      ...(item.removedIngredients || []).map((name) => `SENZA ${printable(name)}`),
+    ];
+    if (changes.length > 0) {
+      cmd(COMMANDS.BOLD_ON);
+      for (const change of changes) line(`    ${change}`);
+      cmd(COMMANDS.BOLD_OFF);
+    }
+
     if (item.modifiers && item.modifiers.length > 0) {
       for (const mod of item.modifiers) {
-        line(`    + ${mod.modifier.name}`);
+        // Le aggiunte si chiamano gia' "+ Avocado": senza toglierlo usciva "+ + Avocado"
+        line(`    + ${mod.modifier.name.replace(/^\s*\+\s*/, "")}`);
       }
     }
 

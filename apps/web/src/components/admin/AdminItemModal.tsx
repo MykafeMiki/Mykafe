@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { X, Upload, Loader2, Image as ImageIcon, Plus, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { uploadItemImage, updateMenuItem, createMenuItem, getIngredients, createIngredient, setMenuItemIngredients, getMenuItemIngredients } from '@/lib/api'
-import { fetchIngredientSubstitutes, setIngredientSubstitute } from '@/lib/ingredientSubstitutes'
+import { fetchIngredientSubstitutes, setIngredientSubstitute, type SubstituteMap } from '@/lib/ingredientSubstitutes'
 import { buildIngredientIndex, findUnmatchedDescriptionParts } from '@/lib/menuDescription'
 import type { Category, MenuItem, Ingredient } from '@shared/types'
 
@@ -52,7 +52,9 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
 
   // Ingredients state
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([])
-  const [selectedIngredients, setSelectedIngredients] = useState<{ id: string; substituteId?: string }[]>([])
+  const [selectedIngredients, setSelectedIngredients] = useState<{ id: string }[]>([])
+  // Sostituti globali (ingrediente esaurito -> sostituto), uguali per tutti i piatti
+  const [substitutes, setSubstitutes] = useState<SubstituteMap>({})
   const [loadingIngredients, setLoadingIngredients] = useState(false)
   const [showNewIngredient, setShowNewIngredient] = useState(false)
   const [newIngName, setNewIngName] = useState('')
@@ -120,18 +122,17 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
     async function loadIngredients() {
       setLoadingIngredients(true)
       try {
-        const data = await getIngredients()
+        // Anche per un piatto nuovo: ogni ingrediente spuntato mostra il suo
+        // sostituto vero, non "Nessun sub." quando uno c'e' gia'
+        const [data, subsMap] = await Promise.all([getIngredients(), fetchIngredientSubstitutes()])
         setAllIngredients(data)
+        setSubstitutes(subsMap)
 
         // If editing, load current item's ingredients
         if (item) {
           try {
             const itemIngredients = await getMenuItemIngredients(item.id)
-            const subsMap = await fetchIngredientSubstitutes()
-            setSelectedIngredients(itemIngredients.map(i => ({
-              id: i.ingredientId,
-              substituteId: subsMap[i.ingredientId]?.id
-            })))
+            setSelectedIngredients(itemIngredients.map(i => ({ id: i.ingredientId })))
           } catch (err) {
             console.error('Failed to load item ingredients:', err)
           }
@@ -442,30 +443,38 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
                             </span>
                             {selected && (
                               <select
-                                value={selected.substituteId || ''}
+                                value={substitutes[ing.id]?.id || ''}
+                                title="Sostituto: quando questo ingrediente è esaurito il menu mostra questo al suo posto, in tutti i piatti"
                                 onChange={(e) => {
                                   const subId = e.target.value
                                   const subIng = allIngredients.find(i => i.id === subId)
-                                  const previous = selectedIngredients
-                                  setSelectedIngredients(prev => prev.map(i =>
-                                    i.id === ing.id ? { ...i, substituteId: subId || undefined } : i
-                                  ))
-                                  setIngredientSubstitute(
-                                    ing.id,
-                                    subIng
-                                      ? { id: subIng.id, name: subIng.name, nameEn: subIng.nameEn, nameFr: subIng.nameFr, nameEs: subIng.nameEs, nameHe: subIng.nameHe }
-                                      : null
-                                  ).catch(err => {
-                                    console.error('Failed to save ingredient substitute:', err)
-                                    setSelectedIngredients(previous)
-                                    alert(t('saveError'))
+                                  const substitute = subIng
+                                    ? { id: subIng.id, name: subIng.name, nameEn: subIng.nameEn, nameFr: subIng.nameFr, nameEs: subIng.nameEs, nameHe: subIng.nameHe }
+                                    : null
+                                  const previous = substitutes
+                                  setSubstitutes(prev => {
+                                    const next = { ...prev }
+                                    if (substitute) next[ing.id] = substitute
+                                    else delete next[ing.id]
+                                    return next
                                   })
+                                  setIngredientSubstitute(ing.id, substitute)
+                                    // La mappa salvata, con le modifiche fatte da altre schede nel frattempo
+                                    .then(setSubstitutes)
+                                    .catch(err => {
+                                      console.error('Failed to save ingredient substitute:', err)
+                                      setSubstitutes(previous)
+                                      alert(t('saveError'))
+                                    })
                                 }}
                                 className="text-xs border rounded px-1 py-0.5 bg-white text-gray-600 max-w-[110px]"
                               >
                                 <option value="">Nessun sub.</option>
                                 {allIngredients.filter(i => i.id !== ing.id && isAllowedHere(i)).map(i => (
-                                  <option key={i.id} value={i.id}>{i.name}</option>
+                                  // Un sostituto esaurito il menu non lo mostrerebbe
+                                  <option key={i.id} value={i.id} disabled={!i.inStock && i.id !== substitutes[ing.id]?.id}>
+                                    {i.name}{!i.inStock ? ' (esaurito)' : ''}
+                                  </option>
                                 ))}
                               </select>
                             )}
@@ -477,7 +486,11 @@ export function AdminItemModal({ item, categoryId, categories, onClose, onSave, 
                         )
                       })}
                     </div>
-
+                    {selectedIngredients.length > 0 && (
+                      <p className="text-xs text-gray-500 mb-2">
+                        Sub. = sostituto: quando l&apos;ingrediente è esaurito, il menu mostra quello al suo posto in tutti i piatti.
+                      </p>
+                    )}
                   </>
                 )}
 

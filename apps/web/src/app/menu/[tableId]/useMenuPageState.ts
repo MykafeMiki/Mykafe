@@ -22,7 +22,7 @@ import {
   type TableCustomer,
 } from '@/lib/api'
 import { filterCategoriesByTime, type MenuContext } from '@/lib/menuTimers'
-import type { Category, MenuItem, Modifier } from '@shared/types'
+import type { Category, DishChanges, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 
 export type PageStep =
@@ -189,9 +189,10 @@ export function useMenuPageState(qrCodeOverride?: string, kioskGuard = false) {
     quantity: number,
     modifiers: Modifier[],
     notes?: string,
-    consumeMode?: ConsumeMode
+    consumeMode?: ConsumeMode,
+    changes?: DishChanges
   ) => {
-    if (selectedItem) addToCart(selectedItem, quantity, modifiers, notes, consumeMode)
+    if (selectedItem) addToCart(selectedItem, quantity, modifiers, notes, consumeMode, changes)
   }
 
   const handleOrderSuccess = (waitMinutes?: number) => {

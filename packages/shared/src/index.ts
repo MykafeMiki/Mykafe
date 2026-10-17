@@ -96,6 +96,9 @@ export interface UnavailableIngredient {
   nameFr?: string;
   nameEs?: string;
   nameHe?: string;
+  // Voci del piatto che sono altri ingredienti col nome simile (normalizzate):
+  // con il Pomodoro esaurito i "Pomodorini ciliegia" restano
+  similarNames?: string[];
   substitute?: {
     id: string;
     name: string;
@@ -181,6 +184,25 @@ export interface Order {
   updatedAt: Date;
 }
 
+// Ingrediente esaurito e il sostituto servito al suo posto (nomi in italiano,
+// per scontrino e schermo cucina)
+export interface IngredientSubstitution {
+  from: string;
+  to: string;
+}
+
+// Ingrediente tolto dal cliente: in italiano per la cucina, e come l'ha visto lui
+export interface RemovedIngredient {
+  name: string;
+  label: string;
+}
+
+// Cambi alla ricetta scelti nel dettaglio del piatto
+export interface DishChanges {
+  substitutions?: IngredientSubstitution[];
+  removedIngredients?: RemovedIngredient[];
+}
+
 export interface OrderItem {
   id: string;
   orderId: string;
@@ -190,6 +212,8 @@ export interface OrderItem {
   notes?: string;
   consumeMode: ConsumeMode;
   modifiers?: OrderItemModifier[];
+  substitutions?: IngredientSubstitution[] | null;
+  removedIngredients?: string[] | null; // nomi in italiano
 }
 
 export interface OrderItemModifier {
@@ -209,6 +233,8 @@ export interface CreateOrderRequest {
     notes?: string;
     modifierIds?: string[];
     consumeMode?: ConsumeMode;
+    substitutions?: IngredientSubstitution[];
+    removedIngredients?: string[]; // nomi in italiano
   }[];
   notes?: string;
   orderType?: OrderType;
@@ -222,7 +248,7 @@ export interface CreateOrderRequest {
   priceContext?: PriceContext;
 }
 
-export interface CartItem {
+export interface CartItem extends DishChanges {
   menuItem: MenuItem;
   quantity: number;
   notes?: string;

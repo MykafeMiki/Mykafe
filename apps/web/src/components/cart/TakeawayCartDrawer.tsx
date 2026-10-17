@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, Minus, Plus, Trash2, Loader2, User, Phone, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCart } from "@/lib/cart";
+import { kitchenChanges, useCart } from "@/lib/cart";
 import { formatPrice, getItemPrice as getContextPrice, isCardPriceList } from "@/lib/utils";
 import { createOrder } from "@/lib/api";
 import { PaymentMethod, OrderType, ConsumeMode, applyCardSurcharge } from "@shared/types";
@@ -97,6 +97,7 @@ export function TakeawayCartDrawer({
           notes: item.notes,
           modifierIds: item.selectedModifiers.map((m) => m.id),
           consumeMode: ConsumeMode.TAKEAWAY,
+          ...kitchenChanges(item),
         })),
         orderType: OrderType.TAKEAWAY,
         priceContext,
@@ -147,6 +148,11 @@ export function TakeawayCartDrawer({
                       {item.selectedModifiers.length > 0 && (
                         <p className="text-sm text-gray-500">
                           {item.selectedModifiers.map((m) => m.name).join(", ")}
+                        </p>
+                      )}
+                      {item.removedIngredients && item.removedIngredients.length > 0 && (
+                        <p className="text-sm text-red-600">
+                          {t("without")} {item.removedIngredients.map((r) => r.label).join(", ")}
                         </p>
                       )}
                       {item.notes && (

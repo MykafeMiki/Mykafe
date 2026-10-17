@@ -165,6 +165,7 @@
   },
   "cart": {
     "title": "Il tuo ordine",
+    "without": "Senza",
     "empty": "Il carrello è vuoto",
     "yourData": "I tuoi dati",
     "namePlaceholder": "Il tuo nome",
@@ -209,9 +210,11 @@
     "addNotes": "Aggiungi note",
     "notesPlaceholder": "Es: senza cipolla, ben cotto...",
     "eatHere": "Mangio qui",
-    "takeaway": "Porto via"
+    "takeaway": "Porto via",
+    "removeIngredientHint": "Tocca un ingrediente per toglierlo"
   },
   "kitchen": {
+    "without": "SENZA",
     "resetAll": "Azzera ordini",
     "resetConfirm": "Cancellare TUTTI gli ordini? Verranno archiviati in Admin e i tavoli liberati. L'operazione non si può annullare.",
     "resetDone": "Ordini azzerati",

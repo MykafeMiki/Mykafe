@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, Minus, Plus, Trash2, Loader2, UtensilsCrossed, ShoppingBag } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCart } from "@/lib/cart";
+import { kitchenChanges, useCart } from "@/lib/cart";
 import { formatPrice, getItemPrice, cn } from "@/lib/utils";
 import { createOrder } from "@/lib/api";
 import { ConsumeMode } from "@shared/types";
@@ -49,6 +49,7 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
           notes: item.notes,
           modifierIds: item.selectedModifiers.map((m) => m.id),
           consumeMode: item.consumeMode,
+          ...kitchenChanges(item),
         })),
         priceContext,
       });
@@ -93,6 +94,11 @@ export function CartDrawer({ isOpen, onClose, onOrderSuccess }: CartDrawerProps)
                       {item.selectedModifiers.length > 0 && (
                         <p className="text-sm text-gray-500">
                           {item.selectedModifiers.map((m) => m.name).join(", ")}
+                        </p>
+                      )}
+                      {item.removedIngredients && item.removedIngredients.length > 0 && (
+                        <p className="text-sm text-red-600">
+                          {t("without")} {item.removedIngredients.map((r) => r.label).join(", ")}
                         </p>
                       )}
                       {item.notes && (

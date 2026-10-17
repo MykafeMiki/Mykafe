@@ -7,7 +7,7 @@ import { SidebarMenuLayout, SidebarBackButton } from '@/components/menu/SidebarM
 import { ItemModal } from '@/components/menu/ItemModal'
 import { CartButton } from '@/components/cart/CartButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
-import type { Category, MenuItem, Modifier } from '@shared/types'
+import type { Category, DishChanges, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 import type { TableSession } from '@/lib/api'
 
@@ -23,7 +23,7 @@ export interface MenuStepProps {
   onGoBack: () => void
   onCategorySelect: (categoryId: string) => void
   onAddItem: (item: MenuItem) => void
-  onAddWithModifiers: (quantity: number, modifiers: Modifier[], notes?: string, consumeMode?: ConsumeMode) => void
+  onAddWithModifiers: (quantity: number, modifiers: Modifier[], notes?: string, consumeMode?: ConsumeMode, changes?: DishChanges) => void
   onSelectItemClose: () => void
   onCartOpen: (open: boolean) => void
   onOrderSuccess: (waitMinutes?: number) => void

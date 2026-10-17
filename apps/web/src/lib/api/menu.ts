@@ -1,8 +1,15 @@
 import { fetchApi, fetchApiAuth, API_URL, supabase, getAuthToken } from './core'
-import type { Category, MenuItem, ModifierGroup, Modifier } from '@shared/types'
-import { buildIngredientIndex, fillDescriptionTranslations } from '@/lib/menuDescription'
-import { buildIngredientCategoryMap, isModifierAllowedInCategory } from '@/lib/ingredientCategories'
+import type { Category, MenuItem, ModifierGroup, Modifier, UnavailableIngredient } from '@shared/types'
+import {
+  buildIngredientIndex,
+  descriptionMentions,
+  descriptionPartKeys,
+  fillDescriptionTranslations,
+  similarIngredientNames
+} from '@/lib/menuDescription'
+import { buildIngredientCategoryMap, isIngredientAllowedInCategory, isModifierAllowedInCategory } from '@/lib/ingredientCategories'
 import { HIDING_INGREDIENTS_SELECT, buildHiddenItemIds } from '@/lib/hiddenDishes'
+import { buildLiveIngredientMap, resolveSubstitute } from '@/lib/menuSubstitutes'
 
 // ============ MENU BASIC ============
 
@@ -91,13 +98,12 @@ export async function fetchMenuDirect(): Promise<Category[]> {
       .eq('active', true)
       .order('sortOrder', { ascending: true }),
 
-    // Ingredienti non disponibili con match pre-calcolati
+    // Ingredienti non disponibili. I piatti che li citano si cercano qui sotto a
+    // ogni lettura: la tabella pre-calcolata MenuItemUnavailableIngredient usa la
+    // regola vecchia (Pomodoro trovava anche i Pomodorini ciliegia)
     supabase
       .from('Ingredient')
-      .select(`
-        id, name, nameEn, nameFr, nameEs, nameHe,
-        menuItemMatches:MenuItemUnavailableIngredient(menuItemId)
-      `)
+      .select('id, name, nameEn, nameFr, nameEs, nameHe')
       .eq('inStock', false),
 
     // Mappa sostituti ingredienti
@@ -108,9 +114,10 @@ export async function fetchMenuDirect(): Promise<Category[]> {
       .single(),
 
     // Tutti gli ingredienti: servono a tradurre le descrizioni voce per voce
+    // e a mostrare i sostituti con nome, traduzioni e disponibilita' attuali
     supabase
       .from('Ingredient')
-      .select('name, nameEn, nameFr, nameEs, nameHe'),
+      .select('id, name, nameEn, nameFr, nameEs, nameHe, inStock'),
 
     // Destinazioni d'uso: in quali categorie e' ammesso ogni ingrediente
     supabase
@@ -146,31 +153,30 @@ export async function fetchMenuDirect(): Promise<Category[]> {
 
   const categories = categoriesResult.data || []
   const ingredientIndex = buildIngredientIndex(ingredientsResult.data || [])
+  // Se la lettura fallisce i sostituti restano con i nomi salvati nella mappa
+  const liveIngredients = ingredientsResult.error ? null : buildLiveIngredientMap(ingredientsResult.data || [])
 
-  // Mappa sostituti: ingredientId -> { id, name, ... }
+  // Mappa sostituti: ingredientId -> { id, name, ... } (nomi di quando e' stato scelto)
   const substituteMap: Record<string, { id: string; name: string; nameEn?: string; nameFr?: string; nameEs?: string; nameHe?: string }> =
     (substitutesResult.data as { value?: Record<string, unknown> } | null)?.value as Record<string, { id: string; name: string }> || {}
 
-  // Mappa: menuItemId -> ingredienti non disponibili (da description matching)
-  const itemUnavailableMap = new Map<string, { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string }[]>()
+  // Ingredienti esauriti, ognuno con i nomi degli altri ingredienti che lo
+  // contengono (Pomodorini ciliegia per Pomodoro): quelle voci non si toccano
   const outOfStockIds = new Set<string>()
-
+  const outOfStockIngredients: UnavailableIngredient[] = []
   for (const ing of outOfStockResult.data || []) {
     outOfStockIds.add(ing.id)
-    for (const match of ing.menuItemMatches || []) {
-      if (!itemUnavailableMap.has(match.menuItemId)) {
-        itemUnavailableMap.set(match.menuItemId, [])
-      }
-      itemUnavailableMap.get(match.menuItemId)!.push({
-        id: ing.id,
-        name: ing.name,
-        nameEn: ing.nameEn,
-        nameFr: ing.nameFr,
-        nameEs: ing.nameEs,
-        nameHe: ing.nameHe
-      })
-    }
+    outOfStockIngredients.push({
+      id: ing.id,
+      name: ing.name,
+      nameEn: ing.nameEn,
+      nameFr: ing.nameFr,
+      nameEs: ing.nameEs,
+      nameHe: ing.nameHe,
+      similarNames: similarIngredientNames(ing, ingredientsResult.data || [])
+    })
   }
+  const outOfStockById = new Map(outOfStockIngredients.map(ing => [ing.id, ing]))
 
   // Filtra items e modifiers
   const filtered = categories.map(category => ({
@@ -181,42 +187,47 @@ export async function fetchMenuDirect(): Promise<Category[]> {
       .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((item: any) => {
+        const described = fillDescriptionTranslations(item, ingredientIndex)
+
         // Tutti gli ingredienti associati che sono esauriti
-        const explicitUnavailable = (item.ingredients || [])
+        const explicitUnavailable: UnavailableIngredient[] = (item.ingredients || [])
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .filter((assoc: any) => assoc.ingredient && !assoc.ingredient.inStock)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((assoc: any) => ({
+          .map((assoc: any) => outOfStockById.get(assoc.ingredient.id) ?? {
             id: assoc.ingredient.id,
             name: assoc.ingredient.name,
             nameEn: assoc.ingredient.nameEn,
             nameFr: assoc.ingredient.nameFr,
             nameEs: assoc.ingredient.nameEs,
             nameHe: assoc.ingredient.nameHe
-          }))
+          })
 
-        // Ingredienti non disponibili da description matching
-        const descriptionMatches = itemUnavailableMap.get(item.id) || []
+        // ...e quelli citati nella descrizione: ricontrollati a ogni lettura, cosi'
+        // valgono anche per piatti creati o modificati dopo (e ingredienti rinominati)
+        const descriptionMatches = outOfStockIngredients.filter(ing => descriptionMentions(described, ing))
 
         // Merge, deduplica e attacca sostituti se configurati
+        const partKeys = descriptionPartKeys(described)
         const seenIds = new Set<string>()
-        const unavailableIngredients: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string, substitute?: { id: string, name: string, nameEn?: string, nameFr?: string, nameEs?: string, nameHe?: string } }[] = []
+        const unavailableIngredients: UnavailableIngredient[] = []
         for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
           if (!seenIds.has(ing.id)) {
             seenIds.add(ing.id)
-            const sub = substituteMap[ing.id]
             unavailableIngredients.push({
               ...ing,
+              // Solo i nomi simili che compaiono in questo piatto
+              similarNames: ing.similarNames?.filter(key => partKeys.has(key)),
               // Il sostituto vale solo se ammesso nella categoria di questo piatto
-              substitute: sub && (!ingredientCategoryMap || isModifierAllowedInCategory(ingredientCategoryMap, { ingredientId: sub.id }, category.id))
-                ? sub
-                : undefined
+              substitute: resolveSubstitute(substituteMap[ing.id], liveIngredients, (subId) =>
+                !ingredientCategoryMap || isIngredientAllowedInCategory(ingredientCategoryMap, subId, category.id)
+              )
             })
           }
         }
 
         return {
-          ...fillDescriptionTranslations(item, ingredientIndex),
+          ...described,
           unavailableIngredients,
           ingredients: undefined, // Rimuovi raw ingredients dalla risposta
           // eslint-disable-next-line @typescript-eslint/no-explicit-any

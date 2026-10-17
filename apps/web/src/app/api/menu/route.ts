@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { buildIngredientIndex, fillDescriptionTranslations } from "@/lib/menuDescription";
-import { buildIngredientCategoryMap, isModifierAllowedInCategory } from "@/lib/ingredientCategories";
+import type { UnavailableIngredient } from "@shared/types";
+import {
+  buildIngredientIndex,
+  descriptionMentions,
+  descriptionPartKeys,
+  fillDescriptionTranslations,
+  similarIngredientNames,
+} from "@/lib/menuDescription";
+import {
+  buildIngredientCategoryMap,
+  isIngredientAllowedInCategory,
+  isModifierAllowedInCategory,
+} from "@/lib/ingredientCategories";
 import { HIDING_INGREDIENTS_SELECT, buildHiddenItemIds } from "@/lib/hiddenDishes";
+import { buildLiveIngredientMap, resolveSubstitute } from "@/lib/menuSubstitutes";
 
 // Force dynamic: evita pre-rendering a build time (env vars non disponibili)
 export const dynamic = "force-dynamic";
@@ -50,19 +62,14 @@ export async function GET() {
         .eq("active", true)
         .order("sortOrder", { ascending: true }),
 
-      // Ingredienti non disponibili con match pre-calcolati
-      supabase
-        .from("Ingredient")
-        .select(
-          `
-          id, name, nameEn, nameFr, nameEs, nameHe,
-          menuItemMatches:MenuItemUnavailableIngredient(menuItemId)
-        `
-        )
-        .eq("inStock", false),
+      // Ingredienti non disponibili. I piatti che li citano si cercano qui sotto a
+      // ogni lettura: la tabella pre-calcolata MenuItemUnavailableIngredient usa la
+      // regola vecchia (Pomodoro trovava anche i Pomodorini ciliegia)
+      supabase.from("Ingredient").select("id, name, nameEn, nameFr, nameEs, nameHe").eq("inStock", false),
 
       // Tutti gli ingredienti: servono a tradurre le descrizioni voce per voce
-      supabase.from("Ingredient").select("name, nameEn, nameFr, nameEs, nameHe"),
+      // e a mostrare i sostituti con nome, traduzioni e disponibilita' attuali
+      supabase.from("Ingredient").select("id, name, nameEn, nameFr, nameEs, nameHe, inStock"),
 
       // Destinazioni d'uso: in quali categorie e' ammesso ogni ingrediente
       supabase.from("IngredientCategory").select("ingredientId, categoryId"),
@@ -89,6 +96,8 @@ export async function GET() {
 
     const categories = categoriesResult.data || [];
     const ingredientIndex = buildIngredientIndex(ingredientsResult.data || []);
+    // Se la lettura fallisce i sostituti restano con i nomi salvati nella mappa
+    const liveIngredients = ingredientsResult.error ? null : buildLiveIngredientMap(ingredientsResult.data || []);
 
     // Mappa sostituti: ingredientId -> { id, name, ... } — query separata per non rompere i tipi
     const substitutesRes = await supabase
@@ -117,36 +126,23 @@ export async function GET() {
         { id: string; name: string }
       >) || {};
 
-    // Mappa: menuItemId -> ingredienti non disponibili (da description matching pre-calcolato)
-    const itemUnavailableMap = new Map<
-      string,
-      {
-        id: string;
-        name: string;
-        nameEn?: string;
-        nameFr?: string;
-        nameEs?: string;
-        nameHe?: string;
-      }[]
-    >();
+    // Ingredienti esauriti, ognuno con i nomi degli altri ingredienti che lo
+    // contengono (Pomodorini ciliegia per Pomodoro): quelle voci non si toccano
     const outOfStockIds = new Set<string>();
-
+    const outOfStockIngredients: UnavailableIngredient[] = [];
     for (const ing of outOfStockResult.data || []) {
       outOfStockIds.add(ing.id);
-      for (const match of ing.menuItemMatches || []) {
-        if (!itemUnavailableMap.has(match.menuItemId)) {
-          itemUnavailableMap.set(match.menuItemId, []);
-        }
-        itemUnavailableMap.get(match.menuItemId)!.push({
-          id: ing.id,
-          name: ing.name,
-          nameEn: ing.nameEn,
-          nameFr: ing.nameFr,
-          nameEs: ing.nameEs,
-          nameHe: ing.nameHe,
-        });
-      }
+      outOfStockIngredients.push({
+        id: ing.id,
+        name: ing.name,
+        nameEn: ing.nameEn,
+        nameFr: ing.nameFr,
+        nameEs: ing.nameEs,
+        nameHe: ing.nameHe,
+        similarNames: similarIngredientNames(ing, ingredientsResult.data || []),
+      });
     }
+    const outOfStockById = new Map(outOfStockIngredients.map((ing) => [ing.id, ing]));
 
     // Supabase nested select can return relation fields as object or single-item array.
     // Normalize access once to avoid brittle runtime/type errors.
@@ -183,66 +179,51 @@ export async function GET() {
         .filter((item) => item.available && !hiddenItemIds.has(item.id))
         .sort((a: { sortOrder: number }, b: { sortOrder: number }) => a.sortOrder - b.sortOrder)
         .map((item) => {
+          const described = fillDescriptionTranslations(item, ingredientIndex);
+
           // Ingredienti non disponibili da due fonti:
           // 1. Associazioni dirette (MenuItemIngredient dove ingredient.inStock = false)
-          const explicitUnavailable: Array<{
-            id: string;
-            name: string;
-            nameEn?: string;
-            nameFr?: string;
-            nameEs?: string;
-            nameHe?: string;
-          }> = [];
+          const explicitUnavailable: UnavailableIngredient[] = [];
 
           for (const assoc of item.ingredients || []) {
             const ingredient = getIngredientFromAssoc(assoc);
             if (ingredient && !ingredient.inStock) {
-              explicitUnavailable.push({
-                id: ingredient.id,
-                name: ingredient.name,
-                nameEn: ingredient.nameEn,
-                nameFr: ingredient.nameFr,
-                nameEs: ingredient.nameEs,
-                nameHe: ingredient.nameHe,
-              });
+              explicitUnavailable.push(
+                outOfStockById.get(ingredient.id) ?? {
+                  id: ingredient.id,
+                  name: ingredient.name,
+                  nameEn: ingredient.nameEn,
+                  nameFr: ingredient.nameFr,
+                  nameEs: ingredient.nameEs,
+                  nameHe: ingredient.nameHe,
+                }
+              );
             }
           }
 
-          // 2. Description matching pre-calcolato (ingredienti citati nella descrizione)
-          const descriptionMatches = itemUnavailableMap.get(item.id) || [];
+          // 2. Ingredienti citati nella descrizione: ricontrollati a ogni lettura, cosi'
+          //    valgono anche per piatti creati o modificati dopo (e ingredienti rinominati)
+          const descriptionMatches = outOfStockIngredients.filter((ing) => descriptionMentions(described, ing));
 
           // Merge e deduplica per ingredientId
+          const partKeys = descriptionPartKeys(described);
           const seenIds = new Set<string>();
-          const unavailableIngredients: {
-            id: string;
-            name: string;
-            nameEn?: string;
-            nameFr?: string;
-            nameEs?: string;
-            nameHe?: string;
-            substitute?: {
-              id: string;
-              name: string;
-              nameEn?: string;
-              nameFr?: string;
-              nameEs?: string;
-              nameHe?: string;
-            };
-          }[] = [];
+          const unavailableIngredients: UnavailableIngredient[] = [];
 
           for (const ing of [...explicitUnavailable, ...descriptionMatches]) {
             if (!seenIds.has(ing.id)) {
               seenIds.add(ing.id);
-              const sub = substituteMap[ing.id];
               unavailableIngredients.push({
                 ...ing,
+                // Solo i nomi simili che compaiono in questo piatto
+                similarNames: ing.similarNames?.filter((key) => partKeys.has(key)),
                 // Il sostituto vale solo se ammesso nella categoria di questo piatto
-                substitute:
-                  sub &&
-                  (!ingredientCategoryMap ||
-                    isModifierAllowedInCategory(ingredientCategoryMap, { ingredientId: sub.id }, category.id))
-                    ? sub
-                    : undefined,
+                substitute: resolveSubstitute(
+                  substituteMap[ing.id],
+                  liveIngredients,
+                  (subId) =>
+                    !ingredientCategoryMap || isIngredientAllowedInCategory(ingredientCategoryMap, subId, category.id)
+                ),
               });
             }
           }
@@ -263,7 +244,7 @@ export async function GET() {
           }));
 
           return {
-            ...fillDescriptionTranslations(item, ingredientIndex),
+            ...described,
             unavailableIngredients,
             ingredients: undefined, // Rimuovi raw ingredients
             modifierGroups: normalizedModifierGroups,

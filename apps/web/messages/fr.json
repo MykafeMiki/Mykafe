@@ -160,6 +160,7 @@
   },
   "cart": {
     "title": "Votre commande",
+    "without": "Sans",
     "empty": "Votre panier est vide",
     "yourData": "Vos coordonnées",
     "namePlaceholder": "Votre nom",
@@ -197,9 +198,11 @@
     "addNotes": "Ajouter des notes",
     "notesPlaceholder": "Ex: sans oignon, bien cuit...",
     "eatHere": "Sur place",
-    "takeaway": "À emporter"
+    "takeaway": "À emporter",
+    "removeIngredientHint": "Touchez un ingrédient pour le retirer"
   },
   "kitchen": {
+    "without": "SANS",
     "resetAll": "Effacer les commandes",
     "resetConfirm": "Supprimer TOUTES les commandes ? Elles seront archivées dans Admin et les tables libérées. Action irréversible.",
     "resetDone": "Commandes effacées",

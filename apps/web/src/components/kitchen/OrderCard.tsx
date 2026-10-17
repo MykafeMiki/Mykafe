@@ -163,6 +163,17 @@ export function OrderCard({ order, onStatusChange }: OrderCardProps) {
                   </span>
                 )}
               </div>
+              {/* Cambi alla ricetta: sostituti degli esauriti e ingredienti tolti dal cliente */}
+              {item.substitutions?.map((sub, i) => (
+                <p key={`sub-${i}`} className="text-sm font-semibold text-amber-700">
+                  {sub.from} → {sub.to}
+                </p>
+              ))}
+              {item.removedIngredients?.map((name, i) => (
+                <p key={`senza-${i}`} className="text-sm font-semibold text-red-600">
+                  {t("without")} {name}
+                </p>
+              ))}
               {item.modifiers && item.modifiers.length > 0 && (
                 <p className="text-sm text-gray-500">
                   {item.modifiers.map((m) => m.modifier?.name).join(", ")}

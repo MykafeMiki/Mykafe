@@ -165,6 +165,7 @@
   },
   "cart": {
     "title": "Your order",
+    "without": "Without",
     "empty": "Your cart is empty",
     "yourData": "Your details",
     "namePlaceholder": "Your name",
@@ -202,9 +203,11 @@
     "addNotes": "Add notes",
     "notesPlaceholder": "E.g.: no onions, well done...",
     "eatHere": "Eat here",
-    "takeaway": "Takeaway"
+    "takeaway": "Takeaway",
+    "removeIngredientHint": "Tap an ingredient to remove it"
   },
   "kitchen": {
+    "without": "WITHOUT",
     "resetAll": "Clear all orders",
     "resetConfirm": "Delete ALL orders? They will be archived in Admin and tables will be freed. This cannot be undone.",
     "resetDone": "Orders cleared",

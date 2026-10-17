@@ -484,17 +484,23 @@ Deno.serve(async (req) => {
       // Create order items
       for (const item of items) {
         const orderItemId = generateId();
+        const orderItemData: Record<string, unknown> = {
+          id: orderItemId,
+          orderId: order.id,
+          menuItemId: item.menuItemId,
+          quantity: item.quantity,
+          notes: item.notes,
+          consumeMode: item.consumeMode || "DINE_IN",
+          createdAt: now,
+        };
+        // Cambi alla ricetta (sostituti, ingredienti tolti): solo se ci sono, cosi'
+        // gli ordini normali non dipendono dalle colonne nuove
+        if (item.substitutions?.length) orderItemData.substitutions = item.substitutions;
+        if (item.removedIngredients?.length) orderItemData.removedIngredients = item.removedIngredients;
+
         const { data: orderItem, error: itemError } = await supabase
           .from("OrderItem")
-          .insert({
-            id: orderItemId,
-            orderId: order.id,
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-            notes: item.notes,
-            consumeMode: item.consumeMode || "DINE_IN",
-            createdAt: now,
-          })
+          .insert(orderItemData)
           .select()
           .single();
 

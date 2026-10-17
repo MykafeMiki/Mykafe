@@ -165,6 +165,7 @@
   },
   "cart": {
     "title": "ההזמנה שלך",
+    "without": "בלי",
     "empty": "העגלה ריקה",
     "yourData": "הפרטים שלך",
     "namePlaceholder": "השם שלך",
@@ -202,9 +203,11 @@
     "addNotes": "הוסף הערות",
     "notesPlaceholder": "לדוגמה: בלי בצל, צלוי היטב...",
     "eatHere": "לאכול כאן",
-    "takeaway": "לקחת"
+    "takeaway": "לקחת",
+    "removeIngredientHint": "הקישו על מרכיב כדי להסיר אותו"
   },
   "kitchen": {
+    "without": "בלי",
     "resetAll": "מחק את כל ההזמנות",
     "resetConfirm": "למחוק את כל ההזמנות? הן יישמרו בארכיון באדמין והשולחנות ישוחררו. לא ניתן לבטל.",
     "resetDone": "ההזמנות נמחקו",

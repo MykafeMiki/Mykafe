@@ -8,6 +8,9 @@
  * l'unica fonte letta dal menu servito ai clienti. Prima esisteva anche una
  * copia in localStorage scritta dalla scheda piatto: quella non arrivava mai
  * al cliente, quindi e' stata rimossa.
+ *
+ * I nomi salvati nella mappa sono quelli del momento della scelta: il menu
+ * usa nome, traduzioni e disponibilita' attuali del sostituto (menuSubstitutes.ts).
  */
 
 import { API_URL, getAuthToken } from "./api/core";

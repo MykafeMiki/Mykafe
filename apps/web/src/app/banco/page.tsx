@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useCart } from '@/lib/cart'
 import { getMenu, getTableByQr } from '@/lib/api'
 import { filterCategoriesByTime } from '@/lib/menuTimers'
-import type { Category, MenuItem, Modifier } from '@shared/types'
+import type { Category, DishChanges, MenuItem, Modifier } from '@shared/types'
 import { ConsumeMode } from '@shared/types'
 import { NameStep } from '@/components/banco/NameStep'
 import { ServiceChoiceStep } from '@/components/banco/ServiceChoiceStep'
@@ -87,10 +87,11 @@ export default function BancoPage() {
     quantity: number,
     modifiers: Modifier[],
     notes?: string,
-    consumeMode?: ConsumeMode
+    consumeMode?: ConsumeMode,
+    changes?: DishChanges
   ) => {
     if (selectedItem) {
-      addToCart(selectedItem, quantity, modifiers, notes, currentConsumeMode)
+      addToCart(selectedItem, quantity, modifiers, notes, currentConsumeMode, changes)
     }
   }
 

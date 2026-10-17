@@ -259,6 +259,9 @@ model OrderItem {
   notes       String?
   consumeMode String              @default("DINE_IN") // DINE_IN, TAKEAWAY
   modifiers   OrderItemModifier[]
+  // Cambi alla ricetta, nomi in italiano (migrazione 20261017_order_item_changes)
+  substitutions      Json? // [{ from, to }]: sostituti degli ingredienti esauriti
+  removedIngredients Json? // ingredienti tolti dal cliente
   createdAt   DateTime            @default(now())
 }
 
